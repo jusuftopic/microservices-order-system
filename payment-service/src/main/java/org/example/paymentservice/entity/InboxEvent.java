@@ -1,11 +1,10 @@
 package org.example.paymentservice.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
+
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -33,22 +32,5 @@ public class InboxEvent {
     @Id
     @Column(name = "event_id", nullable = false, updatable = false)
     private UUID eventId;
-
-    /**
-     * Timestamp when the event was successfully processed.
-     */
-    @NotNull
-    @Column(name = "processed_at", nullable = false)
-    private LocalDateTime processedAt;
-
-    /**
-     * Sets the processing timestamp automatically before insert.
-     */
-    @PrePersist
-    public void prePersist() {
-        if (processedAt == null) {
-            processedAt = LocalDateTime.now();
-        }
-    }
 
 }

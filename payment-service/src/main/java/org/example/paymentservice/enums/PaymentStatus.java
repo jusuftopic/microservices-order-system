@@ -5,6 +5,7 @@ package org.example.paymentservice.enums;
  */
 public enum PaymentStatus {
     PENDING,
+    PROCESSING,
     SUCCESS,
     FAILED
 }

@@ -6,14 +6,14 @@ import org.example.commons.event.PaymentRequestedEvent;
 import org.example.paymentservice.dto.PaymentResultDTO;
 import org.example.paymentservice.entity.InboxEvent;
 import org.example.paymentservice.entity.Payment;
-import org.example.paymentservice.mapper.PaymentMapper;
+import org.example.paymentservice.enums.PaymentStatus;
 import org.example.paymentservice.repository.InboxRepository;
 import org.example.paymentservice.repository.PaymentRepository;
-import org.example.paymentservice.service.provider.PaymentProvider;
+import org.example.paymentservice.service.provider.PaymentProviderWrapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.util.Optional;
 
 /**
  * Business logic for handling payments.
@@ -28,7 +28,7 @@ public class PaymentService {
 
     private final PaymentRepository repository;
     private final InboxRepository inboxRepository;
-    private final PaymentProvider paymentProvider;
+    private final PaymentProviderWrapper paymentProvider;
 
     /**
      * Creates a payment for a given order.
@@ -37,35 +37,62 @@ public class PaymentService {
      */
     @Transactional
     public void processPayment(PaymentRequestedEvent event) {
-        if (inboxRepository.existsById(event.eventId())) {
+        int inserted = inboxRepository.insertIfNotExists(event.eventId());
+
+        if (inserted == 0) {
             log.info("[PAYMENT-SERVICE] Order {} already processed.", event.orderId());
             return;
         }
 
-        storeInboxEntity(event);
-        final PaymentResultDTO paymentResult = paymentProvider.pay(event.orderId());
-        storePayment(event, paymentResult);
+        processPaymentInternal(event);
     }
 
+    private void processPaymentInternal(PaymentRequestedEvent event) {
+        Payment payment = Optional.ofNullable(repository.findByOrderId(event.orderId()))
+                .orElseGet(() -> createPayment(event));
 
-    private void storeInboxEntity(PaymentRequestedEvent event) {
+        if (payment.getStatus() == PaymentStatus.SUCCESS) {
+            log.info("[PAYMENT-SERVICE] Order {} already successfully stored.", event.orderId());
+            return;
+        }
+
+        if (payment.getStatus() == PaymentStatus.PROCESSING) {
+            log.info("[PAYMENT-SERVICE] Order {} still processing.", event.orderId());
+            return;
+        }
+
+        payment.setStatus(PaymentStatus.PROCESSING);
+        repository.save(payment);
+
+        try {
+            final PaymentResultDTO paymentResult = paymentProvider.pay(event.orderId(), event.eventId());
+
+            if (paymentResult.success()) {
+                payment.setStatus(PaymentStatus.SUCCESS);
+                payment.setTransactionId(paymentResult.transactionId());
+            }
+            else {
+                payment.setStatus(PaymentStatus.FAILED);
+                payment.setFailureReason(paymentResult.failureReason());
+            }
+        }
+        catch (Exception e) {
+            payment.setStatus(PaymentStatus.FAILED);
+            payment.setFailureReason("TECHNICAL_ERROR");
+            throw e;
+        }
+
         final InboxEvent inbox = new InboxEvent();
         inbox.setEventId(event.eventId());
+
         inboxRepository.save(inbox);
+        repository.save(payment);
     }
 
-    private void storePayment(PaymentRequestedEvent event, final PaymentResultDTO paymentResult) {
-        Payment entity;
-        if (paymentResult == null) {
-            log.warn("[PAYMENT-SERVICE] Payment result from provider is NULL for the event {} and order {}",
-                    event.eventId(), event.orderId());
-            entity = PaymentMapper.toEntity(event.orderId(), null, "MOCK");
-        }
-        else {
-            entity = PaymentMapper.toEntity(event.orderId(), paymentResult, "MOCK");
-        }
-
-        repository.save(entity);
-        log.info("[PAYMENT-SERVICE] Payment for the order {} is processed.", event.orderId());
+    private Payment createPayment(PaymentRequestedEvent event) {
+        return Payment.builder()
+                .orderId(event.orderId())
+                .status(PaymentStatus.PENDING)
+                .build();
     }
 }

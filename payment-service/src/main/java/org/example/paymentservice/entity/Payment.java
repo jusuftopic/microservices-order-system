@@ -28,7 +28,7 @@ public class Payment {
     /**
      * Reference to Order.
      */
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private Long orderId;
 
     /**
