@@ -44,7 +44,6 @@ public class OrderService {
         log.info("[ORDER-SERVICE] Received new order from customer {}. Total amount {}",
                 request.customerEmail(), request.amount());
 
-        //TODO check successful store
         final Order saved = storeOrder(request);
         storeOutboxEvent(saved);
 

@@ -1,7 +1,7 @@
 package org.example.commons.exception.handler;
 
 import org.example.commons.exception.dto.ApiErrorResponse;
-import org.example.orderservice.common.exception.types.NotFoundException;
+import org.example.commons.exception.types.NotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;

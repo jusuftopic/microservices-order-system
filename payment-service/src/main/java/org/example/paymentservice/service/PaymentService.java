@@ -79,6 +79,8 @@ public class PaymentService {
         catch (Exception e) {
             payment.setStatus(PaymentStatus.FAILED);
             payment.setFailureReason("TECHNICAL_ERROR");
+            log.error("[PAYMENT-SERVICE] Failed to process payment for event {} and order {}",
+                    event.eventId(), event.orderId(), e);
             throw e;
         }
 
