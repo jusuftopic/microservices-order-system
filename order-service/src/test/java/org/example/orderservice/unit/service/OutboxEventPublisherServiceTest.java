@@ -1,9 +1,10 @@
-package org.example.orderservice.service;
+package org.example.orderservice.unit.service;
 
 import org.example.orderservice.entity.OutboxDlqEvent;
 import org.example.orderservice.entity.OutboxEvent;
 import org.example.orderservice.repository.OutboxDlqRepository;
 import org.example.orderservice.repository.OutboxRepository;
+import org.example.orderservice.service.publisher.OutboxEventPublisherService;
 import org.example.orderservice.utils.Constants;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

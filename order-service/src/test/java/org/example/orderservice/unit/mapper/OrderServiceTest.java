@@ -1,9 +1,10 @@
-package org.example.orderservice.mapper;
+package org.example.orderservice.unit.mapper;
 
 import org.example.orderservice.dto.request.OrderRequest;
 import org.example.orderservice.dto.response.OrderResponse;
 import org.example.orderservice.entity.Order;
 import org.example.orderservice.enums.OrderStatus;
+import org.example.orderservice.mapper.OrderMapper;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;

@@ -1,6 +1,7 @@
 package org.example.orderservice.service;
 
 import lombok.RequiredArgsConstructor;
+import org.example.orderservice.service.publisher.OutboxEventPublisherService;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 

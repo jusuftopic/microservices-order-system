@@ -1,4 +1,4 @@
-package org.example.paymentservice.listeners;
+package org.example.paymentservice.listener;
 
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import jakarta.annotation.PostConstruct;

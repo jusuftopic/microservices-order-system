@@ -1,4 +1,4 @@
-package org.example.paymentservice.listeners;
+package org.example.paymentservice.listener;
 
 import io.github.resilience4j.retry.RetryRegistry;
 import jakarta.annotation.PostConstruct;

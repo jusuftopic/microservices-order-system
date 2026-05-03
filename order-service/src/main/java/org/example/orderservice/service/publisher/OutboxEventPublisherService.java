@@ -1,4 +1,4 @@
-package org.example.orderservice.service;
+package org.example.orderservice.service.publisher;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

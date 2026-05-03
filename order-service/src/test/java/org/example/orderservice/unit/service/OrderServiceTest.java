@@ -1,4 +1,4 @@
-package org.example.orderservice.service;
+package org.example.orderservice.unit.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.orderservice.dto.request.OrderRequest;
@@ -8,6 +8,7 @@ import org.example.orderservice.entity.OutboxEvent;
 import org.example.orderservice.enums.OrderStatus;
 import org.example.orderservice.repository.OrderRepository;
 import org.example.orderservice.repository.OutboxRepository;
+import org.example.orderservice.service.OrderService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

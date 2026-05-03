@@ -1,4 +1,4 @@
-package org.example.paymentservice.service;
+package org.example.paymentservice.unit.service;
 
 import org.example.commons.event.PaymentRequestedEvent;
 import org.example.paymentservice.dto.PaymentResultDTO;
@@ -6,6 +6,7 @@ import org.example.paymentservice.entity.Payment;
 import org.example.paymentservice.enums.PaymentStatus;
 import org.example.paymentservice.repository.InboxRepository;
 import org.example.paymentservice.repository.PaymentRepository;
+import org.example.paymentservice.service.PaymentService;
 import org.example.paymentservice.service.provider.PaymentProviderWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
