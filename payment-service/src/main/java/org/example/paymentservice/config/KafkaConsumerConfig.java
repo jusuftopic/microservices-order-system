@@ -23,17 +23,13 @@ import static org.apache.kafka.clients.consumer.ConsumerConfig.VALUE_DESERIALIZE
  * Kafka consumer configurations
  */
 @Configuration
-//@EnableKafka
+@EnableKafka
 public class KafkaConsumerConfig {
-
-    @Value("${spring.kafka.bootstrap-servers}")
-    private String bootstrapServers;
 
     @Bean
     ConsumerFactory<String, PaymentRequestedEvent> consumerFactory() {
         Map<String,Object> props = new HashMap<>();
 
-        props.put(BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(GROUP_ID_CONFIG, "payment-group");
 
         props.put(KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
