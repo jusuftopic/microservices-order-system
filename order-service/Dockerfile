@@ -5,10 +5,14 @@ FROM maven:3.9.6-eclipse-temurin-21 AS build
 
 WORKDIR /app
 
-COPY order-service/pom.xml .
-COPY order-service/src ./src
+# Copy parent POM first (important for multi-module Maven)
+COPY pom.xml .
 
-RUN mvn clean package -DskipTests
+# Copy module source
+COPY order-service/pom.xml order-service/pom.xml
+COPY order-service/src order-service/src
+
+RUN mvn -pl order-service -am clean package -DskipTests
 
 # =========================
 # RUNTIME STAGE
