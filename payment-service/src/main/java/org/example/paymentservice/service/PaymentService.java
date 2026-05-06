@@ -4,12 +4,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.commons.event.PaymentRequestedEvent;
 import org.example.paymentservice.dto.PaymentResultDTO;
-import org.example.paymentservice.entity.InboxEvent;
 import org.example.paymentservice.entity.Payment;
 import org.example.paymentservice.enums.PaymentStatus;
+import org.example.paymentservice.event.PaymentProcessingEvent;
 import org.example.paymentservice.repository.InboxRepository;
 import org.example.paymentservice.repository.PaymentRepository;
 import org.example.paymentservice.service.provider.PaymentProviderWrapper;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,7 +29,7 @@ public class PaymentService {
 
     private final PaymentRepository repository;
     private final InboxRepository inboxRepository;
-    private final PaymentProviderWrapper paymentProvider;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * Creates a payment for a given order.
@@ -44,10 +45,6 @@ public class PaymentService {
             return;
         }
 
-        processPaymentInternal(event);
-    }
-
-    private void processPaymentInternal(PaymentRequestedEvent event) {
         Payment payment = Optional.ofNullable(repository.findByOrderId(event.orderId()))
                 .orElseGet(() -> createPayment(event));
 
@@ -64,31 +61,22 @@ public class PaymentService {
         payment.setStatus(PaymentStatus.PROCESSING);
         repository.save(payment);
 
-        try {
-            final PaymentResultDTO paymentResult = paymentProvider.pay(event.orderId(), event.eventId());
-
-            if (paymentResult.success()) {
-                payment.setStatus(PaymentStatus.SUCCESS);
-                payment.setTransactionId(paymentResult.transactionId());
-            }
-            else {
-                payment.setStatus(PaymentStatus.FAILED);
-                payment.setFailureReason(paymentResult.failureReason());
-            }
-        }
-        catch (Exception e) {
-            payment.setStatus(PaymentStatus.FAILED);
-            payment.setFailureReason("TECHNICAL_ERROR");
-            log.error("[PAYMENT-SERVICE] Failed to process payment for event {} and order {}",
-                    event.eventId(), event.orderId(), e);
-            throw e;
-        }
-
-        final InboxEvent inbox = new InboxEvent();
-        inbox.setEventId(event.eventId());
-
-        inboxRepository.save(inbox);
-        repository.save(payment);
+        /**
+         * IMPORTANT: do NOT call external systems here.
+         * Instead, we publish an event that will be handled AFTER COMMIT.
+         *
+         * Reason:
+         *  - avoid mixing transactional persistence and external 3rd party calls
+         *  - DB lock should not be active during the network call
+         *  - retry/rollback can get messy in slow 3rd party call
+         */
+        eventPublisher.publishEvent(
+                new PaymentProcessingEvent(
+                        payment.getId(),
+                        event.orderId(),
+                        event.eventId()
+                )
+        );
     }
 
     private Payment createPayment(PaymentRequestedEvent event) {

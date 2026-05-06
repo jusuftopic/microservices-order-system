@@ -77,4 +77,16 @@ public class PaymentArchitectureTest {
             noClasses()
                     .that().resideInAPackage("..paymentservice..")
                     .should().dependOnClassesThat().resideInAnyPackage("..orderservice..");
+
+    /**
+     * Prevents using payment provider inside the same transactional context
+     *  as persistence of payment details
+     */
+    @ArchTest
+    static final ArchRule external_calls_not_in_repository_layer =
+            noClasses()
+                    .that().resideInAPackage("..repository..")
+                    .should().dependOnClassesThat()
+                    .haveSimpleName("PaymentProviderWrapper");
+
 }

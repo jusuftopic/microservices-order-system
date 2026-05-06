@@ -1,18 +1,18 @@
 package org.example.paymentservice.unit.service;
 
 import org.example.commons.event.PaymentRequestedEvent;
-import org.example.paymentservice.dto.PaymentResultDTO;
 import org.example.paymentservice.entity.Payment;
 import org.example.paymentservice.enums.PaymentStatus;
+import org.example.paymentservice.event.PaymentProcessingEvent;
 import org.example.paymentservice.repository.InboxRepository;
 import org.example.paymentservice.repository.PaymentRepository;
 import org.example.paymentservice.service.PaymentService;
-import org.example.paymentservice.service.provider.PaymentProviderWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -32,7 +32,7 @@ public class PaymentServiceTest {
     private InboxRepository inboxRepository;
 
     @Mock
-    private PaymentProviderWrapper paymentProvider;
+    private ApplicationEventPublisher eventPublisher;
 
     /* class under test */
     private PaymentService target;
@@ -40,7 +40,7 @@ public class PaymentServiceTest {
     @BeforeEach
     public void setUp() {
         target = new PaymentService(
-                repository, inboxRepository, paymentProvider
+                repository, inboxRepository, eventPublisher
         );
     }
 
@@ -57,15 +57,13 @@ public class PaymentServiceTest {
 
         when(repository.findByOrderId(1L)).thenReturn(null);
 
-        when(paymentProvider.pay(1L, eventId))
-                .thenReturn(new PaymentResultDTO(true, "tx-123", null));
 
         // WHEN
         target.processPayment(event);
 
         // THEN
         verify(inboxRepository).insertIfNotExists(eventId);
-        verify(paymentProvider).pay(1L, eventId);
+        verify(eventPublisher).publishEvent(any(PaymentProcessingEvent.class));
         verify(repository, atLeastOnce()).save(any(Payment.class));
     }
 
@@ -85,7 +83,7 @@ public class PaymentServiceTest {
         // THEN
         verify(inboxRepository).insertIfNotExists(eventId);
         verifyNoInteractions(repository);
-        verifyNoInteractions(paymentProvider);
+        verifyNoInteractions(eventPublisher);
     }
 
     @Test
@@ -109,31 +107,8 @@ public class PaymentServiceTest {
         target.processPayment(event);
 
         // THEN
-        verify(paymentProvider, never()).pay(anyLong(), any());
         verify(repository, never()).save(any());
+        verify(eventPublisher, never()).publishEvent(any(PaymentProcessingEvent.class));
+
     }
-
-    @Test
-    void should_mark_payment_failed_when_provider_returns_failure() {
-
-        // GIVEN
-        UUID eventId = UUID.randomUUID();
-        PaymentRequestedEvent event = new PaymentRequestedEvent(
-                eventId, 1L, BigDecimal.valueOf(1L), "test-email");
-
-        when(inboxRepository.insertIfNotExists(eventId)).thenReturn(1);
-        when(repository.findByOrderId(1L)).thenReturn(null);
-
-        when(paymentProvider.pay(1L, eventId))
-                .thenReturn(new PaymentResultDTO(false, null, "INSUFFICIENT_FUNDS"));
-
-        // WHEN
-        target.processPayment(event);
-
-        // THEN
-        verify(paymentProvider).pay(1L, eventId);
-        verify(repository, atLeastOnce()).save(any(Payment.class));
-    }
-
-
 }

@@ -65,34 +65,43 @@ public class OutboxEventPublisherService {
      * </p>
      */
     private void publishSingleEvent(OutboxEvent event) {
-        try {
-            event.setRetryCount(event.getRetryCount() + 1);
-            event.setLastAttemptAt(LocalDateTime.now());
+        event.setRetryCount(event.getRetryCount() + 1);
+        event.setLastAttemptAt(LocalDateTime.now());
 
-            kafkaTemplate.send(
-                    EventConstants.TOPIC_PAYMENT_REQUESTED,
-                    event.getAggregateId().toString(),
-                    event.getPayload()
-            ).get();
+        kafkaTemplate.send(
+                EventConstants.TOPIC_PAYMENT_REQUESTED,
+                event.getAggregateId().toString(),
+                event.getPayload()
+        ).whenComplete((result, ex) -> handleKafkaResult(event, ex));
+    }
 
-            event.setProcessed(true);
-            outboxRepository.save(event);
-
-            log.debug("[ORDER-SERVICE][OUTBOX-PUBLISHER] Event id={} type={} successfully published.",
-                    event.getId(), event.getEventType());
-        } catch (Exception ex) {
-            log.error("[ORDER-SERVICE][OUTBOX-PUBLISHER] Failed event {} retry {}",
-                    event.getId(), event.getRetryCount(), ex);
-            if (event.getRetryCount() >= Constants.MAX_RETRIES) {
-                moveToDlq(event, ex);
-            }
-            else {
-                outboxRepository.save(event);
-            }
+    private void handleKafkaResult(OutboxEvent event, Throwable ex) {
+        if (ex == null) {
+            handleSuccess(event);
+        } else {
+            handleFailure(event, ex);
         }
     }
 
-    private void moveToDlq(OutboxEvent event, Exception ex) {
+    private void handleSuccess(OutboxEvent event) {
+        event.setProcessed(true);
+        outboxRepository.save(event);
+
+        log.debug("[ORDER-SERVICE][OUTBOX-PUBLISHER] Event id={} type={} successfully published.",
+                event.getId(), event.getEventType());
+    }
+
+    private void handleFailure(OutboxEvent event, Throwable ex) {
+        log.error("[ORDER-SERVICE][OUTBOX-PUBLISHER] Failed event {} retry {}",
+                event.getId(), event.getRetryCount(), ex);
+        if (event.getRetryCount() >= Constants.MAX_RETRIES) {
+            moveToDlq(event, ex);
+        } else {
+            outboxRepository.save(event);
+        }
+    }
+
+    private void moveToDlq(OutboxEvent event, Throwable ex) {
         final OutboxDlqEvent dlqEvent = new OutboxDlqEvent();
         dlqEvent.setOriginalEventId(event.getId());
         dlqEvent.setAggregateId(event.getAggregateId());

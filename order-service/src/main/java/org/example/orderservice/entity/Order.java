@@ -50,7 +50,6 @@ public class Order {
     /**
      * Optional description.
      */
-    @Column(nullable = true)
     private String description;
 
     /**
