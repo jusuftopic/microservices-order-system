@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.commons.event.PaymentRequestedEvent;
-import org.example.commons.exception.types.NotFoundException;
 import org.example.orderservice.dto.request.OrderRequest;
 import org.example.orderservice.dto.response.OrderResponse;
 import org.example.orderservice.entity.Order;

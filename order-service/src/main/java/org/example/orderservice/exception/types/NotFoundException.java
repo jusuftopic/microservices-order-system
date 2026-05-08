@@ -1,4 +1,4 @@
-package org.example.commons.exception.types;
+package org.example.orderservice.exception.types;
 
 /**
  * Custom exception for not founded resources

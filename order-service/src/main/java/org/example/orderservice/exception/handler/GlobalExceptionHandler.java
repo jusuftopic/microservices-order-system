@@ -1,7 +1,8 @@
-package org.example.commons.exception.handler;
+package org.example.orderservice.exception.handler;
 
-import org.example.commons.exception.dto.ApiErrorResponse;
-import org.example.commons.exception.types.NotFoundException;
+
+import org.example.orderservice.exception.dto.ApiErrorResponse;
+import org.example.orderservice.exception.types.NotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -66,7 +67,7 @@ public class GlobalExceptionHandler {
      * @return standardized error response with HTTP 400
      */
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ApiErrorResponse> handleInvalidJson(HttpMessageNotReadableException ex) {
+    public ResponseEntity<org.example.orderservice.exception.dto.ApiErrorResponse> handleInvalidJson(HttpMessageNotReadableException ex) {
         return ResponseEntity.badRequest()
                 .body(ApiErrorResponse.of("Malformed JSON request", 400));
     }

@@ -1,8 +1,8 @@
-package org.example.commons.exception.dto;
-
+package org.example.orderservice.exception.dto;
 
 import java.time.LocalDateTime;
 import java.util.List;
+
 
 /**
  * Standard error response returned by the API when an exception occurs.
