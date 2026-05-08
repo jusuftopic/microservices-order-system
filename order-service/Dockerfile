@@ -7,6 +7,8 @@ WORKDIR /app
 
 COPY . .
 
+RUN ls -R /app/commons/src/main/java/org/example/commons/event
+
 RUN mvn -pl order-service -am clean package -DskipTests
 
 # =========================
