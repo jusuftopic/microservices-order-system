@@ -12,6 +12,7 @@
     </parent>
 
     <artifactId>commons</artifactId>
+    <packaging>jar</packaging>
 
     <url/>
     <licenses>
