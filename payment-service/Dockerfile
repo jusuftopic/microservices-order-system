@@ -7,7 +7,7 @@ WORKDIR /app
 
 COPY . .
 
-RUN mvn -pl payment-service -am clean package -DskipTests
+RUN mvn clean package -DskipTests
 
 # =========================
 # RUNTIME STAGE
