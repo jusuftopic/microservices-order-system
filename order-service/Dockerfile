@@ -7,7 +7,7 @@ WORKDIR /app
 
 COPY . .
 
-RUN mvn clean package -DskipTests
+RUN mvn -f pom.xml clean package -DskipTests
 
 # =========================
 # RUNTIME STAGE
