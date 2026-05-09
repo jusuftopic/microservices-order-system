@@ -124,7 +124,7 @@ public class OutboxEventPublisherService {
         event.setProcessed(true);
         outboxRepository.save(event);
 
-        log.debug("[ORDER-SERVICE][OUTBOX-PUBLISHER] Event id={} type={} successfully published.",
+        log.info("[ORDER-SERVICE][OUTBOX-PUBLISHER] Event id={} type={} successfully published.",
                 event.getId(), event.getEventType());
     }
 
