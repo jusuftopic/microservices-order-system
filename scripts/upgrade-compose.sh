@@ -2,48 +2,28 @@
 
 set -e
 
-echo "=============================="
-echo "🧹 Cleaning broken Docker Compose installs"
-echo "=============================="
+echo "=== Removing ALL docker-compose variants ==="
 
-sudo rm -f /usr/bin/docker-compose || true
-sudo rm -f /usr/local/bin/docker-compose || true
+sudo rm -f /usr/local/bin/docker*
+sudo rm -f /usr/bin/docker-compose
+sudo rm -f ~/.docker/cli-plugins/docker-compose
 
-sudo rm -f /usr/lib/docker/cli-plugins/docker-compose || true
-sudo rm -f /usr/local/lib/docker/cli-plugins/docker-compose || true
+echo "=== Removing aliases from shell configs ==="
 
-echo "=============================="
-echo "📦 Installing Docker Engine (official)"
-echo "=============================="
+sed -i '/docker-compose/d' ~/.bashrc || true
+sed -i '/docker compose/d' ~/.bashrc || true
 
+echo "=== Uninstalling snap docker if exists ==="
+sudo snap remove docker 2>/dev/null || true
+
+echo "=== Reinstalling official Docker clean ==="
 curl -fsSL https://get.docker.com | sudo sh
 
-echo "=============================="
-echo "📦 Installing official Docker Compose plugin (v2)"
-echo "=============================="
-
+echo "=== Installing Compose plugin clean ==="
 sudo apt-get update
 sudo apt-get install -y docker-compose-plugin || true
 
-# Fallback if apt plugin fails (common on broken VMs)
-if ! docker compose version >/dev/null 2>&1; then
-  echo "⚠️ apt plugin failed, installing manual Compose v2..."
-
-  mkdir -p ~/.docker/cli-plugins
-
-  curl -SL https://github.com/docker/compose/releases/download/v2.27.0/docker-compose-linux-x86_64 \
-    -o ~/.docker/cli-plugins/docker-compose
-
-  chmod +x ~/.docker/cli-plugins/docker-compose
-fi
-
-echo "=============================="
-echo "🔍 Verification"
-echo "=============================="
-
-docker --version || true
+echo "=== Verification ==="
+which docker
+docker --version
 docker compose version || true
-
-echo "=============================="
-echo "✅ DONE"
-echo "=============================="
