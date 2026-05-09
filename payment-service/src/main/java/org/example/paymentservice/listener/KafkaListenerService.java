@@ -25,7 +25,7 @@ public class KafkaListenerService {
      *
      * @param event Event to process
      */
-    @KafkaListener(topics = EventConstants.TOPIC_PAYMENT_REQUESTED,
+    @KafkaListener(topics = EventConstants.TOPIC_PAYMENT_REQUESTED_V1,
             groupId = Constants.KAFKA_PAYMENT_GROUP_ID
     )
     public void handlePaymentRequested(PaymentRequestedEvent event) {

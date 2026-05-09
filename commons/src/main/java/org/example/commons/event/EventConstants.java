@@ -9,7 +9,7 @@ public class EventConstants {
     public static final String EVENT_PAYMENT_REQUESTED = "PAYMENT_REQUESTED";
 
     /* TOPICS */
-    public static final String TOPIC_PAYMENT_REQUESTED = "payment-requested";
+    public static final String TOPIC_PAYMENT_REQUESTED_V1 = "payment-requested.v1";
     public static final String TOPIC_PAYMENT_REQUESTED_DLT = "payment-requested.DLT";
 
 }

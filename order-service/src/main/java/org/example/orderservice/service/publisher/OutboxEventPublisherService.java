@@ -1,11 +1,8 @@
 package org.example.orderservice.service.publisher;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.commons.event.EventConstants;
-import org.example.commons.event.PaymentRequestedEvent;
 import org.example.orderservice.entity.OutboxDlqEvent;
 import org.example.orderservice.entity.OutboxEvent;
 import org.example.orderservice.repository.OutboxDlqRepository;
@@ -15,10 +12,8 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Service responsible for publishing Outbox Events to Kafka.
@@ -74,7 +69,7 @@ public class OutboxEventPublisherService {
         event.setLastAttemptAt(LocalDateTime.now());
 
         kafkaTemplate.send(
-                EventConstants.TOPIC_PAYMENT_REQUESTED,
+                EventConstants.TOPIC_PAYMENT_REQUESTED_V1,
                 event.getAggregateId().toString(),
                 event.getPayload()
         )
