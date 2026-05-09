@@ -2,36 +2,48 @@
 
 set -e
 
-echo "=== Removing old Docker versions (if any) ==="
-sudo apt-get remove -y docker docker-engine docker.io containerd runc || true
+echo "=============================="
+echo "🧹 Cleaning broken Docker Compose installs"
+echo "=============================="
 
-echo "=== Installing prerequisites ==="
+sudo rm -f /usr/bin/docker-compose || true
+sudo rm -f /usr/local/bin/docker-compose || true
+
+sudo rm -f /usr/lib/docker/cli-plugins/docker-compose || true
+sudo rm -f /usr/local/lib/docker/cli-plugins/docker-compose || true
+
+echo "=============================="
+echo "📦 Installing Docker Engine (official)"
+echo "=============================="
+
+curl -fsSL https://get.docker.com | sudo sh
+
+echo "=============================="
+echo "📦 Installing official Docker Compose plugin (v2)"
+echo "=============================="
+
 sudo apt-get update
-sudo apt-get install -y ca-certificates curl gnupg
+sudo apt-get install -y docker-compose-plugin || true
 
-echo "=== Adding Docker GPG key ==="
-sudo install -m 0755 -d /etc/apt/keyrings
+# Fallback if apt plugin fails (common on broken VMs)
+if ! docker compose version >/dev/null 2>&1; then
+  echo "⚠️ apt plugin failed, installing manual Compose v2..."
 
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+  mkdir -p ~/.docker/cli-plugins
 
-sudo chmod a+r /etc/apt/keyrings/docker.gpg
+  curl -SL https://github.com/docker/compose/releases/download/v2.27.0/docker-compose-linux-x86_64 \
+    -o ~/.docker/cli-plugins/docker-compose
 
-echo "=== Adding Docker repository ==="
-echo \
-"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-$(. /etc/os-release && echo $VERSION_CODENAME) stable" | \
-sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+  chmod +x ~/.docker/cli-plugins/docker-compose
+fi
 
-echo "=== Installing Docker Engine + Compose V2 ==="
-sudo apt-get update
-sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+echo "=============================="
+echo "🔍 Verification"
+echo "=============================="
 
-echo "=== Enabling Docker service ==="
-sudo systemctl enable docker
-sudo systemctl start docker
-
-echo "=== Verifying installation ==="
 docker --version || true
 docker compose version || true
 
-echo "=== DONE ==="
+echo "=============================="
+echo "✅ DONE"
+echo "=============================="
