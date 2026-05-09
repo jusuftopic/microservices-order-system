@@ -1,5 +1,6 @@
 package org.example.orderservice.unit.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.orderservice.entity.OutboxDlqEvent;
 import org.example.orderservice.entity.OutboxEvent;
 import org.example.orderservice.repository.OutboxDlqRepository;
@@ -39,7 +40,7 @@ public class OutboxEventPublisherServiceTest {
     @BeforeEach
     public void setUp() {
         service = new OutboxEventPublisherService(
-                outboxRepository, dlqRepository, kafkaTemplate
+                outboxRepository, dlqRepository, kafkaTemplate, new ObjectMapper()
         );
     }
 

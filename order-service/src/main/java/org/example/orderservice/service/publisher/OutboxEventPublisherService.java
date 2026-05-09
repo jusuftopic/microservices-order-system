@@ -59,6 +59,7 @@ public class OutboxEventPublisherService {
         if (events == null || events.isEmpty()) {
             log.debug("[ORDER-SERVICE][OUTBOX-PUBLISHER] No pending events found.");
             if (!isSet) {
+                log.info("[ORDER-SERVICE][OUTBOX-PUBLISHER] Going to set");
                 final OutboxEvent event = new OutboxEvent();
                 event.setId(UUID.randomUUID());
                 event.setAggregateType("TEST");
@@ -81,11 +82,10 @@ public class OutboxEventPublisherService {
                 event.setProcessed(true);
                 event.setRetryCount(0);
 
-                publishSingleEvent(event);
+                outboxRepository.save(event);
+                log.info("[OP] Stored");
                 isSet = true;
             }
-
-
             return;
         }
 
@@ -108,7 +108,8 @@ public class OutboxEventPublisherService {
                 EventConstants.TOPIC_PAYMENT_REQUESTED,
                 event.getAggregateId().toString(),
                 event.getPayload()
-        ).whenComplete((result, ex) -> handleKafkaResult(event, ex));
+        )
+                .whenComplete((result, ex) -> handleKafkaResult(event, ex));
     }
 
     private void handleKafkaResult(OutboxEvent event, Throwable ex) {
