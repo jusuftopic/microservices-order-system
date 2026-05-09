@@ -40,7 +40,7 @@ public class OutboxEventPublisherServiceTest {
     @BeforeEach
     public void setUp() {
         service = new OutboxEventPublisherService(
-                outboxRepository, dlqRepository, kafkaTemplate, new ObjectMapper()
+                outboxRepository, dlqRepository, kafkaTemplate
         );
     }
 

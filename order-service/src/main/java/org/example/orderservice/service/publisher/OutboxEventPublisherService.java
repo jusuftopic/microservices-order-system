@@ -41,9 +41,6 @@ public class OutboxEventPublisherService {
     private final OutboxDlqRepository dlqRepository;
     private final KafkaTemplate<String, String> kafkaTemplate;
 
-    private final ObjectMapper objectMapper;
-    private boolean isSet = false;
-
     /**
      * Publishes all pending outbox events.
      *
@@ -58,34 +55,6 @@ public class OutboxEventPublisherService {
         List<OutboxEvent> events = outboxRepository.findByProcessedFalseOrderByCreatedAtAsc();
         if (events == null || events.isEmpty()) {
             log.debug("[ORDER-SERVICE][OUTBOX-PUBLISHER] No pending events found.");
-            if (!isSet) {
-                log.info("[ORDER-SERVICE][OUTBOX-PUBLISHER] Going to set");
-                final OutboxEvent event = new OutboxEvent();
-                event.setId(UUID.randomUUID());
-                event.setAggregateType("TEST");
-                event.setAggregateId(1L);
-                event.setEventType("TEST");
-                try {
-                    event.setPayload(
-                            objectMapper.writeValueAsString(
-                                    new PaymentRequestedEvent(
-                                            UUID.randomUUID(),
-                                            1L, BigDecimal.valueOf(1L), "test"
-                                    )
-                            )
-                    );
-                }
-                catch (Exception e) {
-                    event.setPayload("");
-                }
-
-                event.setProcessed(true);
-                event.setRetryCount(0);
-
-                outboxRepository.save(event);
-                log.info("[OP] Stored");
-                isSet = true;
-            }
             return;
         }
 
