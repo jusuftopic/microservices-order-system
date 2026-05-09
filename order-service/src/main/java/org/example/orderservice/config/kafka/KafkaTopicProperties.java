@@ -1,5 +1,6 @@
 package org.example.orderservice.config.kafka;
 
+import jakarta.validation.constraints.Min;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -17,7 +18,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  */
 @ConfigurationProperties(prefix = "app.kafka.topics")
 public record KafkaTopicProperties(
+
+        @Min(1)
         int partitions,
+
+        @Min(1)
         short replicas
 ) {
 }
