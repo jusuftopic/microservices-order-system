@@ -54,6 +54,8 @@ public class OutboxEventPublisherService {
             return;
         }
 
+        log.info("[ORDER-SERVICE][OUTBOX-PUBLISHER] Found {} events for publishing.", events.size());
+
         events.forEach(this::publishSingleEvent);
     }
 
