@@ -9,6 +9,7 @@ import org.example.orderservice.repository.OutboxDlqRepository;
 import org.example.orderservice.repository.OutboxRepository;
 import org.example.orderservice.utils.Constants;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -68,28 +69,29 @@ public class OutboxEventPublisherService {
         event.setRetryCount(event.getRetryCount() + 1);
         event.setLastAttemptAt(LocalDateTime.now());
 
-        kafkaTemplate.send(
-                EventConstants.TOPIC_PAYMENT_REQUESTED_V1,
-                event.getAggregateId().toString(),
-                event.getPayload()
-        )
-                .whenComplete((result, ex) -> handleKafkaResult(event, ex));
-    }
+        try {
+            SendResult<String, String> result = kafkaTemplate.send(
+                    EventConstants.TOPIC_PAYMENT_REQUESTED_V1,
+                    event.getAggregateId().toString(),
+                    event.getPayload()
+            ).get();
 
-    private void handleKafkaResult(OutboxEvent event, Throwable ex) {
-        if (ex == null) {
-            handleSuccess(event);
-        } else {
-            handleFailure(event, ex);
+            handleSuccess(event, result);
+        }
+        catch (Exception e) {
+            handleFailure(event, e);
         }
     }
 
-    private void handleSuccess(OutboxEvent event) {
+
+    private void handleSuccess(OutboxEvent event,
+                               SendResult<String, String> result) {
         event.setProcessed(true);
         outboxRepository.save(event);
 
-        log.info("[ORDER-SERVICE][OUTBOX-PUBLISHER] Event id={} type={} successfully published.",
-                event.getId(), event.getEventType());
+        log.info("[ORDER-SERVICE][OUTBOX-PUBLISHER] Event id={} type={} successfully published." +
+                        "Topic {}",
+                event.getId(), event.getEventType(), result.getRecordMetadata().topic());
     }
 
     private void handleFailure(OutboxEvent event, Throwable ex) {
