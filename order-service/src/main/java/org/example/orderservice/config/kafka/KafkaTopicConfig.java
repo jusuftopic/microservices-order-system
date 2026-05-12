@@ -32,18 +32,4 @@ public class KafkaTopicConfig {
                 .replicas(props.replicas())
                 .build();
     }
-
-    /**
-     * Dead Letter Topic for failed payment processing events.
-     *
-     * <p>Messages land here after retry exhaustion in consumers.</p>
-     * <p>This topic should always be monitored in production systems.</p>
-     */
-    @Bean
-    public NewTopic paymentRequestedDltTopic(KafkaTopicProperties props) {
-        return TopicBuilder.name(EventConstants.TOPIC_PAYMENT_REQUESTED_DLT)
-                .partitions(props.partitions())
-                .replicas(props.replicas())
-                .build();
-    }
 }
