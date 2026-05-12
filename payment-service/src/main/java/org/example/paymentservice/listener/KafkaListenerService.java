@@ -32,4 +32,10 @@ public class KafkaListenerService {
         log.info("[PAYMENT-SERVICE][KAFKA-LISTENER] Received event {} for processing.", event.eventId());
         paymentService.processPayment(event);
     }
+
+    @KafkaListener(topics = EventConstants.TOPIC_PAYMENT_REQUESTED_DLT,
+            groupId = Constants.KAFKA_PAYMENT_GROUP_ID)
+    public void handlePaymentRequestedDLT(String message) {
+        log.warn("[PAYMENT-SERVICE][KAFKA-LISTENER] Received DLT message for event {}", EventConstants.EVENT_PAYMENT_REQUESTED);
+    }
 }
