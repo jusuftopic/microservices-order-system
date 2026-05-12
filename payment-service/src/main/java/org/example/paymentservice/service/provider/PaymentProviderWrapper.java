@@ -34,11 +34,9 @@ public class PaymentProviderWrapper {
      * - retries exhausted
      * - timeout occurs
      */
-    private PaymentResultDTO fallback(Long orderId, String eventId, Throwable ex) {
+    private PaymentResultDTO fallback(Long orderId, UUID idempotencyKey) {
         log.warn(
-                "[PAYMENT-PROVIDER] fallback triggered for orderId={}, reason={}",
-                orderId,
-                ex.getClass().getSimpleName()
+                "[PAYMENT-PROVIDER] fallback triggered for orderId={}.", orderId
         );
 
         return new PaymentResultDTO(
