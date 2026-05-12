@@ -6,6 +6,7 @@ package org.example.paymentservice.dto;
 public record PaymentResultDTO(
         boolean success,
         String transactionId,
-        String failureReason
+        String failureReason,
+        String provider
 ) {
 }

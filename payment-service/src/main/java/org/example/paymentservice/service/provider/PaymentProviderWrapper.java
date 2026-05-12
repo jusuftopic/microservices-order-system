@@ -44,7 +44,8 @@ public class PaymentProviderWrapper {
         return new PaymentResultDTO(
                 false,
                 null,
-                "PAYMENT_SERVICE_UNAVAILABLE"
+                "PAYMENT_SERVICE_UNAVAILABLE",
+                "MOCK"
         );
     }
 }

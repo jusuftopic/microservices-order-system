@@ -3,7 +3,7 @@ package org.example.paymentservice.listener;
 import lombok.RequiredArgsConstructor;
 import org.example.paymentservice.dto.PaymentResultDTO;
 import org.example.paymentservice.event.PaymentProcessingEvent;
-import org.example.paymentservice.service.PaymentFinalizationService;
+import org.example.paymentservice.service.PaymentService;
 import org.example.paymentservice.service.provider.PaymentProviderWrapper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -15,7 +15,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 public class PaymentProcessingListener {
 
     private final PaymentProviderWrapper paymentProvider;
-    private final PaymentFinalizationService paymentService;
+    private final PaymentService paymentService;
 
     /**
      * This method is executed ONLY after the payment transaction commits successfully.
@@ -33,7 +33,7 @@ public class PaymentProcessingListener {
                 event.eventId()
         );
 
-        // Final DB update in a NEW transaction
+        // Final DB update
         paymentService.finalizePayment(event.paymentId(), result);
     }
 

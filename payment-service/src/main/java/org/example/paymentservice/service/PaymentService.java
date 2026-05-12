@@ -85,4 +85,27 @@ public class PaymentService {
                 .status(PaymentStatus.PENDING)
                 .build();
     }
+
+    /**
+     * Independent transaction after receiving payment result:
+     * - updates result from payment provider
+     * - does NOT depend on original transaction
+     */
+    @Transactional
+    public void finalizePayment(Long paymentId, PaymentResultDTO result) {
+        Payment payment = repository.findById(paymentId)
+                .orElseThrow();
+
+        payment.setProvider(result.provider());
+
+        if (result.success()) {
+            payment.setStatus(PaymentStatus.SUCCESS);
+            payment.setTransactionId(result.transactionId());
+        } else {
+            payment.setStatus(PaymentStatus.FAILED);
+            payment.setFailureReason(result.failureReason());
+        }
+
+        repository.save(payment);
+    }
 }

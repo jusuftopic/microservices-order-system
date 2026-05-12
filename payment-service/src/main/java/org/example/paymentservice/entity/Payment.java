@@ -41,7 +41,7 @@ public class Payment {
     /**
      * Payment provider (e.g., STRIPE, PAYPAL).
      */
-    @Column(nullable = false)
+    @Column
     private String provider;
 
     /**

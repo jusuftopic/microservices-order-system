@@ -40,14 +40,16 @@ public class MockPaymentClient implements PaymentClient {
             result = new PaymentResultDTO(
                     true,
                     UUID.randomUUID().toString(),
-                    null
+                    null,
+                    "MOCK"
             );
         }
         else {
             result = new PaymentResultDTO(
                     false,
                     null,
-                    "INSUFFICIENT_FUNDS"
+                    "INSUFFICIENT_FUNDS",
+                    "MOCK"
             );
         }
         processed.put(idempotencyKey, result);
