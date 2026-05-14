@@ -65,7 +65,7 @@ jobs:
 
       # 4. Compile Order Service
       - name: Compile Order Service
-        run: ./mvnw -pl order-service clean compile
+        run: ./mvnw -pl order-service -am clean compile
 
       # 5. Test Order Service
       - name: Test Order Service
@@ -106,7 +106,7 @@ jobs:
 
       # 4. Compile Payment Service
       - name: Compile Payment Service
-        run: ./mvnw -pl payment-service clean compile
+        run: ./mvnw -pl payment-service -am clean compile
 
       # 5. Test Payment Service
       - name: Test Payment Service
