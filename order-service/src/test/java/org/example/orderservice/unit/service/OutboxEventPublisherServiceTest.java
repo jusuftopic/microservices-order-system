@@ -1,6 +1,6 @@
 package org.example.orderservice.unit.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.kafka.clients.producer.RecordMetadata;
 import org.example.orderservice.entity.OutboxDlqEvent;
 import org.example.orderservice.entity.OutboxEvent;
 import org.example.orderservice.repository.OutboxDlqRepository;
@@ -14,6 +14,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
 
 import java.util.List;
 import java.util.UUID;
@@ -73,7 +74,14 @@ public class OutboxEventPublisherServiceTest {
                 .thenReturn(List.of(event));
 
         // simulate Kafka success
-        CompletableFuture future = CompletableFuture.completedFuture(null);
+        RecordMetadata metadata = mock(RecordMetadata.class);
+
+        SendResult<String, String> sendResult = mock(SendResult.class);
+        when(sendResult.getRecordMetadata()).thenReturn(metadata);
+
+        CompletableFuture<SendResult<String, String>> future =
+                CompletableFuture.completedFuture(sendResult);
+
         when(kafkaTemplate.send(anyString(), anyString(), anyString()))
                 .thenReturn(future);
 
@@ -121,7 +129,7 @@ public class OutboxEventPublisherServiceTest {
     }
 
     @Test
-    void should_move_to_dlq_when_max_retries_reached() throws Exception {
+    void should_move_to_dlq_when_max_retries_reached()  {
 
         // GIVEN
         OutboxEvent event = new OutboxEvent();
@@ -178,10 +186,10 @@ public class OutboxEventPublisherServiceTest {
         when(outboxRepository.findByProcessedFalseOrderByCreatedAtAsc())
                 .thenReturn(List.of(e1, e2));
 
-        CompletableFuture future = CompletableFuture.completedFuture(null);
 
-        when(kafkaTemplate.send(anyString(), anyString(), anyString()))
-                .thenReturn(future);
+        SendResult<String, String> sendResult = mock(SendResult.class);
+        CompletableFuture<SendResult<String, String>> future =
+                CompletableFuture.completedFuture(sendResult);
 
         // WHEN
         service.publishPendingEvents();
