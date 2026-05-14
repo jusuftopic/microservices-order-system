@@ -31,7 +31,7 @@ public class OrderServiceTest {
         Order result = OrderMapper.toEntity(request);
 
         // THEN
-        assertNotNull(result);
+        assertNull(result);
         assertEquals("test1@example.com", result.getCustomerEmail());
         assertEquals(BigDecimal.valueOf(100), result.getAmount());
         assertEquals("Test order", result.getDescription());
