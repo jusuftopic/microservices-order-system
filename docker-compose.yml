@@ -54,6 +54,7 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     depends_on:
       - kafka
+      - order-db
 
   # PAYMENT-SERVICE
   payment-service:
@@ -67,3 +68,4 @@ services:
        SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     depends_on:
       - kafka
+      - payment-db
