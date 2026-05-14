@@ -1,6 +1,5 @@
 package org.example.commons.event;
 
-import java.math.BigDecimal;
 import java.util.UUID;
 
 /**
@@ -8,8 +7,6 @@ import java.util.UUID;
  */
 public record PaymentRequestedEvent(
         UUID eventId,
-        Long orderId,
-        BigDecimal amount,
-        String customerEmail
+        Long orderId
 ) {
 }

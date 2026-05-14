@@ -55,8 +55,7 @@ public class PaymentServiceTest {
         // GIVEN
         UUID eventId = UUID.randomUUID();
 
-        PaymentRequestedEvent event = new PaymentRequestedEvent(
-                eventId, 1L, BigDecimal.valueOf(1L), "test-email");
+        PaymentRequestedEvent event = new PaymentRequestedEvent(eventId, 1L);
 
         when(inboxRepository.insertIfNotExists(eventId)).thenReturn(1);
 
@@ -78,7 +77,7 @@ public class PaymentServiceTest {
         // GIVEN
         UUID eventId = UUID.randomUUID();
         PaymentRequestedEvent event = new PaymentRequestedEvent(
-                eventId, 1L, BigDecimal.valueOf(1L), "test-email");
+                eventId, 1L);
 
         when(inboxRepository.insertIfNotExists(eventId)).thenReturn(0);
 
@@ -96,8 +95,7 @@ public class PaymentServiceTest {
 
         // GIVEN
         UUID eventId = UUID.randomUUID();
-        PaymentRequestedEvent event = new PaymentRequestedEvent(
-                eventId, 1L, BigDecimal.valueOf(1L), "test-email");
+        PaymentRequestedEvent event = new PaymentRequestedEvent(eventId, 1L);
 
         when(inboxRepository.insertIfNotExists(eventId)).thenReturn(1);
 

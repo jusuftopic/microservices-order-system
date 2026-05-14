@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.testcontainers.shaded.org.awaitility.Awaitility;
 
-import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.UUID;
 
@@ -32,9 +31,7 @@ public class IdempotencyIT extends AbstractIntegrationTest{
 
         PaymentRequestedEvent event = new PaymentRequestedEvent(
                 eventId,
-                1L,
-                BigDecimal.TEN,
-                "test@test.com"
+                1L
         );
 
         // WHEN

@@ -9,7 +9,6 @@ import org.example.paymentservice.enums.PaymentStatus;
 import org.example.paymentservice.event.PaymentProcessingEvent;
 import org.example.paymentservice.repository.InboxRepository;
 import org.example.paymentservice.repository.PaymentRepository;
-import org.example.paymentservice.service.provider.PaymentProviderWrapper;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

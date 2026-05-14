@@ -62,9 +62,7 @@ public class OrderService {
         outboxEvent.setPayload(toJson(
                 new PaymentRequestedEvent(
                         eventId,
-                        saved.getId(),
-                        saved.getAmount(),
-                        saved.getCustomerEmail()
+                        saved.getId()
                 )
         ));
         outboxEvent.setProcessed(false);

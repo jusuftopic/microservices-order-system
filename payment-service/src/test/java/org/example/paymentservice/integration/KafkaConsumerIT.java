@@ -35,9 +35,7 @@ public class KafkaConsumerIT extends AbstractIntegrationTest {
         // given
         PaymentRequestedEvent event = new PaymentRequestedEvent(
                 UUID.randomUUID(),
-                1L,
-                BigDecimal.valueOf(100),
-                "test@test.com"
+                1L
         );
 
         // when
