@@ -22,7 +22,7 @@ public class OrderServiceTest {
 
         // GIVEN
         OrderRequest request = new OrderRequest(
-                "test@example.com",
+                "test1@example.com",
                 BigDecimal.valueOf(100),
                 "Test order"
         );
@@ -32,7 +32,7 @@ public class OrderServiceTest {
 
         // THEN
         assertNotNull(result);
-        assertEquals("test@example.com", result.getCustomerEmail());
+        assertEquals("test1@example.com", result.getCustomerEmail());
         assertEquals(BigDecimal.valueOf(100), result.getAmount());
         assertEquals("Test order", result.getDescription());
 
