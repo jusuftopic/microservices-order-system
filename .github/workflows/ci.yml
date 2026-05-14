@@ -3,12 +3,25 @@ name: Order Service CI Pipeline
 on:
   push:
     branches: [ "master" ]
+    paths:
+      - "commons/**"
+      - "order-service/**"
+      - "payment-service/**"
+      - "pom.xml"
+
   pull_request:
     branches: [ "master" ]
+    paths:
+      - "commons/**"
+      - "order-service/**"
+      - "payment-service/**"
+      - "pom.xml"
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
 
     steps:
       # 1. Checkout repo
@@ -28,7 +41,17 @@ jobs:
         run: chmod +x mvnw
 
       # 4. Build & test entire monorepo
-      - name: Build and test
+      - name: Build
         run: ./mvnw clean verify
 
+      - name: Run tests
+        run: ./mvnw verify
+
+      # 5 Upload test results in GitHub UI
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: "**/target/surefire-reports/*.xml"
 

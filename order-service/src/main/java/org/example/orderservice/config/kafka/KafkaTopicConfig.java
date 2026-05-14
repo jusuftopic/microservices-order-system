@@ -2,6 +2,7 @@ package org.example.orderservice.config.kafka;
 
 import org.apache.kafka.clients.admin.NewTopic;
 import org.example.commons.event.EventConstants;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.TopicBuilder;
@@ -16,6 +17,7 @@ import org.springframework.kafka.config.TopicBuilder;
  * <p>Topics are created idempotently (safe to redeploy).</p>
  */
 @Configuration
+@EnableConfigurationProperties(KafkaTopicProperties.class)
 public class KafkaTopicConfig {
 
 
