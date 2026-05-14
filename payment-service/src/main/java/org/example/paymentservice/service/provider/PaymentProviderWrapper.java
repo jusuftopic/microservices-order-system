@@ -23,9 +23,8 @@ public class PaymentProviderWrapper {
             fallbackMethod = "fallback"
     )
     @io.github.resilience4j.retry.annotation.Retry(name = "payment")
-    @io.github.resilience4j.timelimiter.annotation.TimeLimiter(name = "payment")
     public PaymentResultDTO pay(Long orderId, UUID idempotencyKey) {
-        return paymentClient.pay(orderId, idempotencyKey);
+       return paymentClient.pay(orderId, idempotencyKey);
     }
 
     /**
@@ -34,9 +33,11 @@ public class PaymentProviderWrapper {
      * - retries exhausted
      * - timeout occurs
      */
-    private PaymentResultDTO fallback(Long orderId, UUID idempotencyKey) {
+    private PaymentResultDTO fallback(Long orderId, UUID idempotencyKey,
+                                      Throwable ex) {
         log.warn(
-                "[PAYMENT-PROVIDER] fallback triggered for orderId={}.", orderId
+                "[PAYMENT-PROVIDER] fallback triggered for orderId={}.",
+                orderId, ex
         );
 
         return new PaymentResultDTO(

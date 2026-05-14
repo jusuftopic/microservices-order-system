@@ -54,8 +54,6 @@ public class OutboxEventPublisherService {
             return;
         }
 
-        log.info("[ORDER-SERVICE][OUTBOX-PUBLISHER] Found {} events for publishing.", events.size());
-
         events.forEach(this::publishSingleEvent);
     }
 
@@ -91,7 +89,7 @@ public class OutboxEventPublisherService {
         event.setProcessed(true);
         outboxRepository.save(event);
 
-        log.info("[ORDER-SERVICE][OUTBOX-PUBLISHER] Event id={} type={} successfully published." +
+        log.debug("[ORDER-SERVICE][OUTBOX-PUBLISHER] Event id={} type={} successfully published." +
                         "Topic {}",
                 event.getId(), event.getEventType(), result.getRecordMetadata().topic());
     }

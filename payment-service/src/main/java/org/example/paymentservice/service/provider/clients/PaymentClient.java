@@ -6,6 +6,8 @@ import java.util.UUID;
 
 /**
  * Unified interface for different payment providers connected to the system
+ *
+ * Note: Underlying client MUST include timeout options (Alternative: Consider using TimeLimiter)
  */
 public interface PaymentClient {
 
