@@ -21,7 +21,7 @@ public class MockPaymentClient implements PaymentClient {
     private final Map<UUID, PaymentResultDTO> processed = new ConcurrentHashMap<>();
 
     @Setter
-    private volatile Boolean forceSuccess;
+    private volatile Boolean forceSuccess = false;
 
 
     @Override
