@@ -11,7 +11,7 @@ import org.springframework.kafka.config.TopicBuilder;
  * Kafka topic infrastructure definition.
  *
  * <p>This configuration ensures that all required Kafka topics are created
- * explicitly at application startup using Spring Kafka Admin.</p>
+ * explicitly at the application startup using Spring Kafka Admin.</p>
  *
  *
  * <p>Topics are created idempotently (safe to redeploy).</p>
