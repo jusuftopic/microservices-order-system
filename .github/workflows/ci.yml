@@ -18,10 +18,33 @@ on:
       - "pom.xml"
 
 jobs:
-  build:
+  changes:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: true
+    outputs:
+      order: ${{ steps.filter.outputs.order }}
+      payment: ${{ steps.filter.outputs.payment }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Detect changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+           order:
+            - 'order-service/**'
+            - 'commons/**'
+           payment:
+            - 'payment-service/**'
+            - 'commons/**'
+
+  # order-service build
+  build-order:
+    name: Build Order Service
+    needs: changes
+    if: needs.changes.outputs.order == 'true'
+    runs-on: ubuntu-latest
 
     steps:
       # 1. Checkout repo
@@ -40,18 +63,59 @@ jobs:
       - name: Grant execute permission
         run: chmod +x mvnw
 
-      # 4. Build & test entire monorepo
-      - name: Build
-        run: ./mvnw clean verify
+      # 4. Compile Order Service
+      - name: Compile Order Service
+        run: ./mvnw -pl order-service clean compile
 
-      - name: Run tests
-        run: ./mvnw verify
+      # 5. Test Order Service
+      - name: Test Order Service
+        run: ./mvnw -pl order-service -am test
 
-      # 5 Upload test results in GitHub UI
+      # 6 Upload test results in GitHub UI
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results
+          name: order-test-results
           path: "**/target/surefire-reports/*.xml"
 
+
+  # payment-service build
+  build-payment:
+    name: Build Payment Service
+    needs: changes
+    if: needs.changes.outputs.payment == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout repo
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Setup environment Java 21
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      # 3. Make mvnw executable
+      - name: Grant execute permission
+        run: chmod +x mvnw
+
+      # 4. Compile Payment Service
+      - name: Compile Payment Service
+        run: ./mvnw -pl payment-service clean compile
+
+      # 5. Test Payment Service
+      - name: Test Payment Service
+        run: ./mvnw -pl payment-service -am test
+
+      # 6 Upload test results in GitHub UI
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: payment-test-results
+          path: "**/target/surefire-reports/*.xml"
