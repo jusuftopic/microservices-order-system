@@ -25,9 +25,9 @@ public interface InboxRepository extends JpaRepository<InboxEvent, UUID> {
      */
     @Modifying
     @Query(value = """
-    MERGE INTO inbox_event (event_id)
-    KEY(event_id)
+    INSERT INTO inbox_event (event_id)
     VALUES (:eventId)
+    ON CONFLICT (event_id) DO NOTHING
     """, nativeQuery = true)
     int insertIfNotExists(@Param("eventId") UUID eventId);
 }

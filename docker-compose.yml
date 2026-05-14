@@ -2,6 +2,7 @@ version: "3.9"
 
 services:
 
+  # KAFKA
   kafka:
     image: apache/kafka:4.0.2
     container_name: kafka
@@ -19,6 +20,29 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
 
+  # ORDER DB
+  order-db:
+    image: postgres:15
+    container_name: order-db
+    environment:
+      POSTGRES_DB: order_db
+      POSTGRES_USER: order_user
+      POSTGRES_PASSWORD: order_pass
+    ports:
+      - "5432:5432"
+
+  # PAYMENT DB
+  payment-db:
+    image: postgres:15
+    container_name: payment-db
+    environment:
+      POSTGRES_DB: payment_db
+      POSTGRES_USER: payment_user
+      POSTGRES_PASSWORD: payment_pass
+    ports:
+      - "5433:5432"
+
+  # ORDER-SERVICE
   order-service:
     build:
       context: .
@@ -31,7 +55,7 @@ services:
     depends_on:
       - kafka
 
-
+  # PAYMENT-SERVICE
   payment-service:
     build:
       context: .
