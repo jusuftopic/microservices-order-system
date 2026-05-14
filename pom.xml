@@ -23,9 +23,9 @@
     </properties>
 
     <modules>
+        <module>commons</module>
         <module>order-service</module>
         <module>payment-service</module>
-        <module>commons</module>
     </modules>
 
     <dependencyManagement>
