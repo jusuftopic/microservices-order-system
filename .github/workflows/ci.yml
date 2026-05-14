@@ -19,6 +19,7 @@ on:
 
 jobs:
   changes:
+    name: Identify changes
     runs-on: ubuntu-latest
     outputs:
       order: ${{ steps.filter.outputs.order }}
