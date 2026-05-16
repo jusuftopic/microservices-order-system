@@ -5,7 +5,13 @@ package org.example.orderservice.enums;
  */
 public enum OrderStatus {
     CREATED,
-    PROCESSING,
+
+    INVENTORY_PROCESSING,
+    INVENTORY_FAILED,
+
+    PAYMENT_PROCESSING,
+    PAYMENT_FAILED,
+
     COMPLETED,
     FAILED
 }
