@@ -1,5 +1,6 @@
 package org.example.paymentservice.service.provider.clients;
 
+import org.apache.kafka.common.protocol.types.Field;
 import org.example.paymentservice.dto.PaymentResultDTO;
 
 import java.util.UUID;
@@ -19,5 +20,5 @@ public interface PaymentClient {
      *                       track of already processed events
      * @return The result of the payment process
      */
-    PaymentResultDTO pay(Long orderId, UUID idempotencyKey);
+    PaymentResultDTO pay(Long orderId, String idempotencyKey);
 }

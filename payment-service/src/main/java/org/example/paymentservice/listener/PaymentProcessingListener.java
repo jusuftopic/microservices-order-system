@@ -30,7 +30,7 @@ public class PaymentProcessingListener {
         // External system call (safe here — DB is already committed)
         PaymentResultDTO result = paymentProvider.pay(
                 event.orderId(),
-                event.eventId()
+                event.correlationId()
         );
 
         // Final DB update

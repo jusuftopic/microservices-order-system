@@ -1,7 +1,5 @@
 package org.example.paymentservice.event;
 
-import java.util.UUID;
-
 /**
  * Internal event representing that a payment is ready to be processed
  * by an external payment provider.
@@ -11,6 +9,6 @@ import java.util.UUID;
 public record PaymentProcessingEvent(
         Long paymentId,
         Long orderId,
-        UUID eventId
+        String correlationId
 ){
 }

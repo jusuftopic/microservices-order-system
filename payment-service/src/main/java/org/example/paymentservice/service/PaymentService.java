@@ -2,7 +2,7 @@ package org.example.paymentservice.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.commons.event.PaymentRequestedEvent;
+import org.example.commons.event.contracts.PaymentRequestedEvent;
 import org.example.paymentservice.dto.PaymentResultDTO;
 import org.example.paymentservice.entity.Payment;
 import org.example.paymentservice.enums.PaymentStatus;
@@ -37,7 +37,7 @@ public class PaymentService {
      */
     @Transactional
     public void processPayment(PaymentRequestedEvent event) {
-        int inserted = inboxRepository.insertIfNotExists(event.eventId());
+        int inserted = inboxRepository.insertIfNotExists(event.correlationId());
 
         if (inserted == 0) {
             log.info("[PAYMENT-SERVICE] Order {} already processed.", event.orderId());
@@ -73,7 +73,7 @@ public class PaymentService {
                 new PaymentProcessingEvent(
                         payment.getId(),
                         event.orderId(),
-                        event.eventId()
+                        event.correlationId()
                 )
         );
     }

@@ -1,7 +1,7 @@
 package org.example.paymentservice.integration;
 
 import org.example.commons.event.EventConstants;
-import org.example.commons.event.PaymentRequestedEvent;
+import org.example.commons.event.contracts.PaymentRequestedEvent;
 import org.example.paymentservice.repository.InboxRepository;
 import org.example.paymentservice.repository.PaymentRepository;
 import org.junit.jupiter.api.Test;
@@ -34,13 +34,13 @@ public class KafkaConsumerIT extends AbstractIntegrationTest {
 
         // given
         PaymentRequestedEvent event = new PaymentRequestedEvent(
-                UUID.randomUUID(),
-                1L
+                1L, BigDecimal.ONE,
+                "test", "1x1"
         );
 
         // when
         kafkaTemplate.send(
-                EventConstants.TOPIC_PAYMENT_REQUESTED_V1,
+                EventConstants.TOPIC_ODER_PAYMENT_REQUEST_V1,
                 event.orderId().toString(),
                 event
         );

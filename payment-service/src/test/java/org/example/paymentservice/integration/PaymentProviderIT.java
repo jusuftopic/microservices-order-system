@@ -27,7 +27,7 @@ public class PaymentProviderIT extends AbstractIntegrationTest {
         // when
         PaymentResultDTO result = paymentProvider.pay(
                 1L,
-                UUID.randomUUID()
+                "11"
         );
 
         // then
@@ -43,7 +43,7 @@ public class PaymentProviderIT extends AbstractIntegrationTest {
         // when
         PaymentResultDTO result = paymentProvider.pay(
                 1L,
-                UUID.randomUUID()
+                "11"
         );
 
         // then

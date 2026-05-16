@@ -3,7 +3,7 @@ package org.example.orderservice.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.commons.event.PaymentRequestedEvent;
+import org.example.commons.event.contracts.PaymentRequestedEvent;
 import org.example.orderservice.dto.request.OrderRequest;
 import org.example.orderservice.dto.response.OrderResponse;
 import org.example.orderservice.entity.Order;
@@ -14,6 +14,7 @@ import org.example.orderservice.repository.OrderRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -61,8 +62,10 @@ public class OrderService {
         outboxEvent.setEventType(EVENT_PAYMENT_REQUESTED);
         outboxEvent.setPayload(toJson(
                 new PaymentRequestedEvent(
-                        eventId,
-                        saved.getId()
+                        saved.getId(),
+                        BigDecimal.valueOf(1L),
+                        "test",
+                        "dummy"
                 )
         ));
         outboxEvent.setProcessed(false);

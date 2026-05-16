@@ -3,6 +3,7 @@ package org.example.paymentservice.service.provider.clients;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.common.protocol.types.Field;
 import org.example.paymentservice.dto.PaymentResultDTO;
 import org.springframework.stereotype.Service;
 
@@ -18,14 +19,14 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 public class MockPaymentClient implements PaymentClient {
 
-    private final Map<UUID, PaymentResultDTO> processed = new ConcurrentHashMap<>();
+    private final Map<String, PaymentResultDTO> processed = new ConcurrentHashMap<>();
 
     @Setter
     private volatile Boolean forceSuccess = false;
 
 
     @Override
-    public PaymentResultDTO pay(Long orderId, UUID idempotencyKey) {
+    public PaymentResultDTO pay(Long orderId, String idempotencyKey) {
         // simulate provider-side idempotency
         if (processed.containsKey(idempotencyKey)) {
             log.info("[PAYMENT-PROVIDER][MOCK] Returning cached result for key {}", idempotencyKey);

@@ -30,7 +30,7 @@ public class InboxEvent {
      * Unique identifier of the incoming event.
      */
     @Id
-    @Column(name = "event_id", nullable = false, updatable = false)
-    private UUID eventId;
+    @Column(name = "correlation_id", nullable = false, updatable = false)
+    private String correlationId;
 
 }

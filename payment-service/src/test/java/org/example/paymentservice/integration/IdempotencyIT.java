@@ -1,13 +1,14 @@
 package org.example.paymentservice.integration;
 
 import org.example.commons.event.EventConstants;
-import org.example.commons.event.PaymentRequestedEvent;
+import org.example.commons.event.contracts.PaymentRequestedEvent;
 import org.example.paymentservice.repository.InboxRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.testcontainers.shaded.org.awaitility.Awaitility;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.UUID;
 
@@ -30,14 +31,14 @@ public class IdempotencyIT extends AbstractIntegrationTest{
         UUID eventId = UUID.randomUUID();
 
         PaymentRequestedEvent event = new PaymentRequestedEvent(
-                eventId,
-                1L
+                1L, BigDecimal.ONE,
+                "test", "1x1"
         );
 
         // WHEN
         // send twice
-        kafkaTemplate.send(EventConstants.TOPIC_PAYMENT_REQUESTED_V1, event.orderId().toString(), event);
-        kafkaTemplate.send(EventConstants.TOPIC_PAYMENT_REQUESTED_V1, event.orderId().toString(), event);
+        kafkaTemplate.send(EventConstants.TOPIC_ODER_PAYMENT_REQUEST_V1, event.orderId().toString(), event);
+        kafkaTemplate.send(EventConstants.TOPIC_ORDER_INVENTORY_REQUEST_V1, event.orderId().toString(), event);
 
         // THEN -> wait 10 seconds and verify repository
         Awaitility.await()

@@ -14,20 +14,20 @@ import java.util.UUID;
 public interface InboxRepository extends JpaRepository<InboxEvent, UUID> {
 
     /**
-     * Attempts to insert the given eventId into the inbox_event table.
+     * Attempts to insert the given correlationId into the inbox_event table.
      *
      * This method is used to implement the Inbox Pattern for Kafka message
      * deduplication. It ensures that each event is processed at most once
-     * by relying on atomic unique constraint on the event_id column.
+     * by relying on atomic unique constraint on the correlation_id column.
      *
-     * @param eventId unique identifier of the consumed Kafka event
+     * @param correlationId unique identifier of the consumed Kafka event
      * @return number of affected rows
      */
     @Modifying
     @Query(value = """
-    INSERT INTO inbox_event (event_id)
-    VALUES (:eventId)
-    ON CONFLICT (event_id) DO NOTHING
+    INSERT INTO inbox_event (correlation_id)
+    VALUES (:correlationId)
+    ON CONFLICT (correlation_id) DO NOTHING
     """, nativeQuery = true)
-    int insertIfNotExists(@Param("eventId") UUID eventId);
+    int insertIfNotExists(@Param("correlationId") String correlationId);
 }

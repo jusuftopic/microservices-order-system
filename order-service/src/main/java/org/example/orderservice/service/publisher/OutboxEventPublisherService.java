@@ -71,7 +71,7 @@ public class OutboxEventPublisherService {
 
         try {
             SendResult<String, String> result = kafkaTemplate.send(
-                    EventConstants.TOPIC_PAYMENT_REQUESTED_V1,
+                    EventConstants.TOPIC_ODER_PAYMENT_REQUEST_V1,
                     event.getAggregateId().toString(),
                     event.getPayload()
             ).get();

@@ -43,7 +43,7 @@ public class KafkaErrorConfig {
      */
     @Bean
     public NewTopic paymentRequestedDltTopic() {
-        return TopicBuilder.name(EventConstants.TOPIC_PAYMENT_REQUESTED_DLT)
+        return TopicBuilder.name(EventConstants.TOPIC_ODER_PAYMENT_REQUEST_V1)
                 .partitions(3)
                 .replicas(1)
                 .build();

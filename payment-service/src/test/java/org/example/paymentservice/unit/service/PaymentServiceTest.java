@@ -1,6 +1,6 @@
 package org.example.paymentservice.unit.service;
 
-import org.example.commons.event.PaymentRequestedEvent;
+import org.example.commons.event.contracts.PaymentRequestedEvent;
 import org.example.paymentservice.dto.PaymentResultDTO;
 import org.example.paymentservice.entity.Payment;
 import org.example.paymentservice.enums.PaymentStatus;
@@ -53,11 +53,10 @@ public class PaymentServiceTest {
     void should_process_payment_successfully() {
 
         // GIVEN
-        UUID eventId = UUID.randomUUID();
+        final String correlationId = "11x11";
+        PaymentRequestedEvent event = new PaymentRequestedEvent(1L, BigDecimal.ONE, "test", correlationId);
 
-        PaymentRequestedEvent event = new PaymentRequestedEvent(eventId, 1L);
-
-        when(inboxRepository.insertIfNotExists(eventId)).thenReturn(1);
+        when(inboxRepository.insertIfNotExists(correlationId)).thenReturn(1);
 
         when(repository.findByOrderId(1L)).thenReturn(null);
 
@@ -66,7 +65,7 @@ public class PaymentServiceTest {
         target.processPayment(event);
 
         // THEN
-        verify(inboxRepository).insertIfNotExists(eventId);
+        verify(inboxRepository).insertIfNotExists(correlationId);
         verify(eventPublisher).publishEvent(any(PaymentProcessingEvent.class));
         verify(repository, atLeastOnce()).save(any(Payment.class));
     }
@@ -75,17 +74,16 @@ public class PaymentServiceTest {
     void should_skip_processing_when_event_already_exists_in_inbox() {
 
         // GIVEN
-        UUID eventId = UUID.randomUUID();
-        PaymentRequestedEvent event = new PaymentRequestedEvent(
-                eventId, 1L);
+        final String correlationId = "11x11";
+        PaymentRequestedEvent event = new PaymentRequestedEvent(1L, BigDecimal.ONE, "test", correlationId);
 
-        when(inboxRepository.insertIfNotExists(eventId)).thenReturn(0);
+        when(inboxRepository.insertIfNotExists(correlationId)).thenReturn(0);
 
         // WHEN
         target.processPayment(event);
 
         // THEN
-        verify(inboxRepository).insertIfNotExists(eventId);
+        verify(inboxRepository).insertIfNotExists(correlationId);
         verifyNoInteractions(repository);
         verifyNoInteractions(eventPublisher);
     }
@@ -94,10 +92,10 @@ public class PaymentServiceTest {
     void should_skip_when_payment_already_success() {
 
         // GIVEN
-        UUID eventId = UUID.randomUUID();
-        PaymentRequestedEvent event = new PaymentRequestedEvent(eventId, 1L);
+        final String correlationId = "11x11";
+        PaymentRequestedEvent event = new PaymentRequestedEvent(1L, BigDecimal.ONE, "test", correlationId);
 
-        when(inboxRepository.insertIfNotExists(eventId)).thenReturn(1);
+        when(inboxRepository.insertIfNotExists(correlationId)).thenReturn(1);
 
         Payment existingPayment = Payment.builder()
                 .orderId(1L)
