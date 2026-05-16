@@ -43,6 +43,7 @@ public class Order {
     @Column(nullable = false)
     private String customerEmail;
 
+    @Builder.Default
     @OneToMany(
             mappedBy = "order",
             cascade = CascadeType.ALL,
