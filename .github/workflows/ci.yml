@@ -63,9 +63,11 @@ jobs:
           - service: inventory-service
             enabled: ${{ needs.changes.outputs.inventory }}
 
-    if: matrix.enabled == 'true'
-
     steps:
+      - name: Skip CI if not changed
+        if: matrix.enabled != 'true'
+        run: echo "Skipping ${{ matrix.service }}" && exit 0
+
       - name: Checkout code
         uses: actions/checkout@v4
 
