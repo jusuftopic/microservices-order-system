@@ -86,7 +86,7 @@ public class OrderServiceTest {
         OrderResponse response = orderService.createOrder(request);
 
         // THEN
-        assertNull(response);
+        assertNotNull(response);
         assertEquals(1L, response.id());
         assertEquals("CREATED", response.status());
 
