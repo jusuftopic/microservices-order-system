@@ -1,5 +1,6 @@
 package org.example.orderservice.integration;
 
+import org.example.orderservice.dto.request.OrderItemRequest;
 import org.example.orderservice.dto.request.OrderRequest;
 import org.example.orderservice.dto.response.OrderResponse;
 import org.example.orderservice.entity.OutboxEvent;
@@ -9,7 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.ResponseEntity;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,7 +31,10 @@ public class OrderFlowIT extends AbstractIntegrationTest {
         // given
         OrderRequest request = new OrderRequest(
                 "test@test.com",
-                BigDecimal.valueOf(100),
+                List.of(
+                        new OrderItemRequest(1L, 2),
+                        new OrderItemRequest(2L, 1)
+                ),
                 "test order"
         );
 
@@ -45,7 +48,15 @@ public class OrderFlowIT extends AbstractIntegrationTest {
         // then
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
 
-        Long orderId = response.getBody().id();
+        OrderResponse responseBody = response.getBody();
+        assertThat(responseBody).isNotNull();
+
+        Long orderId = responseBody.id();
+
+        assertThat(responseBody.items()).hasSize(2);
+        assertThat(responseBody.items().get(0).productId()).isEqualTo(1L);
+        assertThat(responseBody.items().get(0).quantity()).isEqualTo(2);
+
 
         List<OutboxEvent> events = outboxRepository.findAll();
 

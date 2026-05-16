@@ -4,8 +4,10 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.example.orderservice.enums.OrderStatus;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Order entity represents a purchase/order in the system.
@@ -41,11 +43,12 @@ public class Order {
     @Column(nullable = false)
     private String customerEmail;
 
-    /**
-     * Total order amount.
-     */
-    @Column(nullable = false)
-    private BigDecimal amount;
+    @OneToMany(
+            mappedBy = "order",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    private List<OrderItem> items = new ArrayList<>();
 
     /**
      * Optional description.
@@ -61,6 +64,22 @@ public class Order {
      * Last update timestamp.
      */
     private LocalDateTime updatedAt;
+
+    /**
+     * @return Unmodifiable list of order items
+     */
+    public List<OrderItem> getItems() {
+        return Collections.unmodifiableList(items);
+    }
+
+    /**
+     * Add new item to the list and create bidirectional relationship
+     * @param item {@link OrderItem} to set
+     */
+    public void addItem(OrderItem item) {
+        items.add(item);
+        item.setOrder(this);
+    }
 
     @PrePersist
     public void prePersist() {

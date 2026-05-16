@@ -1,6 +1,7 @@
 package org.example.orderservice.integration;
 
 import org.example.orderservice.entity.Order;
+import org.example.orderservice.entity.OrderItem;
 import org.example.orderservice.entity.OutboxEvent;
 import org.example.orderservice.enums.OrderStatus;
 import org.example.orderservice.repository.OrderRepository;
@@ -35,7 +36,10 @@ public class OutboxPublisherIT extends AbstractIntegrationTest {
 
         // given
         Order order = new Order();
-        order.setAmount(BigDecimal.TEN);
+        order.addItem(OrderItem.builder()
+                        .productId(1L)
+                        .quantity(2)
+                .build());
         order.setStatus(OrderStatus.CREATED);
         order.setCustomerEmail("test@test.com");
 

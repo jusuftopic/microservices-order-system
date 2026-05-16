@@ -1,9 +1,11 @@
 package org.example.orderservice.unit.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.example.orderservice.dto.request.OrderItemRequest;
 import org.example.orderservice.dto.request.OrderRequest;
 import org.example.orderservice.dto.response.OrderResponse;
 import org.example.orderservice.entity.Order;
+import org.example.orderservice.entity.OrderItem;
 import org.example.orderservice.entity.OutboxEvent;
 import org.example.orderservice.enums.OrderStatus;
 import org.example.orderservice.repository.OrderRepository;
@@ -18,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -55,18 +58,25 @@ public class OrderServiceTest {
         // GIVEN
         OrderRequest request = new OrderRequest(
                 "test@mail.com",
-                BigDecimal.valueOf(100),
+                List.of(
+                        new OrderItemRequest(1L, 2),
+                        new OrderItemRequest(2L, 1)
+                ),
                 "desc"
         );
 
         Order savedOrder = Order.builder()
                 .id(1L)
                 .customerEmail("test@mail.com")
-                .amount(BigDecimal.valueOf(100))
                 .description("desc")
                 .status(OrderStatus.CREATED)
                 .createdAt(LocalDateTime.now())
                 .build();
+
+        request.items().forEach(item -> savedOrder.addItem(OrderItem.builder()
+                        .productId(item.productId())
+                        .quantity(item.quantity())
+                .build()));
 
         when(repository.save(any(Order.class))).thenReturn(savedOrder);
         when(objectMapper.writeValueAsString(any())).thenReturn("{json}");
@@ -101,7 +111,10 @@ public class OrderServiceTest {
         // GIVEN
         OrderRequest request = new OrderRequest(
                 "fail@mail.com",
-                BigDecimal.valueOf(50),
+                List.of(
+                        new OrderItemRequest(1L, 2),
+                        new OrderItemRequest(2L, 1)
+                ),
                 "desc"
         );
 
@@ -134,7 +147,13 @@ public class OrderServiceTest {
                 .id(1L)
                 .status(OrderStatus.CREATED)
                 .customerEmail("test@mail.com")
-                .amount(BigDecimal.TEN)
+                .items(List.of(
+                        OrderItem.builder()
+                                .productId(1L)
+                                .quantity(2)
+                                .build()
+                        )
+                )
                 .description("desc")
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -148,6 +167,7 @@ public class OrderServiceTest {
         assertNotNull(response);
         assertEquals(1L, response.id());
         assertEquals("CREATED", response.status());
+        assertEquals(1, response.items().size());
     }
 
     @Test

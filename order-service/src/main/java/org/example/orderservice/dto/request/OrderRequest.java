@@ -3,6 +3,7 @@ package org.example.orderservice.dto.request;
 import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * Request DTO for creating orders.
@@ -13,9 +14,8 @@ public record OrderRequest(
         @Email(message = "Invalid email format")
         String customerEmail,
 
-        @NotNull(message = "Amount is required")
-        @DecimalMin(value = "0.01", message = "Amount must be positive")
-        BigDecimal amount,
+        @NotEmpty(message = "Order must contain at least one item")
+        List<OrderItemRequest> items,
 
         @Size(max = 255, message = "Description too long")
         String description

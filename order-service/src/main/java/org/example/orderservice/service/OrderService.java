@@ -40,8 +40,8 @@ public class OrderService {
      */
     @Transactional
     public OrderResponse createOrder(OrderRequest request) {
-        log.info("[ORDER-SERVICE] Received new order from customer {}. Total amount {}",
-                request.customerEmail(), request.amount());
+        log.info("[ORDER-SERVICE] Received new order from customer {}. Total items {}",
+                request.customerEmail(), request.items().size());
 
         final Order saved = storeOrder(request);
         storeOutboxEvent(saved);
