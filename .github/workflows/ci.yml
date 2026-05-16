@@ -46,31 +46,19 @@ jobs:
             - 'payment-service/**'
             - 'commons/**'
 
-
-  build:
-    name: Build Services
+  # order-service build
+  build-order:
+    name: Build Order Service
     needs: changes
+    if: needs.changes.outputs.order == 'true'
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        service: [ order-service, payment-service, inventory-service ]
-        include:
-          - service: order-service
-            enabled: ${{ needs.changes.outputs.order }}
-          - service: payment-service
-            enabled: ${{ needs.changes.outputs.payment }}
-          - service: inventory-service
-            enabled: ${{ needs.changes.outputs.inventory }}
-
     steps:
-      - name: Skip CI if not changed
-        if: matrix.enabled != 'true'
-        run: echo "Skipping ${{ matrix.service }}" && exit 0
-
+      # 1. Checkout repo
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # 2. Setup environment Java 21
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -78,18 +66,102 @@ jobs:
           java-version: 21
           cache: maven
 
+      # 3. Make mvnw executable
       - name: Grant execute permission
         run: chmod +x mvnw
 
-      - name: Compile ${{ matrix.service }}
-        run: ./mvnw -pl ${{ matrix.service }} -am clean compile
+      # 4. Compile Order Service
+      - name: Compile Order Service
+        run: ./mvnw -pl order-service -am clean compile
 
-      - name: Test ${{ matrix.service }}
-        run: ./mvnw -pl ${{ matrix.service }} -am test
+      # 5. Test Order Service
+      - name: Test Order Service
+        run: ./mvnw -pl order-service -am test
 
+      # 6 Upload test results in GitHub UI
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.service }}-test-results
+          name: order-test-results
+          path: "**/target/surefire-reports/*.xml"
+
+  # payment-service build
+  build-payment:
+    name: Build Payment Service
+    needs: changes
+    if: needs.changes.outputs.payment == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout repo
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Setup environment Java 21
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      # 3. Make mvnw executable
+      - name: Grant execute permission
+        run: chmod +x mvnw
+
+      # 4. Compile Payment Service
+      - name: Compile Payment Service
+        run: ./mvnw -pl payment-service -am clean compile
+
+      # 5. Test Payment Service
+      - name: Test Payment Service
+        run: ./mvnw -pl payment-service -am test
+
+      # 6 Upload test results in GitHub UI
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: payment-test-results
+          path: "**/target/surefire-reports/*.xml"
+
+  # inventory-service build
+  build-inventory:
+    name: Build Inventory Service
+    needs: changes
+    if: needs.changes.outputs.inventory == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout repo
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Setup environment Java 21
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      # 3. Make mvnw executable
+      - name: Grant execute permission
+        run: chmod +x mvnw
+
+      # 4. Compile Inventory Service
+      - name: Compile Inventory Service
+        run: ./mvnw -pl inventory-service -am clean compile
+
+      # 5. Test Inventory Service
+      - name: Test Inventory Service
+        run: ./mvnw -pl inventory-service -am test
+
+      # 6 Upload test results in GitHub UI
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: inventory-test-results
           path: "**/target/surefire-reports/*.xml"
