@@ -8,4 +8,4 @@ This folder contains deployment manifests for the system.
 Services:
 - order-service
 - payment-service
-- kafka
+- inventory-service

@@ -6,5 +6,5 @@ resources:
   - order-service-service.yaml
   - payment-service-deployment.yaml
   - payment-service-service.yaml
-  - kafka-deployment.yaml
-  - kafka-service.yaml
+  - inventory-service-deployment.yaml
+  - inventory-service-service.yaml

@@ -46,6 +46,12 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- ACTUATOR - HEALTH -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
         <!-- KAFKA -->
         <dependency>
             <groupId>org.springframework.kafka</groupId>
