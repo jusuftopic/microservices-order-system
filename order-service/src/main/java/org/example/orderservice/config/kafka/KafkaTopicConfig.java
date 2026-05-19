@@ -20,6 +20,19 @@ import org.springframework.kafka.config.TopicBuilder;
 @EnableConfigurationProperties(KafkaTopicProperties.class)
 public class KafkaTopicConfig {
 
+    /**
+     * Creates the topic used to publish inventory-check event.
+     *
+     * <p>This topic is part of the inventory workflow and is consumed by
+     * the inventory-service.</p>
+     */
+    @Bean
+    public NewTopic orderInventoryRequestedV1Topic(KafkaTopicProperties props) {
+        return TopicBuilder.name(EventConstants.TOPIC_ORDER_INVENTORY_REQUEST_V1)
+                .partitions(props.partitions())
+                .replicas(props.replicas())
+                .build();
+    }
 
     /**
      * Creates the topic used to publish payment initiation events.

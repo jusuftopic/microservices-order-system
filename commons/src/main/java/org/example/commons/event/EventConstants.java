@@ -7,6 +7,7 @@ public class EventConstants {
 
     /* EVENT TYPES */
     public static final String EVENT_PAYMENT_REQUESTED = "PAYMENT_REQUESTED";
+    public static final String EVENT_INVENTORY_CHECK_REQUESTED = "INVENTORY_CHECK_REQUESTED";
 
     /* TOPICS */
     public static final String TOPIC_ORDER_INVENTORY_REQUEST_V1 = "order.inventory.request.v1";

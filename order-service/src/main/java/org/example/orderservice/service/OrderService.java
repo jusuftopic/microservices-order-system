@@ -3,7 +3,8 @@ package org.example.orderservice.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.commons.event.contracts.PaymentRequestedEvent;
+import org.example.commons.event.contracts.InventoryCheckRequestedEvent;
+import org.example.commons.event.contracts.OrderItemEvent;
 import org.example.orderservice.dto.request.OrderRequest;
 import org.example.orderservice.dto.response.OrderResponse;
 import org.example.orderservice.entity.Order;
@@ -14,11 +15,10 @@ import org.example.orderservice.repository.OrderRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import static org.example.commons.event.EventConstants.EVENT_PAYMENT_REQUESTED;
+import static org.example.commons.event.EventConstants.EVENT_INVENTORY_CHECK_REQUESTED;
 
 
 /**
@@ -44,28 +44,32 @@ public class OrderService {
         log.info("[ORDER-SERVICE] Received new order from customer {}. Total items {}",
                 request.customerEmail(), request.items().size());
 
-        final Order saved = storeOrder(request);
-        storeOutboxEvent(saved);
+        final String correlationId = UUID.randomUUID().toString();
+        final Order saved = storeOrder(request, correlationId);
+        storeOutboxEvent(saved, correlationId);
 
         /* 3. return order details */
         log.info("[ORDER-SERVICE] Order {} successfully created. Status: {}", saved.getId(), saved.getStatus());
         return OrderMapper.toResponse(saved);
     }
 
-    private void storeOutboxEvent(Order saved) {
+    private void storeOutboxEvent(Order saved, String correlationId) {
         final UUID eventId = UUID.randomUUID();
 
         final OutboxEvent outboxEvent = new OutboxEvent();
         outboxEvent.setId(eventId);
         outboxEvent.setAggregateType("ORDER");
         outboxEvent.setAggregateId(saved.getId());
-        outboxEvent.setEventType(EVENT_PAYMENT_REQUESTED);
+        outboxEvent.setEventType(EVENT_INVENTORY_CHECK_REQUESTED);
         outboxEvent.setPayload(toJson(
-                new PaymentRequestedEvent(
+                new InventoryCheckRequestedEvent(
                         saved.getId(),
-                        BigDecimal.valueOf(1L),
-                        "test",
-                        "dummy"
+                        saved.getItems().stream()
+                                .map(item -> new OrderItemEvent(
+                                        item.getProductId(),
+                                        item.getQuantity()
+                                )).toList(),
+                        correlationId
                 )
         ));
         outboxEvent.setProcessed(false);
@@ -74,8 +78,9 @@ public class OrderService {
         outboxRepository.save(outboxEvent);
     }
 
-    private Order storeOrder(final OrderRequest request) {
+    private Order storeOrder(final OrderRequest request, String correlationId) {
         Order order = OrderMapper.toEntity(request);
+        order.setCorrelationId(correlationId);
         return repository.save(order);
     }
 

@@ -2,7 +2,7 @@ package org.example.orderservice.service.publisher;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.commons.event.EventConstants;
+import org.example.commons.event.utils.TopicResolver;
 import org.example.orderservice.entity.OutboxDlqEvent;
 import org.example.orderservice.entity.OutboxEvent;
 import org.example.orderservice.repository.OutboxDlqRepository;
@@ -70,8 +70,9 @@ public class OutboxEventPublisherService {
         event.setLastAttemptAt(LocalDateTime.now());
 
         try {
+            String topic = TopicResolver.resolveTopic(event.getEventType());
             SendResult<String, String> result = kafkaTemplate.send(
-                    EventConstants.TOPIC_ODER_PAYMENT_REQUEST_V1,
+                    topic,
                     event.getAggregateId().toString(),
                     event.getPayload()
             ).get();
@@ -120,7 +121,7 @@ public class OutboxEventPublisherService {
         event.setProcessed(true);
         outboxRepository.save(event);
 
-        log.warn("[ORDER-SERVICE][OUTBOX-PUBLISHER] Event {} moved to DLQ after {} retries.",
+        log.warn("[ORDER-SERVICE][OUTBOX-PUBLISHER] Event {} moved to DLQ table after {} retries.",
                 event.getId(), event.getRetryCount());
     }
 }

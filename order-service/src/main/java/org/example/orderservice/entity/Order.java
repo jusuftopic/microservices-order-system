@@ -51,6 +51,8 @@ public class Order {
     )
     private List<OrderItem> items = new ArrayList<>();
 
+    private String correlationId;
+
     /**
      * Optional description.
      */
