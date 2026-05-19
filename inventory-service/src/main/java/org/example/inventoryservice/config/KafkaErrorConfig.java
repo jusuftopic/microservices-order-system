@@ -1,4 +1,4 @@
-package org.example.paymentservice.config;
+package org.example.inventoryservice.config;
 
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.common.TopicPartition;
@@ -13,7 +13,7 @@ import org.springframework.kafka.support.serializer.DeserializationException;
 import org.springframework.util.backoff.FixedBackOff;
 
 /**
- * Kafka consumer reliability configuration for payment-service.
+ * Kafka consumer reliability configuration for inventory-service.
  *
  * <p>This configuration provides two production concerns:
  *
@@ -39,8 +39,8 @@ public class KafkaErrorConfig {
      * </ul>
      */
     @Bean
-    public NewTopic paymentRequestedDltTopic() {
-        return TopicBuilder.name(EventConstants.TOPIC_PAYMENT_DLQ)
+    public NewTopic inventoryRequestedDltTopic() {
+        return TopicBuilder.name(EventConstants.TOPIC_INVENTORY_DLQ)
                 .partitions(1)
                 .replicas(1)
                 .build();
@@ -54,7 +54,7 @@ public class KafkaErrorConfig {
                 new DeadLetterPublishingRecoverer(
                         template,
                         (record, ex) -> new TopicPartition(
-                                EventConstants.TOPIC_PAYMENT_DLQ,
+                                EventConstants.TOPIC_INVENTORY_DLQ,
                                 record.partition()
                         )
                 );

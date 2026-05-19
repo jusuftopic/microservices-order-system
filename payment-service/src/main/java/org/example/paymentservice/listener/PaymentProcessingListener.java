@@ -27,7 +27,7 @@ public class PaymentProcessingListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handle(PaymentProcessingEvent event) {
 
-        // External system call (safe here — DB is already committed)
+        // Contact external payment provider
         PaymentResultDTO result = paymentProvider.pay(
                 event.orderId(),
                 event.correlationId()
