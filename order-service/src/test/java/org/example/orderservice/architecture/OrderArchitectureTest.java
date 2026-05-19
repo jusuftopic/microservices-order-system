@@ -99,5 +99,5 @@ public class OrderArchitectureTest {
     static final ArchRule no_order_domain_leak =
             noClasses()
                     .that().resideInAPackage("..orderservice..")
-                    .should().dependOnClassesThat().resideInAnyPackage("..paymentservice..");
+                    .should().dependOnClassesThat().resideInAnyPackage("..paymentservice..", "..inventoryservice..");
 }

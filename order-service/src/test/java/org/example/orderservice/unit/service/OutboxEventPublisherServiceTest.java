@@ -1,6 +1,7 @@
 package org.example.orderservice.unit.service;
 
 import org.apache.kafka.clients.producer.RecordMetadata;
+import org.example.commons.event.EventConstants;
 import org.example.orderservice.entity.OutboxDlqEvent;
 import org.example.orderservice.entity.OutboxEvent;
 import org.example.orderservice.repository.OutboxDlqRepository;
@@ -69,6 +70,7 @@ public class OutboxEventPublisherServiceTest {
         event.setAggregateId(1L);
         event.setPayload("payload");
         event.setRetryCount(0);
+        event.setEventType(EventConstants.EVENT_INVENTORY_CHECK_REQUESTED);
 
         when(outboxRepository.findByProcessedFalseOrderByCreatedAtAsc())
                 .thenReturn(List.of(event));
@@ -106,6 +108,8 @@ public class OutboxEventPublisherServiceTest {
         event.setAggregateId(1L);
         event.setPayload("payload");
         event.setRetryCount(0);
+        event.setEventType(EventConstants.EVENT_INVENTORY_CHECK_REQUESTED);
+
 
         when(outboxRepository.findByProcessedFalseOrderByCreatedAtAsc())
                 .thenReturn(List.of(event));
@@ -136,6 +140,8 @@ public class OutboxEventPublisherServiceTest {
         event.setId(UUID.randomUUID());
         event.setAggregateId(1L);
         event.setPayload("payload");
+        event.setEventType(EventConstants.EVENT_INVENTORY_CHECK_REQUESTED);
+
 
         // simulate already retried N times
         event.setRetryCount(Constants.MAX_RETRIES - 1);
@@ -177,11 +183,13 @@ public class OutboxEventPublisherServiceTest {
         e1.setId(UUID.randomUUID());
         e1.setAggregateId(1L);
         e1.setPayload("p1");
+        e1.setEventType(EventConstants.EVENT_INVENTORY_CHECK_REQUESTED);
 
         OutboxEvent e2 = new OutboxEvent();
         e2.setId(UUID.randomUUID());
         e2.setAggregateId(2L);
         e2.setPayload("p2");
+        e2.setEventType(EventConstants.EVENT_INVENTORY_CHECK_REQUESTED);
 
         when(outboxRepository.findByProcessedFalseOrderByCreatedAtAsc())
                 .thenReturn(List.of(e1, e2));

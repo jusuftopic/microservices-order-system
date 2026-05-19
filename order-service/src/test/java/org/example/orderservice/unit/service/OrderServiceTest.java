@@ -1,6 +1,7 @@
 package org.example.orderservice.unit.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.example.commons.event.EventConstants;
 import org.example.orderservice.dto.request.OrderItemRequest;
 import org.example.orderservice.dto.request.OrderRequest;
 import org.example.orderservice.dto.response.OrderResponse;
@@ -98,7 +99,7 @@ public class OrderServiceTest {
         assertNotNull(outbox.getId());
         assertEquals("ORDER", outbox.getAggregateType());
         assertEquals(1L, outbox.getAggregateId());
-        assertEquals("PAYMENT_REQUESTED", outbox.getEventType());
+        assertEquals(EventConstants.EVENT_INVENTORY_CHECK_REQUESTED, outbox.getEventType());
         assertEquals("{json}", outbox.getPayload());
         assertFalse(outbox.getProcessed());
         assertNotNull(outbox.getCreatedAt());
