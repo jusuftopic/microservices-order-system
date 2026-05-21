@@ -28,7 +28,7 @@ public class KafkaListenerService {
     @KafkaListener(topics = EventConstants.TOPIC_ORDER_INVENTORY_REQUEST_V1,
             groupId = Constants.KAFKA_INVENTORY_GROUP_ID
     )
-    public void handlePaymentRequested(InventoryCheckRequestedEvent event) {
+    public void handleInventoryCheckRequested(InventoryCheckRequestedEvent event) {
         log.info("[INVENTORY-SERVICE][KAFKA] Received inventory request for order {} with {} items. CorrelationId {}",
                 event.orderId(),
                 event.items().size(),

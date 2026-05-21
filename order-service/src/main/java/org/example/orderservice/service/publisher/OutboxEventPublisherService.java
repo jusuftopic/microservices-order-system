@@ -2,13 +2,11 @@ package org.example.orderservice.service.publisher;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.commons.event.utils.TopicResolver;
 import org.example.orderservice.entity.OutboxDlqEvent;
 import org.example.orderservice.entity.OutboxEvent;
 import org.example.orderservice.repository.OutboxDlqRepository;
 import org.example.orderservice.repository.OutboxRepository;
 import org.example.orderservice.utils.Constants;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,7 +33,7 @@ public class OutboxEventPublisherService {
 
     private final OutboxRepository outboxRepository;
     private final OutboxDlqRepository dlqRepository;
-    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final KafkaPublisherService kafkaPublisherService;
 
     /**
      * Publishes all pending outbox events.
@@ -70,13 +68,7 @@ public class OutboxEventPublisherService {
         event.setLastAttemptAt(LocalDateTime.now());
 
         try {
-            String topic = TopicResolver.resolveTopic(event.getEventType());
-            SendResult<String, String> result = kafkaTemplate.send(
-                    topic,
-                    event.getAggregateId().toString(),
-                    event.getPayload()
-            ).get();
-
+            SendResult<String, String> result = kafkaPublisherService.publishEvent(event);
             handleSuccess(event, result);
         }
         catch (Exception e) {
