@@ -1,4 +1,4 @@
-package org.example.orderservice.config.kafka;
+package org.example.inventoryservice.config;
 
 import lombok.RequiredArgsConstructor;
 import org.example.commons.event.EventConstants;
