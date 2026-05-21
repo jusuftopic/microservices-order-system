@@ -23,7 +23,6 @@ public class OutboxEventScheduler {
 
     private final OutboxEventPublisherService publisherService;
 
-
     /**
      * Runs every 3 second to publish unprocessed outbox events.
      */
