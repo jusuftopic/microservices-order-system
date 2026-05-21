@@ -6,6 +6,7 @@ import org.example.orderservice.entity.OutboxDlqEvent;
 import org.example.orderservice.entity.OutboxEvent;
 import org.example.orderservice.repository.OutboxDlqRepository;
 import org.example.orderservice.repository.OutboxRepository;
+import org.example.orderservice.service.publisher.KafkaPublisherService;
 import org.example.orderservice.service.publisher.OutboxEventPublisherService;
 import org.example.orderservice.utils.Constants;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,14 +36,14 @@ public class OutboxEventPublisherServiceTest {
     private OutboxDlqRepository dlqRepository;
 
     @Mock
-    private KafkaTemplate<String, String> kafkaTemplate;
+    private KafkaPublisherService kafkaPublisherService;
 
     private OutboxEventPublisherService service;
 
     @BeforeEach
     public void setUp() {
         service = new OutboxEventPublisherService(
-                outboxRepository, dlqRepository, kafkaTemplate
+                outboxRepository, dlqRepository, kafkaPublisherService
         );
     }
 
@@ -57,7 +58,7 @@ public class OutboxEventPublisherServiceTest {
         service.publishPendingEvents();
 
         // THEN
-        verifyNoInteractions(kafkaTemplate);
+        verifyNoInteractions(kafkaPublisherService);
         verify(outboxRepository).findByProcessedFalseOrderByCreatedAtAsc();
     }
 
@@ -84,7 +85,7 @@ public class OutboxEventPublisherServiceTest {
         CompletableFuture<SendResult<String, String>> future =
                 CompletableFuture.completedFuture(sendResult);
 
-        when(kafkaTemplate.send(anyString(), anyString(), anyString()))
+        when(kafkaPublisherService.publishEvent(event))
                 .thenReturn(future);
 
         // WHEN
@@ -118,7 +119,7 @@ public class OutboxEventPublisherServiceTest {
         CompletableFuture future = new CompletableFuture();
         future.completeExceptionally(new RuntimeException("Kafka down"));
 
-        when(kafkaTemplate.send(anyString(), anyString(), anyString()))
+        when(kafkaPublisherService.publishEvent(event))
                 .thenReturn(future);
 
         // WHEN
@@ -152,7 +153,7 @@ public class OutboxEventPublisherServiceTest {
         CompletableFuture future = new CompletableFuture();
         future.completeExceptionally(new RuntimeException("Kafka down"));
 
-        when(kafkaTemplate.send(anyString(), anyString(), anyString()))
+        when(kafkaPublisherService.publishEvent(event))
                 .thenReturn(future);
 
         ArgumentCaptor<OutboxDlqEvent> dlqCaptor =
@@ -176,7 +177,7 @@ public class OutboxEventPublisherServiceTest {
     }
 
     @Test
-    void should_process_multiple_events() throws Exception {
+    void should_process_multiple_events() {
 
         // GIVEN
         OutboxEvent e1 = new OutboxEvent();
@@ -194,17 +195,12 @@ public class OutboxEventPublisherServiceTest {
         when(outboxRepository.findByProcessedFalseOrderByCreatedAtAsc())
                 .thenReturn(List.of(e1, e2));
 
-
-        SendResult<String, String> sendResult = mock(SendResult.class);
-        CompletableFuture<SendResult<String, String>> future =
-                CompletableFuture.completedFuture(sendResult);
-
         // WHEN
         service.publishPendingEvents();
 
         // THEN
-        verify(kafkaTemplate, times(2))
-                .send(anyString(), anyString(), anyString());
+        verify(kafkaPublisherService).publishEvent(e1);
+        verify(kafkaPublisherService).publishEvent(e2);
 
         verify(outboxRepository, atLeast(2)).save(any());
     }

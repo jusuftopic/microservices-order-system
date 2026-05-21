@@ -9,6 +9,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 
@@ -35,15 +36,15 @@ public class KafkaPublisherService {
      * @param event outbox event containing metadata and serialized payload
      * @return send result metadata
      */
-    public SendResult<String, String> publishEvent(OutboxEvent event) throws ExecutionException, InterruptedException {
+    public CompletableFuture<SendResult<String, String>> publishEvent(OutboxEvent event) {
 
         String topic = TopicResolver.resolveTopic(event.getEventType());
 
-        SendResult<String, String> result = kafkaTemplate.send(
+        CompletableFuture<SendResult<String, String>> result = kafkaTemplate.send(
                 topic,
                 event.getAggregateId().toString(),
                 event.getPayload()
-        ).get();
+        );
 
         log.info("[ORDER-SERVICE][KAFKA] Event {} published to topic {}",
                 event.getEventType(), topic);
