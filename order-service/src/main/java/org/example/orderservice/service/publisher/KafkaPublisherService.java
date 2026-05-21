@@ -1,8 +1,12 @@
 package org.example.orderservice.service.publisher;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.commons.event.EventConstants;
+import org.example.commons.event.contracts.InventoryCheckRequestedEvent;
+import org.example.commons.event.contracts.PaymentRequestedEvent;
 import org.example.commons.event.utils.TopicResolver;
 import org.example.orderservice.entity.OutboxEvent;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -10,7 +14,6 @@ import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 
 /**
@@ -27,8 +30,8 @@ import java.util.concurrent.ExecutionException;
 @Slf4j
 public class KafkaPublisherService {
 
-    private final KafkaTemplate<String, String> kafkaTemplate;
-
+    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final ObjectMapper objectMapper;
 
     /**
      * Publishes an outbox event to Kafka.
@@ -36,14 +39,14 @@ public class KafkaPublisherService {
      * @param event outbox event containing metadata and serialized payload
      * @return send result metadata
      */
-    public CompletableFuture<SendResult<String, String>> publishEvent(OutboxEvent event) {
+    public CompletableFuture<SendResult<String, Object>> publishEvent(OutboxEvent event) {
 
         String topic = TopicResolver.resolveTopic(event.getEventType());
 
-        CompletableFuture<SendResult<String, String>> result = kafkaTemplate.send(
+        CompletableFuture<SendResult<String, Object>> result = kafkaTemplate.send(
                 topic,
                 event.getAggregateId().toString(),
-                event.getPayload()
+                deserialize(event)
         );
 
         log.info("[ORDER-SERVICE][KAFKA] Event {} published to topic {}",
@@ -51,5 +54,43 @@ public class KafkaPublisherService {
 
         return result;
     }
+
+
+    /**
+     * Converts JSON payload to corresponding event object.
+     *
+     * @param event outbox event
+     * @return deserialized payload object
+     */
+    private Object deserialize(OutboxEvent event) {
+
+        try {
+            return switch (event.getEventType()) {
+
+                case EventConstants.EVENT_INVENTORY_CHECK_REQUESTED ->
+                        objectMapper.readValue(
+                                event.getPayload(),
+                                InventoryCheckRequestedEvent.class
+                        );
+
+                case EventConstants.EVENT_PAYMENT_REQUESTED ->
+                        objectMapper.readValue(
+                                event.getPayload(),
+                                PaymentRequestedEvent.class
+                        );
+
+                default -> throw new IllegalArgumentException(
+                        "Unsupported event type: " + event.getEventType()
+                );
+            };
+
+        } catch (Exception ex) {
+            throw new IllegalStateException(
+                    "Failed to deserialize outbox payload for event " + event.getEventType(),
+                    ex
+            );
+        }
+    }
+
 
 }

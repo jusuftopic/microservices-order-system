@@ -2,6 +2,8 @@ package org.example.orderservice.unit.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.commons.event.EventConstants;
+import org.example.commons.event.contracts.InventoryFailedEvent;
+import org.example.commons.event.contracts.InventoryReservedEvent;
 import org.example.orderservice.dto.request.OrderItemRequest;
 import org.example.orderservice.dto.request.OrderRequest;
 import org.example.orderservice.dto.response.OrderResponse;
@@ -21,6 +23,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -182,4 +185,93 @@ public class OrderServiceTest {
         // THEN
         assertNull(response);
     }
+
+
+    @Test
+    void should_handle_inventory_reserved_and_create_payment_outbox_event() throws Exception {
+
+        // GIVEN
+        Long orderId = 1L;
+
+        Order order = Order.builder()
+                .id(orderId)
+                .customerEmail("test@mail.com")
+                .status(OrderStatus.CREATED)
+                .build();
+
+        InventoryReservedEvent event = new InventoryReservedEvent(
+                orderId,
+                "corr-123"
+        );
+
+        when(repository.findById(orderId)).thenReturn(Optional.of(order));
+        when(objectMapper.writeValueAsString(any())).thenReturn("{json}");
+
+        ArgumentCaptor<OutboxEvent> outboxCaptor = ArgumentCaptor.forClass(OutboxEvent.class);
+
+        // WHEN
+        orderService.handleInventoryReserved(event);
+
+        // THEN
+        verify(repository).save(order);
+        verify(outboxRepository).save(outboxCaptor.capture());
+
+        OutboxEvent outbox = outboxCaptor.getValue();
+
+        assertEquals(orderId, outbox.getAggregateId());
+        assertEquals(EventConstants.EVENT_PAYMENT_REQUESTED, outbox.getEventType());
+        assertEquals("{json}", outbox.getPayload());
+
+        // status updated
+        assertEquals(OrderStatus.INVENTORY_PROCESSING, order.getStatus());
+    }
+
+
+    @Test
+    void should_handle_inventory_failed_and_mark_order_failed() {
+
+        // GIVEN
+        Long orderId = 1L;
+
+        Order order = Order.builder()
+                .id(orderId)
+                .status(OrderStatus.CREATED)
+                .build();
+
+        InventoryFailedEvent event = new InventoryFailedEvent(
+                orderId,
+                "OUT_OF_STOCK",
+                "corr-123"
+        );
+
+        when(repository.findById(orderId)).thenReturn(Optional.of(order));
+
+        // WHEN
+        orderService.handleInventoryFailed(event);
+
+        // THEN
+        assertEquals(OrderStatus.FAILED, order.getStatus());
+
+        verify(repository).save(order);
+        verify(outboxRepository, never()).save(any());
+    }
+
+
+    @Test
+    void should_throw_when_order_not_found_on_inventory_response() {
+
+        // GIVEN
+        InventoryReservedEvent event = new InventoryReservedEvent(
+                999L,
+                "corr-123"
+        );
+
+        when(repository.findById(999L)).thenReturn(Optional.empty());
+
+        // WHEN + THEN
+        assertThrows(NoSuchElementException.class,
+                () -> orderService.handleInventoryReserved(event));
+    }
+
+
 }

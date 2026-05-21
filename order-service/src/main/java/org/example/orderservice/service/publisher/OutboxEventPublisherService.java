@@ -68,7 +68,7 @@ public class OutboxEventPublisherService {
         event.setLastAttemptAt(LocalDateTime.now());
 
         try {
-            SendResult<String, String> result = kafkaPublisherService.publishEvent(event).get();
+            SendResult<String, Object> result = kafkaPublisherService.publishEvent(event).get();
             handleSuccess(event, result);
         }
         catch (Exception e) {
@@ -78,7 +78,7 @@ public class OutboxEventPublisherService {
 
 
     private void handleSuccess(OutboxEvent event,
-                               SendResult<String, String> result) {
+                               SendResult<String, Object> result) {
         event.setProcessed(true);
         outboxRepository.save(event);
 

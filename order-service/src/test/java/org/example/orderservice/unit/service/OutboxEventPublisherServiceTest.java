@@ -78,10 +78,10 @@ public class OutboxEventPublisherServiceTest {
         // simulate Kafka success
         RecordMetadata metadata = mock(RecordMetadata.class);
 
-        SendResult<String, String> sendResult = mock(SendResult.class);
+        SendResult<String, Object> sendResult = mock(SendResult.class);
         when(sendResult.getRecordMetadata()).thenReturn(metadata);
 
-        CompletableFuture<SendResult<String, String>> future =
+        CompletableFuture<SendResult<String, Object>> future =
                 CompletableFuture.completedFuture(sendResult);
 
         when(kafkaPublisherService.publishEvent(event))

@@ -1,6 +1,8 @@
 package org.example.orderservice.unit.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.commons.event.EventConstants;
+import org.example.commons.event.contracts.InventoryCheckRequestedEvent;
 import org.example.orderservice.entity.OutboxEvent;
 import org.example.orderservice.service.publisher.KafkaPublisherService;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,13 +23,13 @@ public class KafkaPublisherServiceTest {
 
 
     @Mock
-    private KafkaTemplate<String, String> kafkaTemplate;
+    private KafkaTemplate<String, Object> kafkaTemplate;
 
     private KafkaPublisherService service;
 
     @BeforeEach
     void setUp() {
-        service = new KafkaPublisherService(kafkaTemplate);
+        service = new KafkaPublisherService(kafkaTemplate, new ObjectMapper());
     }
 
     @Test
@@ -36,30 +38,38 @@ public class KafkaPublisherServiceTest {
         // GIVEN
         OutboxEvent event = new OutboxEvent();
         event.setAggregateId(1L);
-        event.setPayload("payload");
+        event.setPayload("""
+        {
+          "orderId": 1,
+          "items": [],
+          "correlationId": "corr-1"
+       }
+       """);
+
         event.setEventType(EventConstants.EVENT_INVENTORY_CHECK_REQUESTED);
 
-        CompletableFuture<SendResult<String, String>> future =
+        CompletableFuture<SendResult<String, Object>> future =
                 CompletableFuture.completedFuture(mock(SendResult.class));
 
         when(kafkaTemplate.send(
                 eq(EventConstants.TOPIC_ORDER_INVENTORY_REQUEST_V1),
                 eq("1"),
-                eq("payload")
+                any(InventoryCheckRequestedEvent.class)
         )).thenReturn(future);
 
         // WHEN
-        CompletableFuture<SendResult<String, String>> result =
+        CompletableFuture<SendResult<String, Object>> result =
                 service.publishEvent(event);
 
         // THEN
         assertNotNull(result);
 
         verify(kafkaTemplate).send(
-                EventConstants.TOPIC_ORDER_INVENTORY_REQUEST_V1,
-                "1",
-                "payload"
+                eq(EventConstants.TOPIC_ORDER_INVENTORY_REQUEST_V1),
+                eq("1"),
+                any(InventoryCheckRequestedEvent.class)
         );
+
     }
 
     @Test
@@ -68,17 +78,23 @@ public class KafkaPublisherServiceTest {
         // GIVEN
         OutboxEvent event = new OutboxEvent();
         event.setAggregateId(42L);
-        event.setPayload("test");
+        event.setPayload("""
+        {
+          "orderId": 1,
+          "items": [],
+          "correlationId": "corr-1"
+       }
+       """);
         event.setEventType(EventConstants.EVENT_INVENTORY_CHECK_REQUESTED);
 
-        CompletableFuture<SendResult<String, String>> future =
+        CompletableFuture<SendResult<String, Object>> future =
                 new CompletableFuture<>();
 
-        when(kafkaTemplate.send(anyString(), anyString(), anyString()))
+        when(kafkaTemplate.send(anyString(), anyString(), any()))
                 .thenReturn(future);
 
         // WHEN
-        CompletableFuture<SendResult<String, String>> result =
+        CompletableFuture<SendResult<String, Object>> result =
                 service.publishEvent(event);
 
         // THEN
@@ -91,7 +107,13 @@ public class KafkaPublisherServiceTest {
         // GIVEN
         OutboxEvent event = new OutboxEvent();
         event.setAggregateId(1L);
-        event.setPayload("payload");
+        event.setPayload("""
+        {
+          "orderId": 1,
+          "items": [],
+          "correlationId": "corr-1"
+       }
+       """);
         event.setEventType("UNKNOWN_EVENT");
 
         // WHEN & THEN
