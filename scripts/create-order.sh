@@ -6,6 +6,6 @@ curl -X POST "$URL" \
   -H "Content-Type: application/json" \
   -d '{
     "customerEmail": "test@example.com",
-    "amount": 120.50,
+    "amount": 120.00,
     "description": "Test order from script"
   }'

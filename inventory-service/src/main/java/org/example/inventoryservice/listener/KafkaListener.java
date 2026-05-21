@@ -6,7 +6,6 @@ import org.example.commons.event.EventConstants;
 import org.example.commons.event.contracts.InventoryCheckRequestedEvent;
 import org.example.inventoryservice.service.InventoryService;
 import org.example.inventoryservice.utils.Constants;
-import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 /**
@@ -15,7 +14,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class KafkaListenerService {
+public class KafkaListener {
 
     private final InventoryService inventoryService;
 
@@ -25,7 +24,7 @@ public class KafkaListenerService {
      *
      * @param event Inventory check request event
      */
-    @KafkaListener(topics = EventConstants.TOPIC_ORDER_INVENTORY_REQUEST_V1,
+    @org.springframework.kafka.annotation.KafkaListener(topics = EventConstants.TOPIC_ORDER_INVENTORY_REQUEST_V1,
             groupId = Constants.KAFKA_INVENTORY_GROUP_ID
     )
     public void handleInventoryCheckRequested(InventoryCheckRequestedEvent event) {
@@ -38,7 +37,7 @@ public class KafkaListenerService {
         inventoryService.processInventory(event);
     }
 
-    @KafkaListener(topics = EventConstants.TOPIC_INVENTORY_DLQ,
+    @org.springframework.kafka.annotation.KafkaListener(topics = EventConstants.TOPIC_INVENTORY_DLQ,
             groupId = Constants.KAFKA_INVENTORY_GROUP_ID)
     public void handlePaymentRequestedDLT(String message) {
         log.warn("[INVENTORY-SERVICE][KAFKA-LISTENER] Received DLT message for event {}", EventConstants.EVENT_INVENTORY_CHECK_REQUESTED);

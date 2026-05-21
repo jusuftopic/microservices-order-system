@@ -38,9 +38,10 @@ public class OrderArchitectureTest {
                     .layer("Controller").definedBy("..controller..")
                     .layer("Service").definedBy("..service..")
                     .layer("Repository").definedBy("..repository..")
+                    .layer("Listener").definedBy("..listener..")
 
                     .whereLayer("Controller").mayNotBeAccessedByAnyLayer()
-                    .whereLayer("Service").mayOnlyBeAccessedByLayers("Controller")
+                    .whereLayer("Service").mayOnlyBeAccessedByLayers("Controller", "Listener")
                     .whereLayer("Repository").mayOnlyBeAccessedByLayers("Service");
 
     /**
