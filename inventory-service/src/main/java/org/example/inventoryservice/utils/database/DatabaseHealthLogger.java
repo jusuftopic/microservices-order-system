@@ -21,10 +21,10 @@ public class DatabaseHealthLogger {
     @PostConstruct
     public void logConnection() {
         try (Connection connection = dataSource.getConnection()) {
-            log.info("[ORDER-SERVICE][DATABASE] Database connected successfully: {}",
+            log.info("[INVENTORY-SERVICE][DATABASE] Database connected successfully: {}",
                     connection.getMetaData().getURL());
         } catch (Exception e) {
-            log.error("[ORDER-SERVICE][DATABASE] Database connection FAILED", e);
+            log.error("[INVENTORY-SERVICE][DATABASE] Database connection FAILED", e);
         }
     }
 }
