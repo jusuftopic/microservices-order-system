@@ -51,7 +51,7 @@ services:
       POSTGRES_USER: inventory_user
       POSTGRES_PASSWORD: inventory_pass
     ports:
-      - "5434:5434"
+      - "5434:5432"
 
   # ORDER-SERVICE
   order-service:
