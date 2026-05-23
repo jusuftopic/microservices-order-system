@@ -33,4 +33,22 @@ public class KafkaTopicConfig {
                 .replicas(props.replicas())
                 .build();
     }
+
+    /**
+     * Creates the Dead Letter Topic for failed records.
+     *
+     * <p>Messages are sent here when:
+     *
+     * <ul>
+     *   <li>deserialization fails</li>
+     *   <li>listener processing keeps failing after retries</li>
+     * </ul>
+     */
+    @Bean
+    public NewTopic inventoryRequestedDltTopic() {
+        return TopicBuilder.name(EventConstants.TOPIC_INVENTORY_DLQ)
+                .partitions(1)
+                .replicas(1)
+                .build();
+    }
 }
