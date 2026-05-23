@@ -1,0 +1,1 @@
+docker logs -f payment-service | grep "\[PAYMENT-SERVICE\]" | less
