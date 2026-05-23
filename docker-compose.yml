@@ -30,6 +30,12 @@ services:
       POSTGRES_PASSWORD: order_pass
     ports:
       - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U order_user" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
 
   # PAYMENT DB
   payment-db:
@@ -41,6 +47,11 @@ services:
       POSTGRES_PASSWORD: payment_pass
     ports:
       - "5433:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U payment_user" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   # INVENTORY DB
   inventory-db:
@@ -52,6 +63,11 @@ services:
       POSTGRES_PASSWORD: inventory_pass
     ports:
       - "5434:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U inventory_user" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   # ORDER-SERVICE
   order-service:
@@ -64,8 +80,10 @@ services:
     environment:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     depends_on:
-      - kafka
-      - order-db
+      order-db:
+        condition: service_healthy
+      kafka:
+        condition: service_started
 
   # PAYMENT-SERVICE
   payment-service:
@@ -78,8 +96,10 @@ services:
     environment:
        SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     depends_on:
-      - kafka
-      - payment-db
+      payment-db:
+        condition: service_healthy
+      kafka:
+        condition: service_started
 
   # INVENTORY-SERVICE
   inventory-service:
@@ -92,5 +112,7 @@ services:
     environment:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     depends_on:
-      - kafka
-      - inventory-db
+      inventory-db:
+        condition: service_healthy
+      kafka:
+        condition: service_started
