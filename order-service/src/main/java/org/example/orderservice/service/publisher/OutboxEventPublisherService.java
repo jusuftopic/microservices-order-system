@@ -2,6 +2,7 @@ package org.example.orderservice.service.publisher;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.commons.event.EventConstants;
 import org.example.orderservice.entity.OutboxDlqEvent;
 import org.example.orderservice.entity.OutboxEvent;
 import org.example.orderservice.repository.OutboxDlqRepository;
@@ -47,6 +48,12 @@ public class OutboxEventPublisherService {
     public void publishPendingEvents() {
 
         List<OutboxEvent> events = outboxRepository.findByProcessedFalseOrderByCreatedAtAsc();
+
+        //TODO remove after testing
+        events = events.stream()
+                .filter(e -> e.getEventType().equals(EventConstants.EVENT_INVENTORY_CHECK_REQUESTED))
+                .toList();
+
         if (events == null || events.isEmpty()) {
             log.debug("[ORDER-SERVICE][OUTBOX-PUBLISHER] No pending events found.");
             return;
