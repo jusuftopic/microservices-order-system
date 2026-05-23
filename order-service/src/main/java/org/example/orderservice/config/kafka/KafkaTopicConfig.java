@@ -35,6 +35,24 @@ public class KafkaTopicConfig {
     }
 
     /**
+     * Creates the Dead Letter Topic for failed records.
+     *
+     * <p>Messages are sent here when:
+     *
+     * <ul>
+     *   <li>deserialization fails</li>
+     *   <li>listener processing keeps failing after retries</li>
+     * </ul>
+     */
+    @Bean
+    public NewTopic orderRequestedDltTopic(KafkaTopicProperties props) {
+        return TopicBuilder.name(EventConstants.TOPIC_ORDER_DLQ)
+                .partitions(props.partitions())
+                .replicas(props.replicas())
+                .build();
+    }
+
+    /**
      * Creates the topic used to publish payment initiation events.
      *
      * <p>This topic is part of the payment workflow and is consumed by

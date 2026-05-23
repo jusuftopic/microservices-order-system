@@ -1,11 +1,9 @@
-package org.example.paymentservice.config;
+package org.example.orderservice.config.kafka;
 
-import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.common.TopicPartition;
 import org.example.commons.event.EventConstants;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.kafka.config.TopicBuilder;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
 import org.springframework.kafka.listener.DefaultErrorHandler;
@@ -13,7 +11,7 @@ import org.springframework.kafka.support.serializer.DeserializationException;
 import org.springframework.util.backoff.FixedBackOff;
 
 /**
- * Kafka consumer reliability configuration for payment-service.
+ * Kafka consumer reliability configuration for order-service.
  *
  * <p>This configuration provides production concerns:
  *
@@ -29,13 +27,13 @@ public class KafkaErrorConfig {
 
     @Bean
     DefaultErrorHandler errorHandler(
-            KafkaTemplate<Object,Object> template) {
+            KafkaTemplate<String,Object> template) {
 
         DeadLetterPublishingRecoverer recoverer =
                 new DeadLetterPublishingRecoverer(
                         template,
                         (record, ex) -> new TopicPartition(
-                                EventConstants.TOPIC_PAYMENT_DLQ,
+                                EventConstants.TOPIC_ORDER_DLQ,
                                 record.partition()
                         )
                 );
