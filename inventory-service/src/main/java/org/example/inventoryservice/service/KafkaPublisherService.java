@@ -40,6 +40,10 @@ public class KafkaPublisherService {
      * @param event event containing successful inventory reservation information
      */
     public void publishInventoryReserved(InventoryReservedEvent event) {
+        log.info("[INVENTORY-SERVICE][KAFKA] Sending InventoryReservedEvent for order {} correlationId {}",
+                event.orderId(), event.correlationId());
+        log.info("KafkaTemplate class: {}", kafkaTemplate);
+
         kafkaTemplate.send(
                 EventConstants.TOPIC_ORDER_INVENTORY_RESPONSE_V1,
                 event.orderId().toString(),
