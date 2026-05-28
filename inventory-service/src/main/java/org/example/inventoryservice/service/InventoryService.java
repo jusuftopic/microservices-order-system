@@ -1,14 +1,23 @@
 package org.example.inventoryservice.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.commons.event.EventConstants;
 import org.example.commons.event.contracts.InventoryCheckRequestedEvent;
 import org.example.commons.event.contracts.InventoryFailedEvent;
 import org.example.commons.event.contracts.InventoryReservedEvent;
-import org.springframework.kafka.core.KafkaTemplate;
+import org.example.commons.event.contracts.OrderItemEvent;
+import org.example.inventoryservice.entity.InventoryItem;
+import org.example.inventoryservice.entity.OutboxEvent;
+import org.example.inventoryservice.repository.InboxRepository;
+import org.example.inventoryservice.repository.InventoryRepository;
+import org.example.inventoryservice.repository.OutboxRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 
 /**
@@ -25,53 +34,96 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class InventoryService {
 
-    private final KafkaPublisherService kafkaPublisherService;
-
+    private final InboxRepository inboxRepository;
+    private final OutboxRepository outboxRepository;
+    private final InventoryRepository inventoryRepository;
+    private final OutboxDlqService outboxDlqService;
+    private final ObjectMapper objectMapper;
 
     /**
      * Processes inventory check request.
      *
      * <p>
-     * This method evaluates inventory availability and emits a result event.
+     * This method evaluates inventory availability and store outbox event.
      * </p>
      *
      * @param event inventory check request event
      */
     @Transactional
     public void processInventory(InventoryCheckRequestedEvent event) {
-        boolean inventoryAvailable = true;
+        int inserted = inboxRepository.insertIfNotExists(event.correlationId());
 
-        if (inventoryAvailable) {
-            publishSuccess(event);
-        } else {
-            publishFailure(event);
+        if (inserted == 0) {
+            log.info("[INVENTORY-SERVICE] Inventory for order {} already processed.", event.orderId());
+            return;
+        }
+
+        log.debug("[INVENTORY-SERVICE] Processing inventory for order {}", event.orderId());
+
+        try {
+            event.items().forEach(this::reserveQuantity);
+            storeOutboxEventSuccess(event);
+        } catch (Exception ex) {
+            log.error("[INVENTORY-SERVICE] Reservation failed for order {}, correlation id {}, reason {}",
+                    event.orderId(), event.correlationId(), ex.getMessage());
+            storeOutboxEventFailure(event);
         }
     }
 
+    private void reserveQuantity(OrderItemEvent item) {
+        InventoryItem inventory = inventoryRepository
+                .findById(item.productId())
+                .orElseThrow(() -> new IllegalStateException(
+                        "Product not found: " + item.productId()
+                ));
 
-    private void publishSuccess(InventoryCheckRequestedEvent event) {
+        inventory.reserve(item.quantity());
+        inventoryRepository.save(inventory);
+    }
 
-        InventoryReservedEvent response = new InventoryReservedEvent(
+    private void storeOutboxEventSuccess(InventoryCheckRequestedEvent event) {
+        InventoryReservedEvent payload = new InventoryReservedEvent(
                 event.orderId(),
                 event.correlationId()
         );
 
-        kafkaPublisherService.publishInventoryReserved(response);
-
-        log.info("[INVENTORY-SERVICE] Inventory reserved for order {}", event.orderId());
+        storeOutbox(payload, EventConstants.EVENT_INVENTORY_RESERVED, event.orderId());
     }
 
-    private void publishFailure(InventoryCheckRequestedEvent event) {
+    private void storeOutboxEventFailure(InventoryCheckRequestedEvent event) {
 
-        InventoryFailedEvent response = new InventoryFailedEvent(
+        InventoryFailedEvent payload = new InventoryFailedEvent(
                 event.orderId(),
                 "OUT_OF_STOCK",
                 event.correlationId()
         );
 
-        kafkaPublisherService.publishInventoryFailed(response);
-
-        log.warn("[INVENTORY-SERVICE] Inventory FAILED for order {}", event.orderId());
+        storeOutbox(payload, EventConstants.EVENT_INVENTORY_FAILED, event.orderId());
     }
 
+    private void storeOutbox(Object payload, String eventType, Long aggregateId) {
+
+        try {
+            OutboxEvent event = OutboxEvent.builder()
+                    .id(UUID.randomUUID())
+                    .aggregateType("INVENTORY")
+                    .aggregateId(aggregateId)
+                    .eventType(eventType)
+                    .payload(objectMapper.writeValueAsString(payload))
+                    .processed(false)
+                    .retryCount(0)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+
+            outboxRepository.save(event);
+
+            log.info("[INVENTORY-SERVICE] Stored outbox event {} ({})", event.getId(), eventType);
+
+        } catch (Exception e) {
+            log.error("[INVENTORY-SERVICE] Failed to serialize payload for event {} (aggregateId={}). Moved to DLQ table.",
+                    eventType, aggregateId, e);
+            outboxDlqService.storeOutboxDlq(null, aggregateId, eventType,
+                    payload, 0, e);
+        }
+    }
 }

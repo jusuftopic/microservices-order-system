@@ -2,12 +2,11 @@ package org.example.orderservice.service.publisher;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.commons.event.EventConstants;
+import org.example.commons.event.utils.Constants;
 import org.example.orderservice.entity.OutboxDlqEvent;
 import org.example.orderservice.entity.OutboxEvent;
 import org.example.orderservice.repository.OutboxDlqRepository;
 import org.example.orderservice.repository.OutboxRepository;
-import org.example.orderservice.utils.Constants;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,11 +47,6 @@ public class OutboxEventPublisherService {
     public void publishPendingEvents() {
 
         List<OutboxEvent> events = outboxRepository.findByProcessedFalseOrderByCreatedAtAsc();
-
-        //TODO remove after testing
-        events = events.stream()
-                .filter(e -> e.getEventType().equals(EventConstants.EVENT_INVENTORY_CHECK_REQUESTED))
-                .toList();
 
         if (events == null || events.isEmpty()) {
             log.debug("[ORDER-SERVICE][OUTBOX-PUBLISHER] No pending events found.");
@@ -97,7 +91,7 @@ public class OutboxEventPublisherService {
     private void handleFailure(OutboxEvent event, Throwable ex) {
         log.error("[ORDER-SERVICE][OUTBOX-PUBLISHER] Failed event {} retry {}",
                 event.getId(), event.getRetryCount(), ex);
-        if (event.getRetryCount() >= Constants.MAX_RETRIES) {
+        if (event.getRetryCount() >= Constants.MAX_RETRIES_KAFKA) {
             moveToDlq(event, ex);
         } else {
             outboxRepository.save(event);

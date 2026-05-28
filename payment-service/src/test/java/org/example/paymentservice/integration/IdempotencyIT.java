@@ -28,8 +28,6 @@ public class IdempotencyIT extends AbstractIntegrationTest{
     @Test
     void shouldNotProcessSameEventTwice() {
         // GIVEN
-        UUID eventId = UUID.randomUUID();
-
         PaymentRequestedEvent event = new PaymentRequestedEvent(
                 1L, BigDecimal.ONE,
                 "test", "1x1"

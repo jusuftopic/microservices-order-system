@@ -1,4 +1,4 @@
-package org.example.orderservice.service.publisher;
+package org.example.inventoryservice.service.publisher;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -6,23 +6,33 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.commons.event.EventConstants;
 import org.example.commons.event.contracts.InventoryCheckRequestedEvent;
+import org.example.commons.event.contracts.InventoryFailedEvent;
+import org.example.commons.event.contracts.InventoryReservedEvent;
 import org.example.commons.event.contracts.PaymentRequestedEvent;
 import org.example.commons.event.utils.TopicResolver;
-import org.example.orderservice.entity.OutboxEvent;
+import org.example.inventoryservice.entity.OutboxEvent;
+import org.example.inventoryservice.service.OutboxDlqService;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.CompletableFuture;
 
-
 /**
- * Service responsible for publishing order-related events to Kafka.
+ * Service responsible for publishing inventory-related events to Kafka.
  *
  * <p>
- * This class centralizes all Kafka communication logic for the Order Service.
- * It ensures that topic resolution and message publishing are managed
- * in a single place.
+ * This class encapsulates all Kafka communication logic for the Inventory Service.
+ * It ensures that topic usage is centralized and prevents scattering
+ * Kafka-related code across business services.
+ * </p>
+ *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *     <li>Publish inventory success events</li>
+ *     <li>Publish inventory failure events</li>
+ * </ul>
  * </p>
  */
 @Service
@@ -40,7 +50,6 @@ public class KafkaPublisherService {
      * @return send result metadata
      */
     public CompletableFuture<SendResult<String, Object>> publishEvent(OutboxEvent event) {
-
         String topic = TopicResolver.resolveTopic(event.getEventType());
 
         CompletableFuture<SendResult<String, Object>> result = kafkaTemplate.send(
@@ -49,12 +58,11 @@ public class KafkaPublisherService {
                 deserialize(event)
         );
 
-        log.debug("[ORDER-SERVICE][KAFKA] Event {} published to topic {}",
+        log.debug("[INVENTORY-SERVICE][KAFKA] Event {} published to topic {}",
                 event.getEventType(), topic);
 
         return result;
     }
-
 
     /**
      * Converts JSON payload to corresponding event object.
@@ -67,16 +75,16 @@ public class KafkaPublisherService {
         try {
             return switch (event.getEventType()) {
 
-                case EventConstants.EVENT_INVENTORY_CHECK_REQUESTED ->
+                case EventConstants.EVENT_INVENTORY_RESERVED ->
                         objectMapper.readValue(
                                 event.getPayload(),
-                                InventoryCheckRequestedEvent.class
+                                InventoryReservedEvent.class
                         );
 
-                case EventConstants.EVENT_PAYMENT_REQUESTED ->
+                case EventConstants.EVENT_INVENTORY_FAILED ->
                         objectMapper.readValue(
                                 event.getPayload(),
-                                PaymentRequestedEvent.class
+                                InventoryFailedEvent.class
                         );
 
                 default -> throw new IllegalArgumentException(
@@ -91,6 +99,4 @@ public class KafkaPublisherService {
             );
         }
     }
-
-
 }
