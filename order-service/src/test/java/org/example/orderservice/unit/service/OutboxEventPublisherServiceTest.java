@@ -2,13 +2,13 @@ package org.example.orderservice.unit.service;
 
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.example.commons.event.EventConstants;
+import org.example.commons.event.utils.Constants;
 import org.example.orderservice.entity.OutboxDlqEvent;
 import org.example.orderservice.entity.OutboxEvent;
 import org.example.orderservice.repository.OutboxDlqRepository;
 import org.example.orderservice.repository.OutboxRepository;
 import org.example.orderservice.service.publisher.KafkaPublisherService;
 import org.example.orderservice.service.publisher.OutboxEventPublisherService;
-import org.example.orderservice.utils.Constants;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -144,7 +144,7 @@ public class OutboxEventPublisherServiceTest {
 
 
         // simulate already retried N times
-        event.setRetryCount(Constants.MAX_RETRIES - 1);
+        event.setRetryCount(Constants.MAX_RETRIES_KAFKA - 1);
 
         when(outboxRepository.findByProcessedFalseOrderByCreatedAtAsc())
                 .thenReturn(List.of(event));
@@ -169,7 +169,7 @@ public class OutboxEventPublisherServiceTest {
         assertEquals(event.getId(), dlq.getOriginalEventId());
         assertEquals(event.getAggregateId(), dlq.getAggregateId());
         assertEquals(event.getPayload(), dlq.getPayload());
-        assertEquals(Constants.MAX_RETRIES, dlq.getRetryCount());
+        assertEquals(org.example.commons.event.utils.Constants.MAX_RETRIES_KAFKA, dlq.getRetryCount());
 
         assertTrue(event.getProcessed()); // important
         verify(outboxRepository, atLeastOnce()).save(event);
