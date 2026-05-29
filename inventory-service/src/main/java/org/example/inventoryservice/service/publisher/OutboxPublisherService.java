@@ -67,6 +67,7 @@ public class OutboxPublisherService {
     private void handleFailure(OutboxEvent event, Throwable ex) {
         log.warn("[INVENTORY-SERVICE][OUTBOX-PUBLISHER] Failed event {} retry {}",
                 event.getId(), event.getRetryCount(), ex);
+
         if (event.getRetryCount() >= Constants.MAX_RETRIES_KAFKA) {
             /* store to DLQ table */
             outboxDlqService.storeOutboxDlq(
