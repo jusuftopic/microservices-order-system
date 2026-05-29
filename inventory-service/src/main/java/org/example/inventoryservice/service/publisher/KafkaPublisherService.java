@@ -52,6 +52,9 @@ public class KafkaPublisherService {
     public CompletableFuture<SendResult<String, Object>> publishEvent(OutboxEvent event) {
         String topic = TopicResolver.resolveTopic(event.getEventType());
 
+        log.debug("[INVENTORY-SERVICE][KAFKA] Sending event {} to the topic {}",
+                event.getEventType(), topic);
+
         CompletableFuture<SendResult<String, Object>> result = kafkaTemplate.send(
                 topic,
                 event.getAggregateId().toString(),
