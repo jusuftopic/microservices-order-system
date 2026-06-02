@@ -28,8 +28,7 @@ public class OutboxPublisherService {
 
     @Transactional
     public void publishPendingEvents() {
-        List<OutboxEvent> events =
-                repository.findByProcessedFalseOrderByCreatedAtAsc();
+        List<OutboxEvent> events = repository.findPendingEvents();
 
         if (events == null || events.isEmpty()) {
             log.info("[INVENTORY-SERVICE][OUTBOX-PUBLISHER] No pending events found.");

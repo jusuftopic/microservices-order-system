@@ -52,14 +52,13 @@ public class OutboxPublisherServiceTest {
     void should_do_nothing_when_no_events() {
 
         // GIVEN
-        when(repository.findByProcessedFalseOrderByCreatedAtAsc())
-                .thenReturn(Collections.emptyList());
+        when(repository.findPendingEvents()).thenReturn(Collections.emptyList());
 
         // WHEN
         service.publishPendingEvents();
 
         // THEN
-        verify(repository).findByProcessedFalseOrderByCreatedAtAsc();
+        verify(repository).findPendingEvents();
         verifyNoMoreInteractions(repository);
         verifyNoInteractions(kafkaPublisherService);
     }
@@ -74,7 +73,7 @@ public class OutboxPublisherServiceTest {
         CompletableFuture<SendResult<String, Object>> future =
                 CompletableFuture.completedFuture(mock(SendResult.class));
 
-        when(repository.findByProcessedFalseOrderByCreatedAtAsc())
+        when(repository.findPendingEvents())
                 .thenReturn(List.of(event));
 
         when(kafkaPublisherService.publishEvent(event))
@@ -100,7 +99,7 @@ public class OutboxPublisherServiceTest {
         OutboxEvent event = createEvent();
         event.setRetryCount(0);
 
-        when(repository.findByProcessedFalseOrderByCreatedAtAsc())
+        when(repository.findPendingEvents())
                 .thenReturn(List.of(event));
 
         when(kafkaPublisherService.publishEvent(event))
@@ -125,7 +124,7 @@ public class OutboxPublisherServiceTest {
         OutboxEvent event = createEvent();
         event.setRetryCount(Constants.MAX_RETRIES_KAFKA);
 
-        when(repository.findByProcessedFalseOrderByCreatedAtAsc())
+        when(repository.findPendingEvents())
                 .thenReturn(List.of(event));
 
         when(kafkaPublisherService.publishEvent(event))
@@ -157,7 +156,7 @@ public class OutboxPublisherServiceTest {
         OutboxEvent event = createEvent();
         int initialRetry = event.getRetryCount();
 
-        when(repository.findByProcessedFalseOrderByCreatedAtAsc())
+        when(repository.findPendingEvents())
                 .thenReturn(List.of(event));
 
         when(kafkaPublisherService.publishEvent(event))
