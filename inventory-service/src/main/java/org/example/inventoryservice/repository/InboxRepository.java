@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 /**
  * Repository responsible for InboxEvent persistence.
@@ -13,6 +14,7 @@ import org.springframework.data.repository.query.Param;
  * Supports idempotent processing of incoming events.
  * </p>
  */
+@Repository
 public interface InboxRepository extends JpaRepository<InboxEvent, String> {
 
     /**
