@@ -60,25 +60,26 @@ public class InventoryService {
 
         log.debug("[INVENTORY-SERVICE] Processing inventory for order {}", event.orderId());
 
-        try {
-            event.items().forEach(this::reserveQuantity);
-            storeOutboxEventSuccess(event);
-        } catch (Exception ex) {
-            log.error("[INVENTORY-SERVICE] Reservation failed for order {}, correlation id {}, reason {}",
-                    event.orderId(), event.correlationId(), ex.getMessage());
-            storeOutboxEventFailure(event);
+
+        for (OrderItemEvent item : event.items()) {
+
+            InventoryItem inventory = inventoryRepository
+                    .findById(item.productId())
+                    .orElse(null);
+
+            if (inventory == null) {
+                log.warn("[INVENTORY-SERVICE] Item {} not found.", item.productId());
+                storeOutboxEventFailure(event);
+
+                return;
+            }
+
+            inventory.reserve(item.quantity());
+            inventoryRepository.save(inventory);
         }
-    }
 
-    private void reserveQuantity(OrderItemEvent item) {
-        InventoryItem inventory = inventoryRepository
-                .findById(item.productId())
-                .orElseThrow(() -> new IllegalStateException(
-                        "Product not found: " + item.productId()
-                ));
 
-        inventory.reserve(item.quantity());
-        inventoryRepository.save(inventory);
+        storeOutboxEventSuccess(event);
     }
 
     private void storeOutboxEventSuccess(InventoryCheckRequestedEvent event) {

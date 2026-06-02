@@ -31,10 +31,8 @@ public class OutboxPublisherService {
         List<OutboxEvent> events =
                 repository.findByProcessedFalseOrderByCreatedAtAsc();
 
-        log.info("[INVENTORY-SERVICE] Found {} events", events.size());
-
         if (events == null || events.isEmpty()) {
-            log.debug("[INVENTORY-SERVICE][OUTBOX-PUBLISHER] No pending events found.");
+            log.info("[INVENTORY-SERVICE][OUTBOX-PUBLISHER] No pending events found.");
             return;
         }
 

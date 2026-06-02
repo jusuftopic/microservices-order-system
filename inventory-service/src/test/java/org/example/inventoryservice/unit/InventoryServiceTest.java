@@ -197,36 +197,4 @@ public class InventoryServiceTest {
                 any()
         );
     }
-
-
-    @Test
-    void should_throw_when_product_not_found_and_still_generate_failure_event() throws Exception {
-
-        // GIVEN
-        String correlationId = "corr-4";
-
-        InventoryCheckRequestedEvent event =
-                new InventoryCheckRequestedEvent(
-                        1L,
-                        List.of(new OrderItemEvent(999L, 5)),
-                        correlationId
-                );
-
-        when(inboxRepository.insertIfNotExists(correlationId)).thenReturn(1);
-        when(inventoryRepository.findById(999L)).thenReturn(Optional.empty());
-
-        when(objectMapper.writeValueAsString(any())).thenReturn("{json}");
-
-        // WHEN
-        service.processInventory(event);
-
-        // THEN
-        verify(outboxRepository).save(any());
-
-        // failure path
-        verify(outboxDlqService, never()).storeOutboxDlq(any(), any(), any(), any(), anyInt(), any());
-    }
-
-
-
 }

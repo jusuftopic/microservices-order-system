@@ -19,7 +19,6 @@ public class OutboxSchedulerService {
 
     @Scheduled(fixedDelay = 3000)
     public void publish() {
-        log.info("[INVENTORY-SERVICE] Schedule started");
         publisher.publishPendingEvents();
     }
 }
