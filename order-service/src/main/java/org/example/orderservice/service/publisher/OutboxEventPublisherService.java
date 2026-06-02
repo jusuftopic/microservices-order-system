@@ -47,8 +47,6 @@ public class OutboxEventPublisherService {
     public void publishPendingEvents() {
 
         List<OutboxEvent> events = outboxRepository.findByProcessedFalseOrderByCreatedAtAsc();
-        List<OutboxEvent> all = outboxRepository.findAll();
-        System.out.println("ALL SIZE: " + all.size());
 
         if (events == null || events.isEmpty()) {
             log.debug("[ORDER-SERVICE][OUTBOX-PUBLISHER] No pending events found.");
