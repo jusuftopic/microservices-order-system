@@ -111,7 +111,7 @@ public class InventoryService {
                     .aggregateId(aggregateId)
                     .eventType(eventType)
                     .payload(objectMapper.writeValueAsString(payload))
-                    .processed(false)
+                    .processed(Boolean.FALSE)
                     .retryCount(0)
                     .createdAt(LocalDateTime.now())
                     .build();

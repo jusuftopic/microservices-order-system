@@ -69,8 +69,9 @@ public class OutboxEvent {
      * and published to the message broker.
      */
     @NotNull
-    @Column(name = "processed")
-    private Boolean processed = false;
+    @Column(name = "processed", nullable = false)
+    private Boolean processed;
+
 
     @Column(name = "retry_count", nullable = false)
     private int retryCount = 0;
