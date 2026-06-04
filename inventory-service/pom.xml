@@ -41,8 +41,10 @@
 
         <!-- KAFKA -->
         <dependency>
-            <groupId>org.springframework.kafka</groupId>
-            <artifactId>spring-kafka</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-kafka</artifactId>
+            <version>4.0.6</version>
+            <scope>compile</scope>
         </dependency>
 
         <!-- LOMBOK -->
