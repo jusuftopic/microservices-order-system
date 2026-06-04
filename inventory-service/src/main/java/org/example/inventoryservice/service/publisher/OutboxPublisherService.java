@@ -55,7 +55,7 @@ public class OutboxPublisherService {
         event.setProcessed(true);
         repository.save(event);
 
-        log.info("[INVENTORY-SERVICE][OUTBOX-PUBLISHER] Event id={} type={} successfully published." +
+        log.debug("[INVENTORY-SERVICE][OUTBOX-PUBLISHER] Event id={} type={} successfully published." +
                         "Topic {}",
                 event.getId(), event.getEventType(),
                 Optional.ofNullable(result)
