@@ -15,6 +15,7 @@ import org.testcontainers.shaded.org.awaitility.Awaitility;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -62,7 +63,7 @@ public class KafkaConsumerIT extends AbstractIntegrationTest {
                 new InventoryCheckRequestedEvent(
                         1L,
                         List.of(new OrderItemEvent(10L, 2)),
-                        "corr-1"
+                        "corr-1", UUID.randomUUID()
                 );
 
         // WHEN

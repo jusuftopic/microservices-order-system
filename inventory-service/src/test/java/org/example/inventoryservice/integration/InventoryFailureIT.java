@@ -14,6 +14,7 @@ import org.testcontainers.shaded.org.awaitility.Awaitility;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -49,7 +50,7 @@ public class InventoryFailureIT extends AbstractIntegrationTest {
                 new InventoryCheckRequestedEvent(
                         1L,
                         List.of(new OrderItemEvent(999L, 1)),
-                        "corr-fail"
+                        "corr-fail", UUID.randomUUID()
                 );
 
         // WHEN

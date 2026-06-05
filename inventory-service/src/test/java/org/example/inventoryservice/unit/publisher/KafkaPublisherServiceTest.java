@@ -92,7 +92,7 @@ public class KafkaPublisherServiceTest {
         );
 
         InventoryFailedEvent payload =
-                new InventoryFailedEvent(1L, "FAIL", "corr");
+                new InventoryFailedEvent(1L, "FAIL", "corr", UUID.randomUUID());
 
         when(objectMapper.readValue("{json}", InventoryFailedEvent.class))
                 .thenReturn(payload);

@@ -56,7 +56,7 @@ public class OrderServiceTest {
     @BeforeEach
     public void setUp() {
         orderService = new OrderService(
-                repository, outboxRepository, inboxRepository,   objectMapper
+                repository, outboxRepository, inboxRepository, objectMapper
         );
     }
 
@@ -210,6 +210,7 @@ public class OrderServiceTest {
                 UUID.randomUUID()
         );
 
+        when(inboxRepository.insertIfNotExists(event.messageId())).thenReturn(1);
         when(repository.findById(orderId)).thenReturn(Optional.of(order));
         when(objectMapper.writeValueAsString(any())).thenReturn("{json}");
 
@@ -274,6 +275,7 @@ public class OrderServiceTest {
                 UUID.randomUUID()
         );
 
+        when(inboxRepository.insertIfNotExists(event.messageId())).thenReturn(1);
         when(repository.findById(999L)).thenReturn(Optional.empty());
 
         // WHEN + THEN
