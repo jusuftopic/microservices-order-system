@@ -55,7 +55,7 @@ public class KafkaPublisherService {
         log.debug("[INVENTORY-SERVICE][KAFKA] Sending event {} to the topic {}",
                 event.getEventType(), topic);
 
-        log.info("[INVENTORY-SERVICE][KAFKA] Value serializer: {}", kafkaTemplate.getProducerFactory().getValueSerializer());
+        log.info("[INVENTORY-SERVICE][KAFKA] Value serializer: {}", kafkaTemplate.getProducerFactory().getConfigurationProperties());
         CompletableFuture<SendResult<String, Object>> result = kafkaTemplate.send(
                 topic,
                 event.getAggregateId().toString(),

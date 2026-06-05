@@ -29,10 +29,4 @@
         <module>payment-service</module>
     </modules>
 
-    <dependencyManagement>
-        <dependencies>
-            <!-- shared versions automatically -->
-        </dependencies>
-    </dependencyManagement>
-
 </project>
