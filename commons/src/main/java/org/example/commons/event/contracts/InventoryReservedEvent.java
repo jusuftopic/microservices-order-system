@@ -1,5 +1,7 @@
 package org.example.commons.event.contracts;
 
+import java.util.UUID;
+
 /**
  * Event emitted when inventory has been successfully reserved.
  *
@@ -17,6 +19,11 @@ public record InventoryReservedEvent(
         /**
          * Correlation identifier used for tracing the workflow.
          */
-        String correlationId
-) {}
+        String correlationId,
+
+        /**
+         * Unique identifier of the message.
+         */
+        UUID messageId
+) implements BaseEvent {}
 

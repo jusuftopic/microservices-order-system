@@ -51,10 +51,10 @@ public class InventoryService {
      */
     @Transactional
     public void processInventory(InventoryCheckRequestedEvent event) {
-        int inserted = inboxRepository.insertIfNotExists(event.correlationId());
+        int inserted = inboxRepository.insertIfNotExists(event.messageId());
 
         if (inserted == 0) {
-            log.info("[INVENTORY-SERVICE] Inventory for order {} already processed.", event.orderId());
+            log.info("[INVENTORY-SERVICE] Event {} already processed.", event.messageId());
             return;
         }
 
@@ -85,7 +85,8 @@ public class InventoryService {
     private void storeOutboxEventSuccess(InventoryCheckRequestedEvent event) {
         InventoryReservedEvent payload = new InventoryReservedEvent(
                 event.orderId(),
-                event.correlationId()
+                event.correlationId(),
+                UUID.randomUUID()
         );
 
         storeOutbox(payload, EventConstants.EVENT_INVENTORY_RESERVED, event.orderId());
@@ -96,7 +97,8 @@ public class InventoryService {
         InventoryFailedEvent payload = new InventoryFailedEvent(
                 event.orderId(),
                 "OUT_OF_STOCK",
-                event.correlationId()
+                event.correlationId(),
+                UUID.randomUUID()
         );
 
         storeOutbox(payload, EventConstants.EVENT_INVENTORY_FAILED, event.orderId());

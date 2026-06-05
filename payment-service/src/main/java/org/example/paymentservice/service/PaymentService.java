@@ -57,18 +57,24 @@ public class PaymentService {
             return;
         }
 
+        /* process payment progress */
         payment.setStatus(PaymentStatus.PROCESSING);
         repository.save(payment);
 
-        /**
-         * IMPORTANT: do NOT call external systems here.
-         * Instead, we publish an event that will be handled AFTER COMMIT.
-         *
-         * Reason:
-         *  - avoid mixing transactional persistence and external 3rd party calls
-         *  - DB lock should not be active during the network call
-         *  - retry/rollback can get messy in slow 3rd party call
-         */
+        /* publish event to initiate request to 3rd party payment provider */
+        publishPaymentEvent(payment, event);
+    }
+
+    /**
+     * IMPORTANT: do NOT call external systems here.
+     * Instead, we publish an event that will be handled AFTER COMMIT.
+     *
+     * Reason:
+     *  - avoid mixing transactional persistence and external 3rd party calls
+     *  - DB lock should not be active during the network call
+     *  - retry/rollback can get messy in slow 3rd party call
+     */
+    private void publishPaymentEvent(final Payment payment, final PaymentRequestedEvent event) {
         eventPublisher.publishEvent(
                 new PaymentProcessingEvent(
                         payment.getId(),
@@ -100,9 +106,12 @@ public class PaymentService {
         if (result.success()) {
             payment.setStatus(PaymentStatus.SUCCESS);
             payment.setTransactionId(result.transactionId());
+            log.info("[PAYMENT-SERVICE] Payment {} processed successfully. Provider {}", paymentId, result.provider());
         } else {
             payment.setStatus(PaymentStatus.FAILED);
             payment.setFailureReason(result.failureReason());
+            log.warn("[PAYMENT-SERVICE] Payment {} processed failed. Provider {}. Reason: {}",
+                    paymentId, result.provider(), result.failureReason());
         }
 
         repository.save(payment);

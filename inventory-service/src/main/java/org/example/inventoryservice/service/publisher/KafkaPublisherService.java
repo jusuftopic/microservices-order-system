@@ -5,13 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.commons.event.EventConstants;
-import org.example.commons.event.contracts.InventoryCheckRequestedEvent;
 import org.example.commons.event.contracts.InventoryFailedEvent;
 import org.example.commons.event.contracts.InventoryReservedEvent;
-import org.example.commons.event.contracts.PaymentRequestedEvent;
 import org.example.commons.event.utils.TopicResolver;
 import org.example.inventoryservice.entity.OutboxEvent;
-import org.example.inventoryservice.service.OutboxDlqService;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
@@ -55,7 +52,6 @@ public class KafkaPublisherService {
         log.debug("[INVENTORY-SERVICE][KAFKA] Sending event {} to the topic {}",
                 event.getEventType(), topic);
 
-        log.info("[INVENTORY-SERVICE][KAFKA] Value serializer: {}", kafkaTemplate.getProducerFactory().getConfigurationProperties());
         CompletableFuture<SendResult<String, Object>> result = kafkaTemplate.send(
                 topic,
                 event.getAggregateId().toString(),

@@ -11,6 +11,7 @@ import org.example.orderservice.entity.Order;
 import org.example.orderservice.entity.OrderItem;
 import org.example.orderservice.entity.OutboxEvent;
 import org.example.orderservice.enums.OrderStatus;
+import org.example.orderservice.repository.InboxRepository;
 import org.example.orderservice.repository.OrderRepository;
 import org.example.orderservice.repository.OutboxRepository;
 import org.example.orderservice.service.OrderService;
@@ -25,6 +26,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -45,13 +47,16 @@ public class OrderServiceTest {
     @Mock
     private ObjectMapper objectMapper;
 
+    @Mock
+    private InboxRepository inboxRepository;
+
     /* class under test */
     private OrderService orderService;
 
     @BeforeEach
     public void setUp() {
         orderService = new OrderService(
-                repository, outboxRepository, objectMapper
+                repository, outboxRepository, inboxRepository,   objectMapper
         );
     }
 
@@ -201,7 +206,8 @@ public class OrderServiceTest {
 
         InventoryReservedEvent event = new InventoryReservedEvent(
                 orderId,
-                "corr-123"
+                "corr-123",
+                UUID.randomUUID()
         );
 
         when(repository.findById(orderId)).thenReturn(Optional.of(order));
@@ -241,7 +247,8 @@ public class OrderServiceTest {
         InventoryFailedEvent event = new InventoryFailedEvent(
                 orderId,
                 "OUT_OF_STOCK",
-                "corr-123"
+                "corr-123",
+                UUID.randomUUID()
         );
 
         when(repository.findById(orderId)).thenReturn(Optional.of(order));
@@ -263,7 +270,8 @@ public class OrderServiceTest {
         // GIVEN
         InventoryReservedEvent event = new InventoryReservedEvent(
                 999L,
-                "corr-123"
+                "corr-123",
+                UUID.randomUUID()
         );
 
         when(repository.findById(999L)).thenReturn(Optional.empty());

@@ -21,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -69,12 +70,14 @@ public class InventoryServiceTest {
 
         // GIVEN
         String correlationId = "corr-1";
+        UUID messageId = UUID.randomUUID();
 
         InventoryCheckRequestedEvent event =
                 new InventoryCheckRequestedEvent(
                         1L,
                         List.of(new OrderItemEvent(10L, 2)),
-                        correlationId
+                        correlationId,
+                        messageId
                 );
 
         InventoryItem item = InventoryItem.builder()
@@ -83,7 +86,7 @@ public class InventoryServiceTest {
                 .reservedQuantity(0)
                 .build();
 
-        when(inboxRepository.insertIfNotExists(correlationId)).thenReturn(1);
+        when(inboxRepository.insertIfNotExists(messageId)).thenReturn(1);
         when(inventoryRepository.findById(10L)).thenReturn(Optional.of(item));
         when(objectMapper.writeValueAsString(any())).thenReturn("{json}");
 
@@ -110,11 +113,12 @@ public class InventoryServiceTest {
 
         // GIVEN
         String correlationId = "corr-dup";
+        UUID messageId = UUID.randomUUID();
 
         InventoryCheckRequestedEvent event =
-                new InventoryCheckRequestedEvent(1L, List.of(), correlationId);
+                new InventoryCheckRequestedEvent(1L, List.of(), correlationId, messageId);
 
-        when(inboxRepository.insertIfNotExists(correlationId)).thenReturn(0);
+        when(inboxRepository.insertIfNotExists(messageId)).thenReturn(0);
 
         // WHEN
         service.processInventory(event);
@@ -130,15 +134,17 @@ public class InventoryServiceTest {
 
         // GIVEN
         String correlationId = "corr-2";
+        UUID messageId = UUID.randomUUID();
 
         InventoryCheckRequestedEvent event =
                 new InventoryCheckRequestedEvent(
                         1L,
                         List.of(new OrderItemEvent(99L, 1)),
-                        correlationId
+                        correlationId,
+                        messageId
                 );
 
-        when(inboxRepository.insertIfNotExists(correlationId)).thenReturn(1);
+        when(inboxRepository.insertIfNotExists(messageId)).thenReturn(1);
         when(inventoryRepository.findById(99L)).thenReturn(Optional.empty());
 
         when(objectMapper.writeValueAsString(any())).thenReturn("{json}");
@@ -163,12 +169,14 @@ public class InventoryServiceTest {
 
         // GIVEN
         String correlationId = "corr-3";
+        UUID messageId = UUID.randomUUID();
 
         InventoryCheckRequestedEvent event =
                 new InventoryCheckRequestedEvent(
                         1L,
                         List.of(new OrderItemEvent(10L, 1)),
-                        correlationId
+                        correlationId,
+                        messageId
                 );
 
         InventoryItem item = InventoryItem.builder()
@@ -177,7 +185,7 @@ public class InventoryServiceTest {
                 .reservedQuantity(0)
                 .build();
 
-        when(inboxRepository.insertIfNotExists(correlationId)).thenReturn(1);
+        when(inboxRepository.insertIfNotExists(messageId)).thenReturn(1);
         when(inventoryRepository.findById(10L)).thenReturn(Optional.of(item));
 
         when(objectMapper.writeValueAsString(any()))

@@ -11,6 +11,7 @@ import org.example.orderservice.entity.Order;
 import org.example.orderservice.entity.OutboxEvent;
 import org.example.orderservice.enums.OrderStatus;
 import org.example.orderservice.mapper.OrderMapper;
+import org.example.orderservice.repository.InboxRepository;
 import org.example.orderservice.repository.OutboxRepository;
 import org.example.orderservice.repository.OrderRepository;
 import org.springframework.stereotype.Service;
@@ -33,6 +34,7 @@ public class OrderService {
 
     private final OrderRepository repository;
     private final OutboxRepository outboxRepository;
+    private final InboxRepository inboxRepository;
 
     private final ObjectMapper objectMapper;
 
@@ -48,6 +50,7 @@ public class OrderService {
 
         final String correlationId = UUID.randomUUID().toString();
         final Order saved = storeOrder(request, correlationId);
+        final UUID messageId = UUID.randomUUID();
 
         // store outbox event
         storeOutboxEvent(
@@ -61,7 +64,8 @@ public class OrderService {
                                         item.getQuantity()
                                 ))
                                 .toList(),
-                        correlationId
+                        correlationId,
+                        messageId
                 )
         );
 
@@ -81,6 +85,11 @@ public class OrderService {
      */
     @Transactional
     public void handleInventoryReserved(InventoryReservedEvent event) {
+        int inserted = inboxRepository.insertIfNotExists(event.messageId());
+        if (inserted == 0) {
+            log.warn("[ORDER-SERVICE] Event {} already processed.", event.messageId());
+            return;
+        }
 
         Order order = repository.findById(event.orderId())
                 .orElseThrow();
@@ -98,7 +107,8 @@ public class OrderService {
                         order.getId(),
                         calculateAmount(order),
                         order.getCustomerEmail(),
-                        event.correlationId()
+                        event.correlationId(),
+                        UUID.randomUUID()
                 )
         );
     }

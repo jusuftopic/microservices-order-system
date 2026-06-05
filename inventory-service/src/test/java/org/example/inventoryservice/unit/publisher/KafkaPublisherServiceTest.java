@@ -54,7 +54,7 @@ public class KafkaPublisherServiceTest {
         );
 
         InventoryReservedEvent payload =
-                new InventoryReservedEvent(1L, "corr-1");
+                new InventoryReservedEvent(1L, "corr-1", UUID.randomUUID());
 
         when(objectMapper.readValue("{json}", InventoryReservedEvent.class))
                 .thenReturn(payload);
@@ -161,7 +161,7 @@ public class KafkaPublisherServiceTest {
         );
 
         InventoryReservedEvent payload =
-                new InventoryReservedEvent(5L, "corr");
+                new InventoryReservedEvent(5L, "corr", UUID.randomUUID());
 
         when(objectMapper.readValue("{json}", InventoryReservedEvent.class))
                 .thenReturn(payload);

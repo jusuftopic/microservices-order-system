@@ -1,5 +1,7 @@
 package org.example.commons.event.contracts;
 
+import java.util.UUID;
+
 /**
  * Event emitted by Payment Service when payment has been successfully processed.
  *
@@ -17,6 +19,11 @@ public record PaymentCompletedEvent(
         /**
          * Correlation identifier used for tracing the workflow.
          */
-        String correlationId
-) {}
+        String correlationId,
+
+        /**
+         * Unique identifier of the message.
+         */
+        UUID messageId
+) implements BaseEvent {}
 

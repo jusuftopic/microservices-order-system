@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -26,11 +27,21 @@ import java.util.UUID;
 @Setter
 public class InboxEvent {
 
-    /**
-     * Unique identifier of the incoming event.
-     */
     @Id
-    @Column(name = "correlation_id", nullable = false, updatable = false)
-    private String correlationId;
+    @Column(nullable = false, updatable = false, name = "message_id")
+    private UUID messageId;
+
+    /**
+     * Timestamp of when the message was processed.
+     */
+    private LocalDateTime processedAt;
+
+    /**
+     * Initializes default values before persisting.
+     */
+    @PrePersist
+    public void prePersist() {
+        processedAt = LocalDateTime.now();
+    }
 
 }

@@ -14,6 +14,7 @@ import org.testcontainers.shaded.org.awaitility.Awaitility;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -21,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Integration test validating idempotent processing of inventory events.
  *
  * <p>
- * Ensures that duplicate Kafka events with the same correlationId
+ * Ensures that duplicate Kafka events with the same messageId
  * are processed only once.
  * </p>
  */
@@ -57,7 +58,7 @@ public class IdempotencyIT extends AbstractIntegrationTest {
                 new InventoryCheckRequestedEvent(
                         1L,
                         List.of(new OrderItemEvent(10L, 1)),
-                        "same-corr"
+                        "same-corr", UUID.randomUUID()
                 );
 
         // WHEN

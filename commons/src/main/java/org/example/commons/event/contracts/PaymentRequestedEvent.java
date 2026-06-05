@@ -30,6 +30,11 @@ public record PaymentRequestedEvent(
         /**
          * Correlation identifier used for tracking the workflow.
          */
-        String correlationId
-) {}
+        String correlationId,
+
+        /**
+         * Unique identifier of the message.
+         */
+        UUID messageId
+) implements BaseEvent {}
 

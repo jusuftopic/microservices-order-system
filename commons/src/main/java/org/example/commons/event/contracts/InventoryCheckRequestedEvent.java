@@ -1,6 +1,7 @@
 package org.example.commons.event.contracts;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Event emitted to request inventory validation and reservation.
@@ -26,6 +27,14 @@ public record InventoryCheckRequestedEvent(
         /**
          * Correlation identifier used for tracking the workflow across services.
          */
-        String correlationId
-) {}
+        String correlationId,
+
+
+        /**
+         * Unique identifier of the message.
+         */
+        UUID messageId
+
+        ) implements BaseEvent {
+}
 

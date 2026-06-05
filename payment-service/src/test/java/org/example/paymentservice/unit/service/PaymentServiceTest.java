@@ -54,7 +54,7 @@ public class PaymentServiceTest {
 
         // GIVEN
         final String correlationId = "11x11";
-        PaymentRequestedEvent event = new PaymentRequestedEvent(1L, BigDecimal.ONE, "test", correlationId);
+        PaymentRequestedEvent event = new PaymentRequestedEvent(1L, BigDecimal.ONE, "test", correlationId, UUID.randomUUID());
 
         when(inboxRepository.insertIfNotExists(correlationId)).thenReturn(1);
 
@@ -75,7 +75,7 @@ public class PaymentServiceTest {
 
         // GIVEN
         final String correlationId = "11x11";
-        PaymentRequestedEvent event = new PaymentRequestedEvent(1L, BigDecimal.ONE, "test", correlationId);
+        PaymentRequestedEvent event = new PaymentRequestedEvent(1L, BigDecimal.ONE, "test", correlationId, UUID.randomUUID());
 
         when(inboxRepository.insertIfNotExists(correlationId)).thenReturn(0);
 
@@ -93,7 +93,7 @@ public class PaymentServiceTest {
 
         // GIVEN
         final String correlationId = "11x11";
-        PaymentRequestedEvent event = new PaymentRequestedEvent(1L, BigDecimal.ONE, "test", correlationId);
+        PaymentRequestedEvent event = new PaymentRequestedEvent(1L, BigDecimal.ONE, "test", correlationId, UUID.randomUUID());
 
         when(inboxRepository.insertIfNotExists(correlationId)).thenReturn(1);
 

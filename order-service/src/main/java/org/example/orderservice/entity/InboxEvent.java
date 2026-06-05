@@ -1,4 +1,4 @@
-package org.example.inventoryservice.entity;
+package org.example.orderservice.entity;
 
 
 import jakarta.persistence.*;
