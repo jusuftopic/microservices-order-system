@@ -23,11 +23,11 @@ public class PaymentArchitectureTest {
 
     /**
      * Enforces a strict layered architecture:
-     * Listener → Service → Repository.
+     * Kafka Listener → Service → Repository.
      *
      * <ul>
-     *     <li>Listeners are entry points and must not be accessed by other layers</li>
-     *     <li>Services may only be accessed by Listeners</li>
+     *     <li>Kafka listeners are entry points and must not be accessed by other layers</li>
+     *     <li>Services may only be accessed by Kafka listeners</li>
      *     <li>Repositories may only be accessed by Services</li>
      * </ul>
      */
@@ -35,7 +35,7 @@ public class PaymentArchitectureTest {
     static final ArchRule layering =
             layeredArchitecture()
                     .consideringAllDependencies()
-                    .layer("Listener").definedBy("..listener..")
+                    .layer("Listener").definedBy("..listener.kafka..")
                     .layer("Service").definedBy("..service..")
                     .layer("Repository").definedBy("..repository..")
 
@@ -88,5 +88,4 @@ public class PaymentArchitectureTest {
                     .that().resideInAPackage("..repository..")
                     .should().dependOnClassesThat()
                     .haveSimpleName("PaymentProviderWrapper");
-
 }
