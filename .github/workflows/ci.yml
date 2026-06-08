@@ -76,7 +76,7 @@ jobs:
 
       # 5. Test Order Service
       - name: Test Order Service
-        run: ./mvnw -pl order-service -am test
+        run: ./mvnw -pl order-service -am verify
 
       # 6 Upload test results in GitHub UI
       - name: Upload test results
@@ -116,7 +116,7 @@ jobs:
 
       # 5. Test Payment Service
       - name: Test Payment Service
-        run: ./mvnw -pl payment-service -am test
+        run: ./mvnw -pl payment-service -am verify
 
       # 6 Upload test results in GitHub UI
       - name: Upload test results
@@ -156,7 +156,7 @@ jobs:
 
       # 5. Test Inventory Service
       - name: Test Inventory Service
-        run: ./mvnw -pl inventory-service -am test
+        run: ./mvnw -pl inventory-service -am verify
 
       # 6 Upload test results in GitHub UI
       - name: Upload test results
