@@ -35,7 +35,7 @@ public class PaymentArchitectureTest {
     static final ArchRule layering =
             layeredArchitecture()
                     .consideringAllDependencies()
-                    .layer("Listener").definedBy("..listener.kafka..")
+                    .layer("Listener").definedBy("..listener..")
                     .layer("Service").definedBy("..service..")
                     .layer("Repository").definedBy("..repository..")
 
@@ -45,26 +45,40 @@ public class PaymentArchitectureTest {
 
 
     /**
-     * Ensures that PaymentService is enforced to use InboxRepository.
+     * Ensures that PaymentService is enforced to use InboxRepository and OutboxRepository.
      *
      * <p>This enforces correct usage of the inbox pattern for idempotency handling.</p>
      */
     @ArchTest
-    static final ArchRule payment_service_uses_inbox =
+    static final ArchRule payment_service_uses_inbox_and_outbox =
             classes()
                     .that().haveSimpleName("PaymentService")
                     .should().dependOnClassesThat()
-                    .haveSimpleName("InboxRepository");
+                    .haveSimpleName("InboxRepository")
+                    .andShould()
+                    .dependOnClassesThat()
+                    .haveSimpleName("OutboxRepository");
 
     /**
-     * Restricts Kafka usage to infrastructure components only.
+     * Ensures that KafkaTemplate is not used directly outside the allowed layers.
      *
-     * <p>KafkaTemplate must not be used inside service layer classes.</p>
+     * <p>
+     * Kafka access must be encapsulated within the KafkaPublisherService
+     * (outbound adapter) or infrastructure configuration. This prevents
+     * leaking Kafka-specific logic into business components such as
+     * services, listeners, and repositories.
+     * </p>
      */
     @ArchTest
-    static final ArchRule kafka_usage_only_in_listener_and_config =
+    static final ArchRule kafka_template_should_only_be_user_in_wrapper_service =
             noClasses()
-                    .that().resideInAPackage("..service..")
+                    .that()
+                    .resideInAPackage("org.example.paymentservice..")
+                    .and()
+                    .resideOutsideOfPackages(
+                            "org.example.paymentservice.config..",
+                            "org.example.paymentservice.service.publisher.."
+                    )
                     .should().dependOnClassesThat().haveSimpleName("KafkaTemplate");
 
     /**
