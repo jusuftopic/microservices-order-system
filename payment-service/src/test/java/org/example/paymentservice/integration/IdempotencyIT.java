@@ -37,7 +37,7 @@ public class IdempotencyIT extends AbstractIntegrationTest {
 
         // WHEN
         // send twice
-        kafkaTemplate.send(EventConstants.TOPIC_ODER_PAYMENT_REQUEST_V1, event.orderId().toString(), event);
+        kafkaTemplate.send(EventConstants.TOPIC_ORDER_PAYMENT_REQUEST_V1, event.orderId().toString(), event);
         kafkaTemplate.send(EventConstants.TOPIC_ORDER_INVENTORY_REQUEST_V1, event.orderId().toString(), event);
 
         // THEN -> wait 10 seconds and verify repository

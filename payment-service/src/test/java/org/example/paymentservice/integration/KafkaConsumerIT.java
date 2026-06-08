@@ -45,7 +45,7 @@ public class KafkaConsumerIT extends AbstractIntegrationTest {
 
         // when
         kafkaTemplate.send(
-                EventConstants.TOPIC_ODER_PAYMENT_REQUEST_V1,
+                EventConstants.TOPIC_ORDER_PAYMENT_REQUEST_V1,
                 event.orderId().toString(),
                 event
         );

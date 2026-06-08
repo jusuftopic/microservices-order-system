@@ -60,7 +60,7 @@ public class KafkaTopicConfig {
      */
     @Bean
     public NewTopic paymentRequestedV1Topic(KafkaTopicProperties props) {
-        return TopicBuilder.name(EventConstants.TOPIC_ODER_PAYMENT_REQUEST_V1)
+        return TopicBuilder.name(EventConstants.TOPIC_ORDER_PAYMENT_REQUEST_V1)
                 .partitions(props.partitions())
                 .replicas(props.replicas())
                 .build();

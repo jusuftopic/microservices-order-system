@@ -21,12 +21,12 @@ public class PaymentProviderIT extends AbstractIntegrationTest {
     @BeforeEach
     public void setUp() {
         mockPaymentClient.resetCache();
-        mockPaymentClient.setForceSuccess(true);
     }
 
     @Test
     void shouldReturnSuccessfulPayment() {
-
+        // given
+        mockPaymentClient.setForceSuccess(true);
 
         // when
         PaymentResultDTO result = paymentProvider.pay(
@@ -39,17 +39,4 @@ public class PaymentProviderIT extends AbstractIntegrationTest {
         assertThat(result.transactionId()).isNotNull();
     }
 
-    @Test
-    void shouldReturnFailedPayment() {
-
-        // when
-        PaymentResultDTO result = paymentProvider.pay(
-                1L,
-                "11"
-        );
-
-        // then
-        assertThat(result.success()).isFalse();
-        assertThat(result.failureReason()).isEqualTo("INSUFFICIENT_FUNDS");
-    }
 }

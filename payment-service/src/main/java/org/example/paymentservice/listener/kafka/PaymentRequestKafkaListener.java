@@ -18,7 +18,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 @Slf4j
 @KafkaListener(
-        topics = EventConstants.TOPIC_ODER_PAYMENT_REQUEST_V1,
+        topics = EventConstants.TOPIC_ORDER_PAYMENT_REQUEST_V1,
         groupId = Constants.KAFKA_PAYMENT_GROUP_ID
 )
 public class PaymentRequestKafkaListener {

@@ -19,7 +19,7 @@ public class TopicResolver {
                     EventConstants.TOPIC_ORDER_INVENTORY_REQUEST_V1;
 
             case EventConstants.EVENT_PAYMENT_REQUESTED ->
-                    EventConstants.TOPIC_ODER_PAYMENT_REQUEST_V1;
+                    EventConstants.TOPIC_ORDER_PAYMENT_REQUEST_V1;
 
             case EventConstants.EVENT_INVENTORY_RESERVED,
                  EventConstants.EVENT_INVENTORY_FAILED-> EventConstants.TOPIC_ORDER_INVENTORY_RESPONSE_V1;
