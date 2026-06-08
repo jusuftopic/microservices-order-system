@@ -50,6 +50,11 @@ public class Payment {
     private String transactionId;
 
     /**
+     * Correlation ID.
+     */
+    private String correlationId;
+
+    /**
      * Payment failure reason
      */
     private String failureReason;

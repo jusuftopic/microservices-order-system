@@ -27,7 +27,6 @@ public class OutboxEventScheduler {
      * Runs every 3 second to publish unprocessed outbox events.
      */
     @Scheduled(fixedDelay = 3000)
-    @Transactional
     public void publishOutboxEvents() {
         publisherService.publishPendingEvents();
     }

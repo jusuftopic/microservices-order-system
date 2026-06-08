@@ -3,6 +3,7 @@ package org.example.paymentservice.integration;
 import org.example.commons.event.EventConstants;
 import org.example.commons.event.contracts.PaymentRequestedEvent;
 import org.example.paymentservice.repository.InboxRepository;
+import org.example.paymentservice.repository.OutboxRepository;
 import org.example.paymentservice.repository.PaymentRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +28,9 @@ public class KafkaConsumerIT extends AbstractIntegrationTest {
     private InboxRepository inboxRepository;
 
     @Autowired
+    private OutboxRepository outboxRepository;
+
+    @Autowired
     private PaymentRepository paymentRepository;
 
     @Test
@@ -49,8 +53,13 @@ public class KafkaConsumerIT extends AbstractIntegrationTest {
         Awaitility.await()
                 .atMost(Duration.ofSeconds(10))
                 .untilAsserted(() -> {
-
+                    // inbox still created
                     assertThat(inboxRepository.count()).isEqualTo(1);
+
+                    // outbox event
+                    assertThat(outboxRepository.count()).isEqualTo(1);
+
+                    // processed payment entry
                     assertThat(paymentRepository.findAll()).hasSize(1);
                 });
     }

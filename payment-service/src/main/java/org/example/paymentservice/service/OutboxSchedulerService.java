@@ -1,8 +1,8 @@
-package org.example.inventoryservice.service;
+package org.example.paymentservice.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.inventoryservice.service.publisher.OutboxPublisherService;
+import org.example.paymentservice.service.publisher.OutboxPublisherService;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

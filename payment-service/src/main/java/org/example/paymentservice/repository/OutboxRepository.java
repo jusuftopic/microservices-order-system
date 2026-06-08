@@ -1,0 +1,27 @@
+package org.example.paymentservice.repository;
+
+import org.example.paymentservice.entity.OutboxEvent;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * Repository for managing outbox events.
+ */
+@Repository
+public interface OutboxRepository extends JpaRepository<OutboxEvent, UUID> {
+
+    /**
+     * Finds all unprocessed events ordered by creation time.
+     */
+    @Query("""
+    SELECT e FROM OutboxEvent e
+    WHERE e.processed = false OR e.processed IS NULL
+    ORDER BY e.createdAt ASC
+""")
+    List<OutboxEvent> findPendingEvents();
+
+}

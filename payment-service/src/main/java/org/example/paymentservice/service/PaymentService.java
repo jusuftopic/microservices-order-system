@@ -1,19 +1,27 @@
 package org.example.paymentservice.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.commons.event.EventConstants;
+import org.example.commons.event.contracts.PaymentCompletedEvent;
+import org.example.commons.event.contracts.PaymentFailedEvent;
 import org.example.commons.event.contracts.PaymentRequestedEvent;
 import org.example.paymentservice.dto.PaymentResultDTO;
+import org.example.paymentservice.entity.OutboxEvent;
 import org.example.paymentservice.entity.Payment;
 import org.example.paymentservice.enums.PaymentStatus;
 import org.example.paymentservice.event.PaymentProcessingEvent;
 import org.example.paymentservice.repository.InboxRepository;
+import org.example.paymentservice.repository.OutboxRepository;
 import org.example.paymentservice.repository.PaymentRepository;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Business logic for handling payments.
@@ -29,6 +37,9 @@ public class PaymentService {
     private final PaymentRepository repository;
     private final InboxRepository inboxRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final ObjectMapper objectMapper;
+    private final OutboxRepository outboxRepository;
+    private final OutboxDlqService outboxDlqService;
 
     /**
      * Creates a payment for a given order.
@@ -37,7 +48,7 @@ public class PaymentService {
      */
     @Transactional
     public void processPayment(PaymentRequestedEvent event) {
-        int inserted = inboxRepository.insertIfNotExists(event.correlationId());
+        int inserted = inboxRepository.insertIfNotExists(event.messageId());
 
         if (inserted == 0) {
             log.info("[PAYMENT-SERVICE] Order {} already processed.", event.orderId());
@@ -88,6 +99,7 @@ public class PaymentService {
         return Payment.builder()
                 .orderId(event.orderId())
                 .status(PaymentStatus.PENDING)
+                .correlationId(event.correlationId())
                 .build();
     }
 
@@ -107,13 +119,75 @@ public class PaymentService {
             payment.setStatus(PaymentStatus.SUCCESS);
             payment.setTransactionId(result.transactionId());
             log.info("[PAYMENT-SERVICE] Payment {} processed successfully. Provider {}", paymentId, result.provider());
+
+
+            storeOutbox(
+                    new PaymentCompletedEvent(
+                            payment.getOrderId(),
+                            payment.getCorrelationId(),
+                            UUID.randomUUID()
+                    ),
+                    EventConstants.EVENT_PAYMENT_SUCCESS,
+                    payment.getOrderId()
+            );
+
         } else {
             payment.setStatus(PaymentStatus.FAILED);
             payment.setFailureReason(result.failureReason());
             log.warn("[PAYMENT-SERVICE] Payment {} processed failed. Provider {}. Reason: {}",
                     paymentId, result.provider(), result.failureReason());
-        }
 
+
+            storeOutbox(
+                    new PaymentFailedEvent(
+                            payment.getOrderId(),
+                            result.failureReason(),
+                            payment.getCorrelationId(),
+                            UUID.randomUUID()
+                    ),
+                    EventConstants.EVENT_PAYMENT_FAILED,
+                    payment.getOrderId()
+            );
+
+        }
         repository.save(payment);
+    }
+
+    private void storeOutbox(Object payload,
+                             String eventType,
+                             Long aggregateId) {
+
+        try {
+
+            OutboxEvent event = OutboxEvent.builder()
+                    .id(UUID.randomUUID())
+                    .aggregateType("PAYMENT")
+                    .aggregateId(aggregateId)
+                    .eventType(eventType)
+                    .payload(objectMapper.writeValueAsString(payload))
+                    .processed(Boolean.FALSE)
+                    .retryCount(0)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+
+            outboxRepository.save(event);
+
+            log.info("[PAYMENT-SERVICE] Stored outbox event {} ({})",
+                    event.getId(), eventType);
+
+        } catch (Exception e) {
+
+            log.error("[PAYMENT-SERVICE] Failed to serialize payload for event {}",
+                    eventType, e);
+
+            outboxDlqService.storeOutboxDlq(
+                    null,
+                    aggregateId,
+                    eventType,
+                    payload,
+                    0,
+                    e
+            );
+        }
     }
 }

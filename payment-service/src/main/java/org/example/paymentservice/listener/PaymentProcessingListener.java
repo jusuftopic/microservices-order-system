@@ -33,7 +33,6 @@ public class PaymentProcessingListener {
                 event.correlationId()
         );
 
-        // Final DB update
         paymentService.finalizePayment(event.paymentId(), result);
     }
 
