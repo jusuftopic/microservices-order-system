@@ -1,4 +1,4 @@
-package org.example.orderservice.listener;
+package org.example.orderservice.listener.kafka;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 
 /**
  * Kafka listener responsible for handling incoming events
- * from other services
+ * from the inventory services
  *
  * <p>
  * This component represents the entry point for orchestration logic.
@@ -28,7 +28,7 @@ import org.springframework.stereotype.Service;
         topics = EventConstants.TOPIC_ORDER_INVENTORY_RESPONSE_V1,
         groupId = Constants.KAFKA_ORDER_GROUP_ID
 )
-public class KafkaListenerService {
+public class InventoryResponseKafkaListener {
 
     private final OrderService orderService;
 
