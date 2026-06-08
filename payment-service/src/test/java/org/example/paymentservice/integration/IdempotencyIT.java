@@ -2,6 +2,7 @@ package org.example.paymentservice.integration;
 
 import org.example.commons.event.EventConstants;
 import org.example.commons.event.contracts.PaymentRequestedEvent;
+import org.example.paymentservice.integration.setup.AbstractIntegrationTest;
 import org.example.paymentservice.repository.InboxRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Integration tests ensure no duplicated payment processing in the system
  */
-public class IdempotencyIT extends AbstractIntegrationTest{
+public class IdempotencyIT extends AbstractIntegrationTest {
 
     @Autowired
     private KafkaTemplate<String, PaymentRequestedEvent> kafkaTemplate;

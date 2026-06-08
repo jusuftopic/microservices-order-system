@@ -1,6 +1,7 @@
-package org.example.paymentservice.integration;
+package org.example.paymentservice.integration.setup;
 
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -10,6 +11,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
+@Import(KafkaTestTopicsConfig.class)
 @Testcontainers
 @SpringBootTest
 @ActiveProfiles("test")

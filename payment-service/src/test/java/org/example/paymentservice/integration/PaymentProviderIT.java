@@ -1,12 +1,12 @@
 package org.example.paymentservice.integration;
 
 import org.example.paymentservice.dto.PaymentResultDTO;
+import org.example.paymentservice.integration.setup.AbstractIntegrationTest;
 import org.example.paymentservice.service.provider.PaymentProviderWrapper;
 import org.example.paymentservice.service.provider.clients.MockPaymentClient;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -18,11 +18,15 @@ public class PaymentProviderIT extends AbstractIntegrationTest {
     @Autowired
     private MockPaymentClient mockPaymentClient;
 
+    @BeforeEach
+    public void setUp() {
+        mockPaymentClient.resetCache();
+        mockPaymentClient.setForceSuccess(true);
+    }
+
     @Test
     void shouldReturnSuccessfulPayment() {
 
-        // given
-        mockPaymentClient.setForceSuccess(true);
 
         // when
         PaymentResultDTO result = paymentProvider.pay(
@@ -37,8 +41,6 @@ public class PaymentProviderIT extends AbstractIntegrationTest {
 
     @Test
     void shouldReturnFailedPayment() {
-        // given
-        mockPaymentClient.setForceSuccess(false);
 
         // when
         PaymentResultDTO result = paymentProvider.pay(

@@ -57,4 +57,8 @@ public class MockPaymentClient implements PaymentClient {
         return result;
 
     }
+
+    public void resetCache() {
+        processed.clear();
+    }
 }
