@@ -1,4 +1,4 @@
-package org.example.orderservice.unit.service;
+package org.example.orderservice.unit.service.outbox;
 
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.example.commons.event.EventConstants;

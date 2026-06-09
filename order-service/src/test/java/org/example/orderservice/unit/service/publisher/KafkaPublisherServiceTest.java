@@ -1,4 +1,4 @@
-package org.example.orderservice.unit.service;
+package org.example.orderservice.unit.service.publisher;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.commons.event.EventConstants;

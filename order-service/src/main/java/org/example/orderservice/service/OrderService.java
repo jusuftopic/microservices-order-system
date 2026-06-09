@@ -1,6 +1,5 @@
 package org.example.orderservice.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.commons.event.EventConstants;
@@ -8,17 +7,15 @@ import org.example.commons.event.contracts.*;
 import org.example.orderservice.dto.request.OrderRequest;
 import org.example.orderservice.dto.response.OrderResponse;
 import org.example.orderservice.entity.Order;
-import org.example.orderservice.entity.OutboxEvent;
-import org.example.orderservice.enums.OrderStatus;
 import org.example.orderservice.mapper.OrderMapper;
 import org.example.orderservice.repository.InboxRepository;
-import org.example.orderservice.repository.OutboxRepository;
 import org.example.orderservice.repository.OrderRepository;
+import org.example.orderservice.service.outbox.OrderOutboxService;
+import org.example.orderservice.service.workflow.OrderWorkflowService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static org.example.commons.event.EventConstants.EVENT_INVENTORY_CHECK_REQUESTED;
@@ -33,10 +30,9 @@ import static org.example.commons.event.EventConstants.EVENT_INVENTORY_CHECK_REQ
 public class OrderService {
 
     private final OrderRepository repository;
-    private final OutboxRepository outboxRepository;
     private final InboxRepository inboxRepository;
-
-    private final ObjectMapper objectMapper;
+    private final OrderOutboxService outboxService;
+    private final OrderWorkflowService workflowService;
 
     /**
      * Creates a new initial Order
@@ -53,8 +49,9 @@ public class OrderService {
         final UUID messageId = UUID.randomUUID();
 
         // store outbox event
-        storeOutboxEvent(
-                saved,
+        outboxService.storeEvent(
+                saved.getId(),
+                "ORDER",
                 EVENT_INVENTORY_CHECK_REQUESTED,
                 new InventoryCheckRequestedEvent(
                         saved.getId(),
@@ -91,17 +88,11 @@ public class OrderService {
             return;
         }
 
-        Order order = repository.findById(event.orderId())
-                .orElseThrow();
+        Order order = workflowService.markInventoryProcessing(event.orderId());
 
-        log.info("[ORDER-SERVICE] Processing inventory success for order {}", order.getId());
-
-        // update state
-        order.setStatus(OrderStatus.INVENTORY_PROCESSING);
-        repository.save(order);
-
-        storeOutboxEvent(
-                order,
+        outboxService.storeEvent(
+                order.getId(),
+                "ORDER",
                 EventConstants.EVENT_PAYMENT_REQUESTED,
                 new PaymentRequestedEvent(
                         order.getId(),
@@ -124,45 +115,15 @@ public class OrderService {
      */
     @Transactional
     public void handleInventoryFailed(InventoryFailedEvent event) {
-
-        Order order = repository.findById(event.orderId())
-                .orElseThrow();
-
+        final Order order = workflowService.markFailed(event.orderId());
         log.warn("[ORDER-SERVICE] Inventory failed for order {} reason {}",
                 order.getId(), event.reason());
-
-        order.setStatus(OrderStatus.FAILED);
-        repository.save(order);
-    }
-
-
-    private void storeOutboxEvent(Order order, String eventType, Object payload) {
-
-        final OutboxEvent outboxEvent = new OutboxEvent();
-        outboxEvent.setId(UUID.randomUUID());
-        outboxEvent.setAggregateType("ORDER");
-        outboxEvent.setAggregateId(order.getId());
-        outboxEvent.setEventType(eventType);
-        outboxEvent.setPayload(toJson(payload));
-        outboxEvent.setProcessed(false);
-        outboxEvent.setCreatedAt(LocalDateTime.now());
-
-        outboxRepository.save(outboxEvent);
     }
 
     private Order storeOrder(final OrderRequest request, String correlationId) {
         Order order = OrderMapper.toEntity(request);
         order.setCorrelationId(correlationId);
         return repository.save(order);
-    }
-
-    private String toJson(Object value) {
-        try {
-            return objectMapper.writeValueAsString(value);
-        } catch (com.fasterxml.jackson.core.JsonProcessingException ex) {
-            log.error("[ORDER-SERVICE] Failed to serialize outbox payload. Reason: {}", ex.getMessage(), ex);
-            throw new IllegalStateException("Failed to serialize outbox payload", ex);
-        }
     }
 
     private BigDecimal calculateAmount(Order order) {

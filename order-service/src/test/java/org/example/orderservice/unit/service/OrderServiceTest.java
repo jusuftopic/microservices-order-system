@@ -1,24 +1,24 @@
 package org.example.orderservice.unit.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.commons.event.EventConstants;
+import org.example.commons.event.contracts.InventoryCheckRequestedEvent;
 import org.example.commons.event.contracts.InventoryFailedEvent;
 import org.example.commons.event.contracts.InventoryReservedEvent;
+import org.example.commons.event.contracts.PaymentRequestedEvent;
 import org.example.orderservice.dto.request.OrderItemRequest;
 import org.example.orderservice.dto.request.OrderRequest;
 import org.example.orderservice.dto.response.OrderResponse;
 import org.example.orderservice.entity.Order;
 import org.example.orderservice.entity.OrderItem;
-import org.example.orderservice.entity.OutboxEvent;
 import org.example.orderservice.enums.OrderStatus;
 import org.example.orderservice.repository.InboxRepository;
 import org.example.orderservice.repository.OrderRepository;
-import org.example.orderservice.repository.OutboxRepository;
 import org.example.orderservice.service.OrderService;
+import org.example.orderservice.service.outbox.OrderOutboxService;
+import org.example.orderservice.service.workflow.OrderWorkflowService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -42,10 +42,10 @@ public class OrderServiceTest {
     private OrderRepository repository;
 
     @Mock
-    private OutboxRepository outboxRepository;
+    private OrderOutboxService outboxService;
 
     @Mock
-    private ObjectMapper objectMapper;
+    private OrderWorkflowService workflowService;
 
     @Mock
     private InboxRepository inboxRepository;
@@ -56,7 +56,7 @@ public class OrderServiceTest {
     @BeforeEach
     public void setUp() {
         orderService = new OrderService(
-                repository, outboxRepository, inboxRepository, objectMapper
+                repository, inboxRepository, outboxService, workflowService
         );
     }
 
@@ -87,9 +87,7 @@ public class OrderServiceTest {
                 .build()));
 
         when(repository.save(any(Order.class))).thenReturn(savedOrder);
-        when(objectMapper.writeValueAsString(any())).thenReturn("{json}");
 
-        ArgumentCaptor<OutboxEvent> outboxCaptor = ArgumentCaptor.forClass(OutboxEvent.class);
 
         // WHEN
         OrderResponse response = orderService.createOrder(request);
@@ -100,52 +98,15 @@ public class OrderServiceTest {
         assertEquals("CREATED", response.status());
 
         verify(repository).save(any(Order.class));
-        verify(outboxRepository).save(outboxCaptor.capture());
 
-        OutboxEvent outbox = outboxCaptor.getValue();
+        verify(outboxService).storeEvent(
+                eq(1L),
+                eq("ORDER"),
+                eq(EventConstants.EVENT_INVENTORY_CHECK_REQUESTED),
+                any(InventoryCheckRequestedEvent.class));
 
-        assertNotNull(outbox.getId());
-        assertEquals("ORDER", outbox.getAggregateType());
-        assertEquals(1L, outbox.getAggregateId());
-        assertEquals(EventConstants.EVENT_INVENTORY_CHECK_REQUESTED, outbox.getEventType());
-        assertEquals("{json}", outbox.getPayload());
-        assertFalse(outbox.getProcessed());
-        assertNotNull(outbox.getCreatedAt());
     }
 
-    @Test
-    void should_throw_when_serialization_fails() throws Exception {
-
-        // GIVEN
-        OrderRequest request = new OrderRequest(
-                "fail@mail.com",
-                List.of(
-                        new OrderItemRequest(1L, 2),
-                        new OrderItemRequest(2L, 1)
-                ),
-                "desc"
-        );
-
-        Order savedOrder = Order.builder()
-                .id(1L)
-                .status(OrderStatus.CREATED)
-                .build();
-
-        when(repository.save(any())).thenReturn(savedOrder);
-
-        when(objectMapper.writeValueAsString(any()))
-                .thenThrow(new com.fasterxml.jackson.core.JsonProcessingException("fail") {});
-
-        // WHEN + THEN
-        IllegalStateException ex = assertThrows(
-                IllegalStateException.class,
-                () -> orderService.createOrder(request)
-        );
-
-        assertTrue(ex.getMessage().contains("Failed to serialize outbox payload"));
-
-        verify(outboxRepository, never()).save(any());
-    }
 
     @Test
     void should_return_order_when_found() {
@@ -211,26 +172,21 @@ public class OrderServiceTest {
         );
 
         when(inboxRepository.insertIfNotExists(event.messageId())).thenReturn(1);
-        when(repository.findById(orderId)).thenReturn(Optional.of(order));
-        when(objectMapper.writeValueAsString(any())).thenReturn("{json}");
-
-        ArgumentCaptor<OutboxEvent> outboxCaptor = ArgumentCaptor.forClass(OutboxEvent.class);
+        when(workflowService.markInventoryProcessing(orderId)).thenReturn(order);
 
         // WHEN
         orderService.handleInventoryReserved(event);
 
         // THEN
-        verify(repository).save(order);
-        verify(outboxRepository).save(outboxCaptor.capture());
+        verify(inboxRepository).insertIfNotExists(event.messageId());
+        verify(workflowService).markInventoryProcessing(orderId);
 
-        OutboxEvent outbox = outboxCaptor.getValue();
-
-        assertEquals(orderId, outbox.getAggregateId());
-        assertEquals(EventConstants.EVENT_PAYMENT_REQUESTED, outbox.getEventType());
-        assertEquals("{json}", outbox.getPayload());
-
-        // status updated
-        assertEquals(OrderStatus.INVENTORY_PROCESSING, order.getStatus());
+        verify(outboxService).storeEvent(
+                eq(orderId),
+                eq("ORDER"),
+                eq(EventConstants.EVENT_PAYMENT_REQUESTED),
+                any(PaymentRequestedEvent.class)
+        );
     }
 
 
@@ -252,36 +208,14 @@ public class OrderServiceTest {
                 UUID.randomUUID()
         );
 
-        when(repository.findById(orderId)).thenReturn(Optional.of(order));
+        when(workflowService.markFailed(orderId)).thenReturn(order);
 
         // WHEN
         orderService.handleInventoryFailed(event);
 
         // THEN
-        assertEquals(OrderStatus.FAILED, order.getStatus());
-
-        verify(repository).save(order);
-        verify(outboxRepository, never()).save(any());
+        verify(workflowService).markFailed(orderId);
+        verifyNoInteractions(outboxService);
     }
-
-
-    @Test
-    void should_throw_when_order_not_found_on_inventory_response() {
-
-        // GIVEN
-        InventoryReservedEvent event = new InventoryReservedEvent(
-                999L,
-                "corr-123",
-                UUID.randomUUID()
-        );
-
-        when(inboxRepository.insertIfNotExists(event.messageId())).thenReturn(1);
-        when(repository.findById(999L)).thenReturn(Optional.empty());
-
-        // WHEN + THEN
-        assertThrows(NoSuchElementException.class,
-                () -> orderService.handleInventoryReserved(event));
-    }
-
 
 }

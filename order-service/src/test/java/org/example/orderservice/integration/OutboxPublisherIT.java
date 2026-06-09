@@ -6,12 +6,11 @@ import org.example.orderservice.entity.OutboxEvent;
 import org.example.orderservice.enums.OrderStatus;
 import org.example.orderservice.repository.OrderRepository;
 import org.example.orderservice.repository.OutboxRepository;
-import org.example.orderservice.service.OutboxEventScheduler;
+import org.example.orderservice.service.outbox.OutboxEventScheduler;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.testcontainers.shaded.org.awaitility.Awaitility;
 
-import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.List;
 
