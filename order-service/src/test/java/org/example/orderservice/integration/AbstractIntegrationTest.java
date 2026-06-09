@@ -24,14 +24,13 @@ public abstract class AbstractIntegrationTest {
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")
             .withDatabaseName("orders")
             .withUsername("test")
-            .withPassword("test")
-            .withReuse(true);
+            .withPassword("test");
 
     @Container
     static KafkaContainer kafka = new KafkaContainer(
             DockerImageName
                     .parse("confluentinc/cp-kafka:7.5.0")
-    ).withReuse(true);
+    );
 
     @DynamicPropertySource
     static void overrideProps(DynamicPropertyRegistry registry) {
