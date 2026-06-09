@@ -32,6 +32,9 @@ public class OutboxDlqIT extends AbstractIntegrationTest {
         // given
         OutboxEvent event = new OutboxEvent();
         event.setId(UUID.randomUUID());
+        event.setAggregateType("ORDER");
+        event.setEventType("EVENT");
+        event.setPayload("payload");
         event.setAggregateId(1L);
         event.setRetryCount(3); // force DLQ
         event.setProcessed(false);
