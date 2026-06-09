@@ -2,6 +2,7 @@ package org.example.orderservice.integration;
 
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -21,26 +22,16 @@ import org.testcontainers.utility.DockerImageName;
 public abstract class AbstractIntegrationTest {
 
     @Container
+    @ServiceConnection
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")
             .withDatabaseName("orders")
             .withUsername("test")
             .withPassword("test");
 
     @Container
+    @ServiceConnection
     static KafkaContainer kafka = new KafkaContainer(
             DockerImageName
                     .parse("confluentinc/cp-kafka:7.5.0")
     );
-
-    @DynamicPropertySource
-    static void overrideProps(DynamicPropertyRegistry registry) {
-
-        // DB
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
-
-        // Kafka
-        registry.add("spring.kafka.bootstrap-servers", kafka::getBootstrapServers);
-    }
 }
