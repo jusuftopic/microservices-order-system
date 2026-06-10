@@ -2,8 +2,8 @@ package org.example.paymentservice.integration;
 
 import org.example.commons.event.EventConstants;
 import org.example.commons.event.contracts.PaymentRequestedEvent;
-import org.example.paymentservice.integration.setup.AbstractIntegrationTest;
 import org.example.paymentservice.repository.InboxRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -25,6 +25,11 @@ public class IdempotencyIT extends AbstractIntegrationTest {
 
     @Autowired
     private InboxRepository inboxRepository;
+
+    @BeforeEach
+    public void setUp() {
+        inboxRepository.deleteAll();
+    }
 
     @Test
     void shouldNotProcessSameEventTwice() {

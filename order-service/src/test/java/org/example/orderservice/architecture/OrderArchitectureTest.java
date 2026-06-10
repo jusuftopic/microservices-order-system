@@ -74,7 +74,7 @@ public class OrderArchitectureTest {
             noClasses()
                     .that()
                     .resideOutsideOfPackage("..config..")
-                    .and().resideOutsideOfPackage("..service.publisher..")
+                    .and().resideOutsideOfPackage("..service.kafka..")
                     .should()
                     .dependOnClassesThat()
                     .haveSimpleName("KafkaTemplate");
