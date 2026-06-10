@@ -6,38 +6,38 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 /**
  * Base integration setup
  */
-@Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 public class AbstractIntegrationTest {
 
-    @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")
+    static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")
             .withDatabaseName("inventory_items")
             .withUsername("test")
             .withPassword("test");
 
-    @Container
-    static KafkaContainer kafka = new KafkaContainer(
+    static final KafkaContainer kafka = new KafkaContainer(
             DockerImageName.parse("confluentinc/cp-kafka:7.5.0")
     );
 
-    @DynamicPropertySource
-    static void overrideProps(DynamicPropertyRegistry registry) {
+    static {
+        postgres.start();
+        kafka.start();
+    }
 
-        // DB
+    // Dynamically map container properties to Spring Boot configurations
+    @DynamicPropertySource
+    static void configureProperties(DynamicPropertyRegistry registry) {
+        // PostgreSQL properties
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
 
-        // Kafka
+        // Kafka properties (adjust key to match your application.yml property structure)
         registry.add("spring.kafka.bootstrap-servers", kafka::getBootstrapServers);
     }
 }

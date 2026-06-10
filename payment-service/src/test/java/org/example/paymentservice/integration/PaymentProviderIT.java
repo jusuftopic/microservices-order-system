@@ -1,7 +1,6 @@
 package org.example.paymentservice.integration;
 
 import org.example.paymentservice.dto.PaymentResultDTO;
-import org.example.paymentservice.integration.setup.AbstractIntegrationTest;
 import org.example.paymentservice.service.provider.PaymentProviderWrapper;
 import org.example.paymentservice.service.provider.clients.MockPaymentClient;
 import org.junit.jupiter.api.BeforeEach;

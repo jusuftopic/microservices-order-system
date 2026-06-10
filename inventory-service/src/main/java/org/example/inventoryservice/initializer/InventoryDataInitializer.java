@@ -19,7 +19,6 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 @Profile("!test")
-
 public class InventoryDataInitializer implements CommandLineRunner {
 
 

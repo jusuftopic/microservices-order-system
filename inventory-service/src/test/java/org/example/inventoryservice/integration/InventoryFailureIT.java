@@ -7,6 +7,7 @@ import org.example.commons.event.contracts.OrderItemEvent;
 import org.example.inventoryservice.entity.OutboxEvent;
 import org.example.inventoryservice.repository.InboxRepository;
 import org.example.inventoryservice.repository.OutboxRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -40,6 +41,12 @@ public class InventoryFailureIT extends AbstractIntegrationTest {
 
     @Autowired
     private OutboxRepository outboxRepository;
+
+    @BeforeEach
+    public void setUp() {
+        inboxRepository.deleteAll();
+        outboxRepository.deleteAll();
+    }
 
 
     @Test

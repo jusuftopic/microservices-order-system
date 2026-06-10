@@ -38,10 +38,11 @@ public class InventoryArchitectureTest {
                     .layer("Listener").definedBy("..listener..")
                     .layer("Service").definedBy("..service..")
                     .layer("Repository").definedBy("..repository..")
+                    .layer("Initializer").definedBy("..initializer..")
 
                     .whereLayer("Listener").mayNotBeAccessedByAnyLayer()
                     .whereLayer("Service").mayOnlyBeAccessedByLayers("Listener")
-                    .whereLayer("Repository").mayOnlyBeAccessedByLayers("Service");
+                    .whereLayer("Repository").mayOnlyBeAccessedByLayers("Service", "Initializer");
 
     /**
      * Ensures that InventoryService is enforced to use inbox and outbox pattern.

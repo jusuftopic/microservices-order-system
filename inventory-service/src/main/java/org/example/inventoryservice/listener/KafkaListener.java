@@ -18,7 +18,6 @@ public class KafkaListener {
 
     private final InventoryService inventoryService;
 
-
     /**
      * Handles incoming inventory check requests.
      *
