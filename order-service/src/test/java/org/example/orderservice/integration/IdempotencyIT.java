@@ -44,7 +44,7 @@ public class IdempotencyIT extends AbstractIntegrationTest {
     public void setUp() {
         inboxRepository.deleteAll();
         orderRepository.deleteAll();
-        orderRepository.deleteAll();
+        outboxRepository.deleteAll();
     }
 
     @Test
