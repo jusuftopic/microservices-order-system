@@ -1,7 +1,7 @@
 package org.example.inventoryservice.integration;
 
 import org.example.commons.event.EventConstants;
-import org.example.commons.event.contracts.InventoryCheckRequestedEvent;
+import org.example.commons.event.contracts.InventoryRequestedEvent;
 import org.example.commons.event.contracts.OrderItemEvent;
 import org.example.inventoryservice.entity.InventoryItem;
 import org.example.inventoryservice.entity.OutboxEvent;
@@ -37,7 +37,7 @@ public class KafkaConsumerIT extends AbstractIntegrationTest {
 
 
     @Autowired
-    private KafkaTemplate<String, InventoryCheckRequestedEvent> kafkaTemplate;
+    private KafkaTemplate<String, InventoryRequestedEvent> kafkaTemplate;
 
     @Autowired
     private InboxRepository inboxRepository;
@@ -67,8 +67,8 @@ public class KafkaConsumerIT extends AbstractIntegrationTest {
 
         inventoryRepository.save(item);
 
-        InventoryCheckRequestedEvent event =
-                new InventoryCheckRequestedEvent(
+        InventoryRequestedEvent event =
+                new InventoryRequestedEvent(
                         1L,
                         List.of(new OrderItemEvent(10L, 2)),
                         "corr-1", UUID.randomUUID()

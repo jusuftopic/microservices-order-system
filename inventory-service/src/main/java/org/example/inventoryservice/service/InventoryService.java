@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.commons.event.EventConstants;
-import org.example.commons.event.contracts.InventoryCheckRequestedEvent;
+import org.example.commons.event.contracts.InventoryRequestedEvent;
 import org.example.commons.event.contracts.InventoryFailedEvent;
 import org.example.commons.event.contracts.InventoryReservedEvent;
 import org.example.commons.event.contracts.OrderItemEvent;
@@ -50,7 +50,7 @@ public class InventoryService {
      * @param event inventory check request event
      */
     @Transactional
-    public void processInventory(InventoryCheckRequestedEvent event) {
+    public void processInventory(InventoryRequestedEvent event) {
         int inserted = inboxRepository.insertIfNotExists(event.messageId());
 
         if (inserted == 0) {
@@ -95,7 +95,7 @@ public class InventoryService {
         storeOutboxEventSuccess(event);
     }
 
-    private void storeOutboxEventSuccess(InventoryCheckRequestedEvent event) {
+    private void storeOutboxEventSuccess(InventoryRequestedEvent event) {
         InventoryReservedEvent payload = new InventoryReservedEvent(
                 event.orderId(),
                 event.correlationId(),
@@ -105,7 +105,7 @@ public class InventoryService {
         storeOutbox(payload, EventConstants.EVENT_INVENTORY_RESERVED, event.orderId());
     }
 
-    private void storeOutboxEventFailure(InventoryCheckRequestedEvent event, String reason) {
+    private void storeOutboxEventFailure(InventoryRequestedEvent event, String reason) {
 
         InventoryFailedEvent payload = new InventoryFailedEvent(
                 event.orderId(),

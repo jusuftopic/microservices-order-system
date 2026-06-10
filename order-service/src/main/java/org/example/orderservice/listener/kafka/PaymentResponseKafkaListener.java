@@ -48,7 +48,7 @@ public class PaymentResponseKafkaListener {
                 completed.correlationId()
         );
 
-    //    orderService.handlePaymentCompleted(completed);
+        orderService.handlePaymentCompleted(completed);
     }
 
     /**

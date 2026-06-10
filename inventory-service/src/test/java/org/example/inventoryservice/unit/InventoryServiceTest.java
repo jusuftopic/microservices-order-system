@@ -3,7 +3,7 @@ package org.example.inventoryservice.unit;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.commons.event.EventConstants;
-import org.example.commons.event.contracts.InventoryCheckRequestedEvent;
+import org.example.commons.event.contracts.InventoryRequestedEvent;
 import org.example.commons.event.contracts.OrderItemEvent;
 import org.example.inventoryservice.entity.InventoryItem;
 import org.example.inventoryservice.entity.OutboxEvent;
@@ -72,8 +72,8 @@ public class InventoryServiceTest {
         String correlationId = "corr-1";
         UUID messageId = UUID.randomUUID();
 
-        InventoryCheckRequestedEvent event =
-                new InventoryCheckRequestedEvent(
+        InventoryRequestedEvent event =
+                new InventoryRequestedEvent(
                         1L,
                         List.of(new OrderItemEvent(10L, 2)),
                         correlationId,
@@ -115,8 +115,8 @@ public class InventoryServiceTest {
         String correlationId = "corr-dup";
         UUID messageId = UUID.randomUUID();
 
-        InventoryCheckRequestedEvent event =
-                new InventoryCheckRequestedEvent(1L, List.of(), correlationId, messageId);
+        InventoryRequestedEvent event =
+                new InventoryRequestedEvent(1L, List.of(), correlationId, messageId);
 
         when(inboxRepository.insertIfNotExists(messageId)).thenReturn(0);
 
@@ -136,8 +136,8 @@ public class InventoryServiceTest {
         String correlationId = "corr-2";
         UUID messageId = UUID.randomUUID();
 
-        InventoryCheckRequestedEvent event =
-                new InventoryCheckRequestedEvent(
+        InventoryRequestedEvent event =
+                new InventoryRequestedEvent(
                         1L,
                         List.of(new OrderItemEvent(99L, 1)),
                         correlationId,
@@ -171,8 +171,8 @@ public class InventoryServiceTest {
         String correlationId = "corr-2";
         UUID messageId = UUID.randomUUID();
 
-        InventoryCheckRequestedEvent event =
-                new InventoryCheckRequestedEvent(
+        InventoryRequestedEvent event =
+                new InventoryRequestedEvent(
                         1L,
                         List.of(new OrderItemEvent(productId, 10)),
                         correlationId,
@@ -209,8 +209,8 @@ public class InventoryServiceTest {
         String correlationId = "corr-3";
         UUID messageId = UUID.randomUUID();
 
-        InventoryCheckRequestedEvent event =
-                new InventoryCheckRequestedEvent(
+        InventoryRequestedEvent event =
+                new InventoryRequestedEvent(
                         1L,
                         List.of(new OrderItemEvent(10L, 1)),
                         correlationId,

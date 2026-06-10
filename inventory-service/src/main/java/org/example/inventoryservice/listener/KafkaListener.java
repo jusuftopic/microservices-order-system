@@ -3,7 +3,7 @@ package org.example.inventoryservice.listener;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.commons.event.EventConstants;
-import org.example.commons.event.contracts.InventoryCheckRequestedEvent;
+import org.example.commons.event.contracts.InventoryRequestedEvent;
 import org.example.inventoryservice.service.InventoryService;
 import org.example.inventoryservice.utils.Constants;
 import org.springframework.stereotype.Service;
@@ -26,7 +26,7 @@ public class KafkaListener {
     @org.springframework.kafka.annotation.KafkaListener(topics = EventConstants.TOPIC_ORDER_INVENTORY_REQUEST_V1,
             groupId = Constants.KAFKA_INVENTORY_GROUP_ID
     )
-    public void handleInventoryCheckRequested(InventoryCheckRequestedEvent event) {
+    public void handleInventoryCheckRequested(InventoryRequestedEvent event) {
         log.info("[INVENTORY-SERVICE][KAFKA] Received inventory request for order {} with {} items. CorrelationId {}",
                 event.orderId(),
                 event.items().size(),

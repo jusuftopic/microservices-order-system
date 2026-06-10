@@ -7,6 +7,7 @@ import org.example.commons.event.contracts.*;
 import org.example.orderservice.dto.request.OrderRequest;
 import org.example.orderservice.dto.response.OrderResponse;
 import org.example.orderservice.entity.Order;
+import org.example.orderservice.enums.OrderStatus;
 import org.example.orderservice.mapper.OrderMapper;
 import org.example.orderservice.repository.InboxRepository;
 import org.example.orderservice.repository.OrderRepository;
@@ -53,7 +54,7 @@ public class OrderService {
                 saved.getId(),
                 "ORDER",
                 EVENT_INVENTORY_CHECK_REQUESTED,
-                new InventoryCheckRequestedEvent(
+                new InventoryRequestedEvent(
                         saved.getId(),
                         saved.getItems().stream()
                                 .map(item -> new OrderItemEvent(
@@ -84,11 +85,11 @@ public class OrderService {
     public void handleInventoryReserved(InventoryReservedEvent event) {
         int inserted = inboxRepository.insertIfNotExists(event.messageId());
         if (inserted == 0) {
-            log.warn("[ORDER-SERVICE] Event {} already processed.", event.messageId());
+            logAlreadyProcessed(event.messageId());
             return;
         }
 
-        Order order = workflowService.markInventoryProcessing(event.orderId());
+        Order order = workflowService.updateStatus(event.orderId(), OrderStatus.INVENTORY_RESERVE_COMPLETED);
 
         outboxService.storeEvent(
                 order.getId(),
@@ -115,16 +116,56 @@ public class OrderService {
      */
     @Transactional
     public void handleInventoryFailed(InventoryFailedEvent event) {
-        final Order order = workflowService.markFailed(event.orderId());
+        final Order order = workflowService.updateStatus(event.orderId(), OrderStatus.INVENTORY_RESERVE_FAILED);
         log.warn("[ORDER-SERVICE] Inventory failed for order {} reason {}. No further processing.",
                 order.getId(), event.reason());
     }
 
-    private Order storeOrder(final OrderRequest request, String correlationId) {
+    /**
+     * Handles successful payment.
+     *
+     * <p>
+     * Updates order status and triggers inventory commit step via outbox event.
+     * </p>
+     *
+     * @param event inventory reserved event
+     */
+    public void handlePaymentCompleted(PaymentCompletedEvent event) {
+        int inserted = inboxRepository.insertIfNotExists(event.messageId());
+
+        if (inserted == 0) {
+            logAlreadyProcessed(event.messageId());
+            return;
+        }
+
+        Order order = workflowService.updateStatus(event.orderId(), OrderStatus.PAYMENT_COMPLETED);
+
+        log.info("[ORDER-SERVICE] Payment completed for order {}", order.getId());
+
+        outboxService.storeEvent(
+                order.getId(),
+                "ORDER",
+                EventConstants.EVENT_INVENTORY_COMMIT_REQUESTED,
+                new InventoryRequestedEvent(
+                        order.getId(),
+                        order.getItems().stream()
+                                .map(o -> new OrderItemEvent(o.getProductId(), o.getQuantity()))
+                                .toList(),
+                        event.correlationId(),
+                        UUID.randomUUID()
+                )
+        );
+    }
+
+        private Order storeOrder(final OrderRequest request, String correlationId) {
         Order order = OrderMapper.toEntity(request);
         order.setCorrelationId(correlationId);
         return repository.save(order);
     }
+
+        private void logAlreadyProcessed(UUID messageId) {
+            log.warn("[ORDER-SERVICE] Event {} already processed.", messageId);
+        }
 
     private BigDecimal calculateAmount(Order order) {
         return order.getItems().stream()

@@ -8,6 +8,10 @@ import org.example.orderservice.repository.OrderRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
+
 /**
  * Central place for order state transitions
  */
@@ -18,56 +22,78 @@ public class OrderWorkflowService {
 
     private final OrderRepository repository;
 
+    private static final Map<OrderStatus, Set<OrderStatus>> VALID_TRANSITIONS =
+            Map.of(
+
+                    OrderStatus.CREATED,
+                    Set.of(
+                            OrderStatus.INVENTORY_RESERVE_COMPLETED,
+                            OrderStatus.INVENTORY_RESERVE_FAILED
+                    ),
+
+                    OrderStatus.INVENTORY_RESERVE_COMPLETED,
+                    Set.of(
+                            OrderStatus.PAYMENT_COMPLETED,
+                            OrderStatus.PAYMENT_FAILED
+                    ),
+
+                    OrderStatus.PAYMENT_COMPLETED,
+                    Set.of(
+                            OrderStatus.INVENTORY_COMMIT_COMPLETED,
+                            OrderStatus.INVENTORY_COMMIT_FAILED
+                    ),
+
+                    OrderStatus.INVENTORY_COMMIT_COMPLETED,
+                    Set.of(
+                            OrderStatus.COMPLETED
+                    ),
+
+                    OrderStatus.INVENTORY_RESERVE_FAILED,
+                    Set.of(OrderStatus.FAILED),
+
+                    OrderStatus.PAYMENT_FAILED,
+                    Set.of(OrderStatus.FAILED),
+
+                    OrderStatus.INVENTORY_COMMIT_FAILED,
+                    Set.of(OrderStatus.FAILED)
+            );
+
     /**
      * Update order status to inventory processing
      *
      * @param orderId Order identifier to change status for
+     * @param targetStatus Status to update order to
      * @return Updated {@link Order}
      */
     @Transactional
-    public Order markInventoryProcessing(Long orderId) {
-
+    public Order updateStatus(Long orderId, OrderStatus targetStatus) {
         Order order = repository.findById(orderId)
                 .orElseThrow();
+        final OrderStatus currentStatus = order.getStatus();
 
-        order.setStatus(OrderStatus.INVENTORY_PROCESSING);
+        validateTransition(currentStatus, targetStatus);
 
-        return repository.save(order);
+        order.setStatus(targetStatus);
+        final Order stored = repository.save(order);
+
+        log.info("[ORDER-SERVICE][WORKFLOW] Order {} transitioned {} -> {}",
+                stored.getId(), currentStatus, targetStatus);
+
+        return stored;
     }
 
-    /**
-     * Update order status to failed
-     *
-     * @param orderId Order identifier to change status for
-     * @return Updated {@link Order}
-     */
-    @Transactional
-    public Order markFailed(Long orderId) {
+    private void validateTransition(OrderStatus current, OrderStatus target) {
 
-        Order order = repository.findById(orderId)
-                .orElseThrow();
+        Set<OrderStatus> allowed =
+                VALID_TRANSITIONS.getOrDefault(
+                        current,
+                        Collections.emptySet()
+                );
 
-        order.setStatus(OrderStatus.FAILED);
-
-        return repository.save(order);
+        if (!allowed.contains(target)) {
+            throw new IllegalStateException(
+                    "Invalid order transition: " + current + " -> " + target
+            );
+        }
     }
-
-    /**
-     * Update order status to complete
-     *
-     * @param orderId Order identifier to change status for
-     * @return Updated {@link Order}
-     */
-    @Transactional
-    public Order markCompleted(Long orderId) {
-
-        Order order = repository.findById(orderId)
-                .orElseThrow();
-
-        order.setStatus(OrderStatus.COMPLETED);
-
-        return repository.save(order);
-    }
-
-
 }

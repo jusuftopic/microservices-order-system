@@ -1,10 +1,7 @@
 package org.example.orderservice.unit.service;
 
 import org.example.commons.event.EventConstants;
-import org.example.commons.event.contracts.InventoryCheckRequestedEvent;
-import org.example.commons.event.contracts.InventoryFailedEvent;
-import org.example.commons.event.contracts.InventoryReservedEvent;
-import org.example.commons.event.contracts.PaymentRequestedEvent;
+import org.example.commons.event.contracts.*;
 import org.example.orderservice.dto.request.OrderItemRequest;
 import org.example.orderservice.dto.request.OrderRequest;
 import org.example.orderservice.dto.response.OrderResponse;
@@ -24,7 +21,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -61,7 +57,7 @@ public class OrderServiceTest {
     }
 
     @Test
-    void should_create_order_and_store_outbox_event() throws Exception {
+    void should_create_order_and_store_outbox_event() {
 
         // GIVEN
         OrderRequest request = new OrderRequest(
@@ -103,8 +99,7 @@ public class OrderServiceTest {
                 eq(1L),
                 eq("ORDER"),
                 eq(EventConstants.EVENT_INVENTORY_CHECK_REQUESTED),
-                any(InventoryCheckRequestedEvent.class));
-
+                any(InventoryRequestedEvent.class));
     }
 
 
@@ -172,14 +167,14 @@ public class OrderServiceTest {
         );
 
         when(inboxRepository.insertIfNotExists(event.messageId())).thenReturn(1);
-        when(workflowService.markInventoryProcessing(orderId)).thenReturn(order);
+        when(workflowService.updateStatus(orderId, OrderStatus.INVENTORY_RESERVE_COMPLETED)).thenReturn(order);
 
         // WHEN
         orderService.handleInventoryReserved(event);
 
         // THEN
         verify(inboxRepository).insertIfNotExists(event.messageId());
-        verify(workflowService).markInventoryProcessing(orderId);
+        verify(workflowService).updateStatus(orderId, OrderStatus.INVENTORY_RESERVE_COMPLETED);
 
         verify(outboxService).storeEvent(
                 eq(orderId),
@@ -208,14 +203,70 @@ public class OrderServiceTest {
                 UUID.randomUUID()
         );
 
-        when(workflowService.markFailed(orderId)).thenReturn(order);
+        when(workflowService.updateStatus(orderId, OrderStatus.INVENTORY_RESERVE_FAILED)).thenReturn(order);
 
         // WHEN
         orderService.handleInventoryFailed(event);
 
         // THEN
-        verify(workflowService).markFailed(orderId);
+        verify(workflowService).updateStatus(orderId, OrderStatus.INVENTORY_RESERVE_FAILED);
         verifyNoInteractions(outboxService);
     }
+
+
+    @Test
+    void should_handle_payment_completed_and_create_inventory_commit_outbox_event() {
+
+        // GIVEN
+        Long orderId = 1L;
+
+        Order order = Order.builder()
+                .id(orderId)
+                .customerEmail("test@mail.com")
+                .status(OrderStatus.INVENTORY_RESERVE_COMPLETED)
+                .items(List.of(
+                        OrderItem.builder()
+                                .productId(1L)
+                                .quantity(2)
+                                .build(),
+                        OrderItem.builder()
+                                .productId(2L)
+                                .quantity(1)
+                                .build()
+                ))
+                .build();
+
+        PaymentCompletedEvent event = new PaymentCompletedEvent(
+                orderId,
+                "corr-123",
+                UUID.randomUUID()
+        );
+
+        when(inboxRepository.insertIfNotExists(event.messageId()))
+                .thenReturn(1);
+
+        when(workflowService.updateStatus(
+                orderId,
+                OrderStatus.PAYMENT_COMPLETED
+        )).thenReturn(order);
+
+        // WHEN
+        orderService.handlePaymentCompleted(event);
+
+        // THEN
+        verify(inboxRepository)
+                .insertIfNotExists(event.messageId());
+
+        verify(workflowService)
+                .updateStatus(orderId, OrderStatus.PAYMENT_COMPLETED);
+
+        verify(outboxService).storeEvent(
+                eq(orderId),
+                eq("ORDER"),
+                eq(EventConstants.EVENT_INVENTORY_COMMIT_REQUESTED),
+                any(InventoryRequestedEvent.class)
+        );
+    }
+
 
 }

@@ -12,7 +12,7 @@ import java.util.UUID;
  * <p>Consumed by Inventory Service.</p>
  */
 
-public record InventoryCheckRequestedEvent(
+public record InventoryRequestedEvent(
 
         /**
          * Unique identifier of the order.
