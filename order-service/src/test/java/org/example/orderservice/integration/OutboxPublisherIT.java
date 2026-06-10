@@ -53,6 +53,7 @@ public class OutboxPublisherIT extends AbstractIntegrationTest {
 
         OutboxEvent event = new OutboxEvent();
         event.setAggregateId(order.getId());
+        event.setAggregateType("ORDER");
         event.setPayload("{\"test\":\"payload\"}");
         event.setProcessed(false);
         event.setEventType("PAYMENT_REQUESTED");

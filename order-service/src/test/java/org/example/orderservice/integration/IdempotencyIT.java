@@ -50,17 +50,15 @@ public class IdempotencyIT extends AbstractIntegrationTest {
     @Test
     void shouldNotProcessSameEventTwice() {
         // GIVEN
-
-        final InventoryReservedEvent event = new InventoryReservedEvent(
-                1L, "test", UUID.randomUUID()
-        );
-
         final Order order = new Order();
-        order.setId(1L);
         order.setStatus(OrderStatus.CREATED);
         order.setCustomerEmail("test");
 
-        orderRepository.save(order);
+        final Order stored = orderRepository.save(order);
+
+        final InventoryReservedEvent event = new InventoryReservedEvent(
+                stored.getId(), "test", UUID.randomUUID()
+        );
 
         // WHEN
         kafkaTemplate.send(EventConstants.TOPIC_ORDER_INVENTORY_RESPONSE_V1, "1", event);
