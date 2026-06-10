@@ -163,6 +163,44 @@ public class InventoryServiceTest {
         assertEquals("{json}", outbox.getPayload());
     }
 
+    @Test
+    void should_store_failure_outbox_event_when_out_of_stock() throws Exception {
+
+        // GIVEN
+        Long productId = 99L;
+        String correlationId = "corr-2";
+        UUID messageId = UUID.randomUUID();
+
+        InventoryCheckRequestedEvent event =
+                new InventoryCheckRequestedEvent(
+                        1L,
+                        List.of(new OrderItemEvent(productId, 10)),
+                        correlationId,
+                        messageId
+                );
+
+        final InventoryItem item = InventoryItem.builder()
+                .productId(productId)
+                .reservedQuantity(50)
+                .availableQuantity(5)
+                .build();
+        when(inboxRepository.insertIfNotExists(messageId)).thenReturn(1);
+        when(inventoryRepository.findById(productId)).thenReturn(Optional.of(item));
+
+        when(objectMapper.writeValueAsString(any())).thenReturn("{json}");
+
+        ArgumentCaptor<OutboxEvent> captor = ArgumentCaptor.forClass(OutboxEvent.class);
+
+        // WHEN
+        service.processInventory(event);
+
+        // THEN
+        verify(outboxRepository).save(captor.capture());
+
+        OutboxEvent outbox = captor.getValue();
+
+        assertEquals(EventConstants.EVENT_INVENTORY_FAILED, outbox.getEventType());
+    }
 
     @Test
     void should_store_event_in_dlq_when_serialization_fails() throws Exception {

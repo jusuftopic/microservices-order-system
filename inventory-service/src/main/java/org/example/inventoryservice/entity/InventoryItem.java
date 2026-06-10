@@ -56,12 +56,6 @@ public class InventoryItem {
      * @param quantity quantity to reserve
      */
     public void reserve(int quantity) {
-        if (!canReserve(quantity)) {
-            throw new IllegalStateException(
-                    "Not enough stock for product " + productId
-            );
-        }
-
         this.availableQuantity -= quantity;
         this.reservedQuantity += quantity;
     }

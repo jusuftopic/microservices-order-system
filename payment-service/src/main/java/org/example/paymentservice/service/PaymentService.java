@@ -51,7 +51,7 @@ public class PaymentService {
         int inserted = inboxRepository.insertIfNotExists(event.messageId());
 
         if (inserted == 0) {
-            log.info("[PAYMENT-SERVICE] Order {} already processed.", event.orderId());
+            log.warn("[PAYMENT-SERVICE] Order {} already processed.", event.orderId());
             return;
         }
 

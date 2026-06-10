@@ -1,18 +1,21 @@
-package org.example.orderservice.service.publisher;
+package org.example.orderservice.service.outbox;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.producer.RecordMetadata;
 import org.example.commons.event.utils.Constants;
 import org.example.orderservice.entity.OutboxDlqEvent;
 import org.example.orderservice.entity.OutboxEvent;
 import org.example.orderservice.repository.OutboxDlqRepository;
 import org.example.orderservice.repository.OutboxRepository;
+import org.example.orderservice.service.kafka.KafkaPublisherService;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Service responsible for publishing Outbox Events to Kafka.
@@ -82,14 +85,16 @@ public class OutboxEventPublisherService {
                                SendResult<String, Object> result) {
         event.setProcessed(true);
         outboxRepository.save(event);
+        final String topic = Optional.ofNullable(result.getRecordMetadata())
+                        .map(RecordMetadata::topic).orElse(null);
 
         log.debug("[ORDER-SERVICE][OUTBOX-PUBLISHER] Event id={} type={} successfully published." +
                         "Topic {}",
-                event.getId(), event.getEventType(), result.getRecordMetadata().topic());
+                event.getId(), event.getEventType(), topic);
     }
 
     private void handleFailure(OutboxEvent event, Throwable ex) {
-        log.error("[ORDER-SERVICE][OUTBOX-PUBLISHER] Failed event {} retry {}",
+        log.error("[ORDER-SERVICE][OUTBOX-PUBLISHER] Failed event {} retry attempt {}",
                 event.getId(), event.getRetryCount(), ex);
         if (event.getRetryCount() >= Constants.MAX_RETRIES_KAFKA) {
             moveToDlq(event, ex);

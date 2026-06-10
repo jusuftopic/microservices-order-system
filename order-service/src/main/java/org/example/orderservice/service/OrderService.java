@@ -116,7 +116,7 @@ public class OrderService {
     @Transactional
     public void handleInventoryFailed(InventoryFailedEvent event) {
         final Order order = workflowService.markFailed(event.orderId());
-        log.warn("[ORDER-SERVICE] Inventory failed for order {} reason {}",
+        log.warn("[ORDER-SERVICE] Inventory failed for order {} reason {}. No further processing.",
                 order.getId(), event.reason());
     }
 

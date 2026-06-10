@@ -54,11 +54,11 @@ public class InventoryService {
         int inserted = inboxRepository.insertIfNotExists(event.messageId());
 
         if (inserted == 0) {
-            log.info("[INVENTORY-SERVICE] Event {} already processed.", event.messageId());
+            log.warn("[INVENTORY-SERVICE] Event {} already processed.", event.messageId());
             return;
         }
 
-        log.debug("[INVENTORY-SERVICE] Processing inventory for order {}", event.orderId());
+        log.info("[INVENTORY-SERVICE] Processing inventory for order {}", event.orderId());
 
 
         for (OrderItemEvent item : event.items()) {
@@ -69,10 +69,23 @@ public class InventoryService {
 
             if (inventory == null) {
                 log.warn("[INVENTORY-SERVICE] Item {} not found.", item.productId());
-                storeOutboxEventFailure(event);
+                storeOutboxEventFailure(event, "ITEM_NOT_FOUND");
+                return;
+            }
+
+            if (!inventory.canReserve(item.quantity())) {
+
+                log.warn("[INVENTORY-SERVICE] Not enough stock for product {} requested {} available {}",
+                        item.productId(),
+                        item.quantity(),
+                        inventory.getAvailableQuantity()
+                );
+
+                storeOutboxEventFailure(event, "OUT_OF_STOCK");
 
                 return;
             }
+
 
             inventory.reserve(item.quantity());
             inventoryRepository.save(inventory);
@@ -92,11 +105,11 @@ public class InventoryService {
         storeOutbox(payload, EventConstants.EVENT_INVENTORY_RESERVED, event.orderId());
     }
 
-    private void storeOutboxEventFailure(InventoryCheckRequestedEvent event) {
+    private void storeOutboxEventFailure(InventoryCheckRequestedEvent event, String reason) {
 
         InventoryFailedEvent payload = new InventoryFailedEvent(
                 event.orderId(),
-                "OUT_OF_STOCK",
+                reason,
                 event.correlationId(),
                 UUID.randomUUID()
         );

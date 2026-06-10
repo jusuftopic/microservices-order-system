@@ -1,4 +1,4 @@
-package org.example.orderservice.service.publisher;
+package org.example.orderservice.service.kafka;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
