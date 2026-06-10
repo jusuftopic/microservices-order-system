@@ -7,6 +7,7 @@ import org.example.orderservice.enums.OrderStatus;
 import org.example.orderservice.repository.OrderRepository;
 import org.example.orderservice.repository.OutboxRepository;
 import org.example.orderservice.service.outbox.OutboxEventScheduler;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.testcontainers.shaded.org.awaitility.Awaitility;
@@ -29,6 +30,12 @@ public class OutboxPublisherIT extends AbstractIntegrationTest {
 
     @Autowired
     private OutboxEventScheduler scheduler;
+
+    @BeforeEach
+    public void setUp() {
+        orderRepository.deleteAll();
+        outboxRepository.deleteAll();
+    }
 
     @Test
     void shouldPublishOutboxEventToKafka() {

@@ -7,6 +7,7 @@ import org.example.orderservice.enums.OrderStatus;
 import org.example.orderservice.repository.InboxRepository;
 import org.example.orderservice.repository.OrderRepository;
 import org.example.orderservice.repository.OutboxRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -38,6 +39,13 @@ public class IdempotencyIT extends AbstractIntegrationTest {
 
     @Autowired
     private OrderRepository orderRepository;
+
+    @BeforeEach
+    public void setUp() {
+        inboxRepository.deleteAll();
+        orderRepository.deleteAll();
+        orderRepository.deleteAll();
+    }
 
     @Test
     void shouldNotProcessSameEventTwice() {
