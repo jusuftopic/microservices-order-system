@@ -1,11 +1,11 @@
-package org.example.inventoryservice.unit.publisher;
+package org.example.inventoryservice.unit.outbox;
 
 import org.example.commons.event.utils.Constants;
 import org.example.inventoryservice.entity.OutboxEvent;
 import org.example.inventoryservice.repository.OutboxRepository;
-import org.example.inventoryservice.service.OutboxDlqService;
-import org.example.inventoryservice.service.publisher.KafkaPublisherService;
-import org.example.inventoryservice.service.publisher.OutboxPublisherService;
+import org.example.inventoryservice.service.outbox.OutboxDlqService;
+import org.example.inventoryservice.service.kafka.KafkaPublisherService;
+import org.example.inventoryservice.service.outbox.OutboxPublisherService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 /**
- * Tests {@link org.example.inventoryservice.service.publisher.OutboxPublisherService}
+ * Tests {@link OutboxPublisherService}
  */
 @ExtendWith(MockitoExtension.class)
 public class OutboxPublisherServiceTest {

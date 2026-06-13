@@ -58,7 +58,7 @@ public class InventoryArchitectureTest {
                     .haveSimpleName("InboxRepository")
                     .andShould()
                     .dependOnClassesThat()
-                    .haveSimpleName("OutboxRepository");
+                    .haveSimpleName("OutboxStoreService");
 
 
     /**
@@ -79,7 +79,7 @@ public class InventoryArchitectureTest {
                     .and()
                     .resideOutsideOfPackages(
                             "org.example.inventoryservice.config..",
-                            "org.example.inventoryservice.service.publisher.."
+                            "org.example.inventoryservice.service.kafka.."
                     )
                     .should()
                     .dependOnClassesThat()

@@ -1,4 +1,4 @@
-package org.example.inventoryservice.service;
+package org.example.inventoryservice.service.outbox;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;

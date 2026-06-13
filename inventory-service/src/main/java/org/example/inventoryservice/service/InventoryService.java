@@ -1,22 +1,16 @@
 package org.example.inventoryservice.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.commons.event.EventConstants;
-import org.example.commons.event.contracts.InventoryReserveRequestedEvent;
-import org.example.commons.event.contracts.InventoryFailedEvent;
-import org.example.commons.event.contracts.InventoryReservedEvent;
-import org.example.commons.event.contracts.OrderItemEvent;
+import org.example.commons.event.contracts.*;
 import org.example.inventoryservice.entity.InventoryItem;
-import org.example.inventoryservice.entity.OutboxEvent;
 import org.example.inventoryservice.repository.InboxRepository;
 import org.example.inventoryservice.repository.InventoryRepository;
-import org.example.inventoryservice.repository.OutboxRepository;
+import org.example.inventoryservice.service.outbox.OutboxStoreService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 
@@ -35,10 +29,8 @@ import java.util.UUID;
 public class InventoryService {
 
     private final InboxRepository inboxRepository;
-    private final OutboxRepository outboxRepository;
     private final InventoryRepository inventoryRepository;
-    private final OutboxDlqService outboxDlqService;
-    private final ObjectMapper objectMapper;
+    private final OutboxStoreService outboxStoreService;
 
     /**
      * Processes inventory check request.
@@ -54,7 +46,7 @@ public class InventoryService {
         int inserted = inboxRepository.insertIfNotExists(event.messageId());
 
         if (inserted == 0) {
-            log.warn("[INVENTORY-SERVICE] Event {} already processed.", event.messageId());
+            logAlreadyProcessed(event.messageId());
             return;
         }
 
@@ -68,7 +60,7 @@ public class InventoryService {
                     .orElse(null);
 
             if (inventory == null) {
-                log.warn("[INVENTORY-SERVICE] Item {} not found.", item.productId());
+                logItemNotFound(item);
                 storeOutboxEventFailure(event, "ITEM_NOT_FOUND");
                 return;
             }
@@ -91,8 +83,112 @@ public class InventoryService {
             inventoryRepository.save(inventory);
         }
 
-
         storeOutboxEventSuccess(event);
+    }
+
+
+    /**
+     * Processes inventory commit request.
+     *
+     * <p>
+     * This method finalizes previously reserved inventory for an order.
+     * It reduces the reserved quantity and confirms that stock has been
+     * permanently deducted.
+     * </p>
+     *
+     * <p>
+     * If any item is not found, the commit operation fails and a failure
+     * event is stored. Otherwise, a success event is emitted.
+     * </p>
+     *
+     * @param event inventory commit request event
+     */
+    @Transactional
+    public void processCommit(InventoryCommitEvent event) {
+
+        int inserted = inboxRepository.insertIfNotExists(event.messageId());
+
+        if (inserted == 0) {
+            logAlreadyProcessed(event.messageId());
+            return;
+        }
+
+        log.info("[INVENTORY-SERVICE] Committing inventory for order {}", event.orderId());
+
+        for (OrderItemEvent item : event.items()) {
+            InventoryItem inventory = inventoryRepository
+                    .findById(item.productId())
+                    .orElse(null);
+
+            if (inventory == null) {
+                storeCommitFailure(event, "ITEM_NOT_FOUND");
+                return;
+            }
+
+            // finalize reservation
+            inventory.setReservedQuantity(
+                    inventory.getReservedQuantity() - item.quantity()
+            );
+
+            inventoryRepository.save(inventory);
+        }
+
+        storeCommitSuccess(event);
+    }
+
+
+    /**
+     * Processes inventory release request.
+     *
+     * <p>
+     * This method performs a compensation step in the order workflow.
+     * It releases previously reserved inventory and returns it back
+     * to available stock.
+     * </p>
+     *
+     * <p>
+     * Missing items are skipped, and processing continues for the remaining items.
+     * Once all items are processed, a success event is emitted.
+     * </p>
+     *
+     * @param event inventory release request event
+     */
+    @Transactional
+    public void processRelease(InventoryReleasedRequestedEvent event) {
+
+        int inserted = inboxRepository.insertIfNotExists(event.messageId());
+
+        if (inserted == 0) {
+            logAlreadyProcessed(event.messageId());
+            return;
+        }
+
+        log.info("[INVENTORY-SERVICE] Releasing inventory for order {}", event.orderId());
+
+        for (OrderItemEvent item : event.items()) {
+
+            InventoryItem inventory = inventoryRepository
+                    .findById(item.productId())
+                    .orElse(null);
+
+            if (inventory == null) {
+                logItemNotFound(item);
+                continue;
+            }
+
+            inventory.release(item.quantity());
+            inventoryRepository.save(inventory);
+        }
+
+        storeReleaseSuccess(event);
+    }
+
+    private void logItemNotFound(OrderItemEvent item) {
+        log.warn("[INVENTORY-SERVICE] Item {} not found.", item.productId());
+    }
+
+    private void logAlreadyProcessed(UUID event) {
+        log.warn("[INVENTORY-SERVICE] Event {} already processed.", event);
     }
 
     private void storeOutboxEventSuccess(InventoryReserveRequestedEvent event) {
@@ -102,7 +198,7 @@ public class InventoryService {
                 UUID.randomUUID()
         );
 
-        storeOutbox(payload, EventConstants.EVENT_INVENTORY_RESERVED, event.orderId());
+        outboxStoreService.store(payload, EventConstants.EVENT_INVENTORY_RESERVED, event.orderId());
     }
 
     private void storeOutboxEventFailure(InventoryReserveRequestedEvent event, String reason) {
@@ -114,32 +210,53 @@ public class InventoryService {
                 UUID.randomUUID()
         );
 
-        storeOutbox(payload, EventConstants.EVENT_INVENTORY_FAILED, event.orderId());
+        outboxStoreService.store(payload, EventConstants.EVENT_INVENTORY_FAILED, event.orderId());
     }
 
-    private void storeOutbox(Object payload, String eventType, Long aggregateId) {
+    private void storeCommitSuccess(InventoryCommitEvent event) {
 
-        try {
-            OutboxEvent event = OutboxEvent.builder()
-                    .id(UUID.randomUUID())
-                    .aggregateType("INVENTORY")
-                    .aggregateId(aggregateId)
-                    .eventType(eventType)
-                    .payload(objectMapper.writeValueAsString(payload))
-                    .processed(Boolean.FALSE)
-                    .retryCount(0)
-                    .createdAt(LocalDateTime.now())
-                    .build();
+        InventoryCommitCompletedEvent payload =
+                new InventoryCommitCompletedEvent(
+                        event.orderId(),
+                        event.correlationId(),
+                        UUID.randomUUID()
+                );
 
-            outboxRepository.save(event);
+        outboxStoreService.store(payload,
+                EventConstants.EVENT_INVENTORY_COMMIT_COMPLETED,
+                event.orderId());
+    }
 
-            log.info("[INVENTORY-SERVICE] Stored outbox event {} ({})", event.getId(), eventType);
+    private void storeCommitFailure(
+            InventoryCommitEvent event,
+            String reason
+    ) {
 
-        } catch (Exception e) {
-            log.error("[INVENTORY-SERVICE] Failed to serialize payload for event {} (aggregateId={}). Moved to DLQ table.",
-                    eventType, aggregateId, e);
-            outboxDlqService.storeOutboxDlq(null, aggregateId, eventType,
-                    payload, 0, e);
-        }
+        InventoryCommitFailedEvent payload =
+                new InventoryCommitFailedEvent(
+                        event.orderId(),
+                        reason,
+                        event.correlationId(),
+                        UUID.randomUUID()
+                );
+
+        outboxStoreService.store(payload,
+                EventConstants.EVENT_INVENTORY_COMMIT_FAILED,
+                event.orderId());
+    }
+
+
+    private void storeReleaseSuccess(InventoryReleasedRequestedEvent event) {
+
+        InventoryReleaseCompletedEvent payload =
+                new InventoryReleaseCompletedEvent(
+                        event.orderId(),
+                        event.correlationId(),
+                        UUID.randomUUID()
+                );
+
+        outboxStoreService.store(payload,
+                EventConstants.EVENT_INVENTORY_RELEASE_COMPLETED,
+                event.orderId());
     }
 }

@@ -2,6 +2,9 @@ package org.example.commons.event.utils;
 
 import org.example.commons.event.EventConstants;
 
+import static org.example.commons.event.EventConstants.TOPIC_ORDER_INVENTORY_FINALIZATION_REQUEST_V1;
+import static org.example.commons.event.EventConstants.TOPIC_ORDER_INVENTORY_FINALIZATION_RESPONSE_V1;
+
 /**
  * Utils class help to resolve topic based on happened event type
  */
@@ -29,7 +32,12 @@ public class TopicResolver {
 
             case EventConstants.EVENT_INVENTORY_COMMIT_REQUESTED,
                  EventConstants.EVENT_INVENTORY_RELEASE_REQUESTED ->
-                    EventConstants.TOPIC_ORDER_INVENTORY_FINALIZATION_REQUEST;
+                    TOPIC_ORDER_INVENTORY_FINALIZATION_REQUEST_V1;
+
+            case EventConstants.EVENT_INVENTORY_COMMIT_COMPLETED,
+                 EventConstants.EVENT_INVENTORY_COMMIT_FAILED,
+                 EventConstants.EVENT_INVENTORY_RELEASE_COMPLETED ->
+                    TOPIC_ORDER_INVENTORY_FINALIZATION_RESPONSE_V1;
 
             default -> throw new IllegalArgumentException(
                     "Unknown event type: " + eventType

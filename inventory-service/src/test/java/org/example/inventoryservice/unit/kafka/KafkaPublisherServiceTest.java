@@ -1,12 +1,11 @@
-package org.example.inventoryservice.unit.publisher;
+package org.example.inventoryservice.unit.kafka;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.commons.event.EventConstants;
-import org.example.commons.event.contracts.InventoryFailedEvent;
-import org.example.commons.event.contracts.InventoryReservedEvent;
+import org.example.commons.event.contracts.*;
 import org.example.inventoryservice.entity.OutboxEvent;
-import org.example.inventoryservice.service.publisher.KafkaPublisherService;
+import org.example.inventoryservice.service.kafka.KafkaPublisherService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -180,6 +179,93 @@ public class KafkaPublisherServiceTest {
         );
     }
 
+    @Test
+    void should_publish_inventory_commit_completed_event() throws Exception {
+
+        // GIVEN
+        OutboxEvent event = createEvent(
+                EventConstants.EVENT_INVENTORY_COMMIT_COMPLETED,
+                "{json}"
+        );
+
+        InventoryCommitCompletedEvent payload =
+                new InventoryCommitCompletedEvent(1L, "corr", UUID.randomUUID());
+
+        when(objectMapper.readValue("{json}", InventoryCommitCompletedEvent.class))
+                .thenReturn(payload);
+
+        when(kafkaTemplate.send(anyString(), anyString(), any()))
+                .thenReturn(CompletableFuture.completedFuture(mock(SendResult.class)));
+
+        // WHEN
+        service.publishEvent(event);
+
+        // THEN
+        verify(kafkaTemplate).send(
+                eq(EventConstants.TOPIC_ORDER_INVENTORY_RESPONSE_V1),
+                eq("1"),
+                eq(payload)
+        );
+    }
+
+    @Test
+    void should_publish_inventory_commit_failed_event() throws Exception {
+
+        // GIVEN
+        OutboxEvent event = createEvent(
+                EventConstants.EVENT_INVENTORY_COMMIT_FAILED,
+                "{json}"
+        );
+
+        InventoryCommitFailedEvent payload =
+                new InventoryCommitFailedEvent(1L, "FAIL", "corr", UUID.randomUUID());
+
+        when(objectMapper.readValue("{json}", InventoryCommitFailedEvent.class))
+                .thenReturn(payload);
+
+        when(kafkaTemplate.send(anyString(), anyString(), any()))
+                .thenReturn(CompletableFuture.completedFuture(mock(SendResult.class)));
+
+        // WHEN
+        service.publishEvent(event);
+
+        // THEN
+        verify(kafkaTemplate).send(
+                eq(EventConstants.TOPIC_ORDER_INVENTORY_RESPONSE_V1),
+                eq("1"),
+                eq(payload)
+        );
+    }
+
+    @Test
+    void should_publish_inventory_release_completed_event() throws Exception {
+
+        // GIVEN
+        OutboxEvent event = createEvent(
+                EventConstants.EVENT_INVENTORY_RELEASE_COMPLETED,
+                "{json}"
+        );
+
+        InventoryReleaseCompletedEvent payload =
+                new InventoryReleaseCompletedEvent(1L, "corr", UUID.randomUUID());
+
+        when(objectMapper.readValue("{json}", InventoryReleaseCompletedEvent.class))
+                .thenReturn(payload);
+
+        when(kafkaTemplate.send(anyString(), anyString(), any()))
+                .thenReturn(CompletableFuture.completedFuture(mock(SendResult.class)));
+
+        // WHEN
+        service.publishEvent(event);
+
+        // THEN
+        verify(kafkaTemplate).send(
+                eq(EventConstants.TOPIC_ORDER_INVENTORY_RESPONSE_V1),
+                eq("1"),
+                eq(payload)
+        );
+    }
+
 
     private OutboxEvent createEvent(String type, String payload) {
         OutboxEvent event = new OutboxEvent();
@@ -189,7 +275,4 @@ public class KafkaPublisherServiceTest {
         event.setPayload(payload);
         return event;
     }
-
-
-
 }

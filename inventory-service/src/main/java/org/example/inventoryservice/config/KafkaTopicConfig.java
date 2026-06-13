@@ -35,6 +35,20 @@ public class KafkaTopicConfig {
     }
 
     /**
+     * Creates the topic used to answer to published inventory-finalization event.
+     *
+     * <p>This topic is part of the inventory workflow and is consumed by
+     * the order-service.</p>
+     */
+    @Bean
+    public NewTopic orderInventoryFinalizationResponseV1Topic(KafkaTopicProperties props) {
+        return TopicBuilder.name(EventConstants.TOPIC_ORDER_INVENTORY_FINALIZATION_RESPONSE_V1)
+                .partitions(props.partitions())
+                .replicas(props.replicas())
+                .build();
+    }
+
+    /**
      * Creates the Dead Letter Topic for failed records.
      *
      * <p>Messages are sent here when:

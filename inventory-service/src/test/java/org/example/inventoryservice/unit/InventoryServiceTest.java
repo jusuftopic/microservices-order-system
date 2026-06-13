@@ -1,21 +1,16 @@
 package org.example.inventoryservice.unit;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.commons.event.EventConstants;
 import org.example.commons.event.contracts.InventoryReserveRequestedEvent;
 import org.example.commons.event.contracts.OrderItemEvent;
 import org.example.inventoryservice.entity.InventoryItem;
-import org.example.inventoryservice.entity.OutboxEvent;
 import org.example.inventoryservice.repository.InboxRepository;
 import org.example.inventoryservice.repository.InventoryRepository;
-import org.example.inventoryservice.repository.OutboxRepository;
 import org.example.inventoryservice.service.InventoryService;
-import org.example.inventoryservice.service.OutboxDlqService;
+import org.example.inventoryservice.service.outbox.OutboxStoreService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -23,8 +18,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -38,16 +31,10 @@ public class InventoryServiceTest {
     private InboxRepository inboxRepository;
 
     @Mock
-    private OutboxRepository outboxRepository;
+    private OutboxStoreService outboxStoreService;
 
     @Mock
     private InventoryRepository inventoryRepository;
-
-    @Mock
-    private OutboxDlqService outboxDlqService;
-
-    @Mock
-    private ObjectMapper objectMapper;
 
 
     private InventoryService service;
@@ -57,10 +44,8 @@ public class InventoryServiceTest {
     void setUp() {
         service = new InventoryService(
                 inboxRepository,
-                outboxRepository,
                 inventoryRepository,
-                outboxDlqService,
-                objectMapper
+                outboxStoreService
         );
     }
 
@@ -88,23 +73,17 @@ public class InventoryServiceTest {
 
         when(inboxRepository.insertIfNotExists(messageId)).thenReturn(1);
         when(inventoryRepository.findById(10L)).thenReturn(Optional.of(item));
-        when(objectMapper.writeValueAsString(any())).thenReturn("{json}");
-
-        ArgumentCaptor<OutboxEvent> captor = ArgumentCaptor.forClass(OutboxEvent.class);
 
         // WHEN
         service.processInventory(event);
 
         // THEN
         verify(inventoryRepository).save(any(InventoryItem.class));
-        verify(outboxRepository).save(captor.capture());
-
-        OutboxEvent outbox = captor.getValue();
-
-        assertEquals(EventConstants.EVENT_INVENTORY_RESERVED, outbox.getEventType());
-        assertEquals("{json}", outbox.getPayload());
-        assertEquals(1L, outbox.getAggregateId());
-        assertFalse(outbox.getProcessed());
+        verify(outboxStoreService).store(
+                any(),
+                eq(EventConstants.EVENT_INVENTORY_RESERVED),
+                eq(1L)
+        );
     }
 
 
@@ -125,7 +104,7 @@ public class InventoryServiceTest {
 
         // THEN
         verifyNoInteractions(inventoryRepository);
-        verifyNoInteractions(outboxRepository);
+        verifyNoInteractions(outboxStoreService);
     }
 
 
@@ -147,20 +126,15 @@ public class InventoryServiceTest {
         when(inboxRepository.insertIfNotExists(messageId)).thenReturn(1);
         when(inventoryRepository.findById(99L)).thenReturn(Optional.empty());
 
-        when(objectMapper.writeValueAsString(any())).thenReturn("{json}");
-
-        ArgumentCaptor<OutboxEvent> captor = ArgumentCaptor.forClass(OutboxEvent.class);
-
         // WHEN
         service.processInventory(event);
 
         // THEN
-        verify(outboxRepository).save(captor.capture());
-
-        OutboxEvent outbox = captor.getValue();
-
-        assertEquals(EventConstants.EVENT_INVENTORY_FAILED, outbox.getEventType());
-        assertEquals("{json}", outbox.getPayload());
+        verify(outboxStoreService).store(
+                any(),
+                eq(EventConstants.EVENT_INVENTORY_FAILED),
+                eq(1L)
+        );
     }
 
     @Test
@@ -187,60 +161,15 @@ public class InventoryServiceTest {
         when(inboxRepository.insertIfNotExists(messageId)).thenReturn(1);
         when(inventoryRepository.findById(productId)).thenReturn(Optional.of(item));
 
-        when(objectMapper.writeValueAsString(any())).thenReturn("{json}");
-
-        ArgumentCaptor<OutboxEvent> captor = ArgumentCaptor.forClass(OutboxEvent.class);
 
         // WHEN
         service.processInventory(event);
 
         // THEN
-        verify(outboxRepository).save(captor.capture());
-
-        OutboxEvent outbox = captor.getValue();
-
-        assertEquals(EventConstants.EVENT_INVENTORY_FAILED, outbox.getEventType());
-    }
-
-    @Test
-    void should_store_event_in_dlq_when_serialization_fails() throws Exception {
-
-        // GIVEN
-        String correlationId = "corr-3";
-        UUID messageId = UUID.randomUUID();
-
-        InventoryReserveRequestedEvent event =
-                new InventoryReserveRequestedEvent(
-                        1L,
-                        List.of(new OrderItemEvent(10L, 1)),
-                        correlationId,
-                        messageId
-                );
-
-        InventoryItem item = InventoryItem.builder()
-                .productId(10L)
-                .availableQuantity(10)
-                .reservedQuantity(0)
-                .build();
-
-        when(inboxRepository.insertIfNotExists(messageId)).thenReturn(1);
-        when(inventoryRepository.findById(10L)).thenReturn(Optional.of(item));
-
-        when(objectMapper.writeValueAsString(any()))
-                .thenThrow(new JsonProcessingException("fail") {});
-
-        // WHEN
-        service.processInventory(event);
-
-        // THEN
-        verify(outboxRepository, never()).save(any());
-        verify(outboxDlqService).storeOutboxDlq(
-                isNull(),
-                eq(1L),
-                eq(EventConstants.EVENT_INVENTORY_RESERVED),
+        verify(outboxStoreService).store(
                 any(),
-                eq(0),
-                any()
+                eq(EventConstants.EVENT_INVENTORY_FAILED),
+                eq(1L)
         );
     }
 }

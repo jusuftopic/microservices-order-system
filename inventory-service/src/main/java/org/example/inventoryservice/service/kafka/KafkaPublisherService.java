@@ -1,12 +1,11 @@
-package org.example.inventoryservice.service.publisher;
+package org.example.inventoryservice.service.kafka;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.commons.event.EventConstants;
-import org.example.commons.event.contracts.InventoryFailedEvent;
-import org.example.commons.event.contracts.InventoryReservedEvent;
+import org.example.commons.event.contracts.*;
 import org.example.commons.event.utils.TopicResolver;
 import org.example.inventoryservice.entity.OutboxEvent;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -85,6 +84,24 @@ public class KafkaPublisherService {
                         objectMapper.readValue(
                                 event.getPayload(),
                                 InventoryFailedEvent.class
+                        );
+
+                case EventConstants.EVENT_INVENTORY_COMMIT_COMPLETED ->
+                        objectMapper.readValue(
+                                event.getPayload(),
+                                InventoryCommitCompletedEvent.class
+                        );
+
+                case EventConstants.EVENT_INVENTORY_COMMIT_FAILED ->
+                        objectMapper.readValue(
+                                event.getPayload(),
+                                InventoryCommitFailedEvent.class
+                        );
+
+                case EventConstants.EVENT_INVENTORY_RELEASE_COMPLETED ->
+                        objectMapper.readValue(
+                                event.getPayload(),
+                                InventoryReleaseCompletedEvent.class
                         );
 
                 default -> throw new IllegalArgumentException(

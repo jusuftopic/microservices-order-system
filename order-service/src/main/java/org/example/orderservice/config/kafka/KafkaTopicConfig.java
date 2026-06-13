@@ -74,7 +74,7 @@ public class KafkaTopicConfig {
      */
     @Bean
     public NewTopic inventoryCommitRequestedV1Topic(KafkaTopicProperties props) {
-        return TopicBuilder.name(EventConstants.TOPIC_ORDER_INVENTORY_FINALIZATION_REQUEST)
+        return TopicBuilder.name(EventConstants.TOPIC_ORDER_INVENTORY_FINALIZATION_REQUEST_V1)
                 .partitions(props.partitions())
                 .replicas(props.replicas())
                 .build();
