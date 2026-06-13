@@ -99,7 +99,7 @@ public class OrderServiceTest {
                 eq(1L),
                 eq("ORDER"),
                 eq(EventConstants.EVENT_INVENTORY_CHECK_REQUESTED),
-                any(InventoryRequestedEvent.class));
+                any(InventoryReserveRequestedEvent.class));
     }
 
 
@@ -264,9 +264,63 @@ public class OrderServiceTest {
                 eq(orderId),
                 eq("ORDER"),
                 eq(EventConstants.EVENT_INVENTORY_COMMIT_REQUESTED),
-                any(InventoryRequestedEvent.class)
+                any(InventoryCommitEvent.class)
         );
     }
 
 
+    @Test
+    void should_handle_payment_failed_and_create_inventory_release_outbox_event() {
+
+        // GIVEN
+        Long orderId = 1L;
+
+        Order order = Order.builder()
+                .id(orderId)
+                .customerEmail("test@mail.com")
+                .status(OrderStatus.INVENTORY_RESERVE_COMPLETED)
+                .items(List.of(
+                        OrderItem.builder()
+                                .productId(1L)
+                                .quantity(2)
+                                .build(),
+                        OrderItem.builder()
+                                .productId(2L)
+                                .quantity(1)
+                                .build()
+                ))
+                .build();
+
+        PaymentFailedEvent event = new PaymentFailedEvent(
+                orderId,
+                "DECLINED",
+                "corr-123",
+                UUID.randomUUID()
+        );
+
+        when(inboxRepository.insertIfNotExists(event.messageId()))
+                .thenReturn(1);
+
+        when(workflowService.updateStatus(
+                orderId,
+                OrderStatus.PAYMENT_FAILED
+        )).thenReturn(order);
+
+        // WHEN
+        orderService.handlePaymentFailed(event);
+
+        // THEN
+        verify(inboxRepository)
+                .insertIfNotExists(event.messageId());
+
+        verify(workflowService)
+                .updateStatus(orderId, OrderStatus.PAYMENT_FAILED);
+
+        verify(outboxService).storeEvent(
+                eq(orderId),
+                eq("ORDER"),
+                eq(EventConstants.EVENT_INVENTORY_RELEASE_REQUESTED),
+                any(InventoryReleasedRequestedEvent.class)
+        );
+    }
 }

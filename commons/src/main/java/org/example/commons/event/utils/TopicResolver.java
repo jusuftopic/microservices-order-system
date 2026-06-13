@@ -27,6 +27,10 @@ public class TopicResolver {
             case EventConstants.EVENT_PAYMENT_SUCCESS,
                  EventConstants.EVENT_PAYMENT_FAILED-> EventConstants.TOPIC_ORDER_PAYMENT_RESPONSE_V1;
 
+            case EventConstants.EVENT_INVENTORY_COMMIT_REQUESTED,
+                 EventConstants.EVENT_INVENTORY_RELEASE_REQUESTED ->
+                    EventConstants.TOPIC_ORDER_INVENTORY_FINALIZATION_REQUEST;
+
             default -> throw new IllegalArgumentException(
                     "Unknown event type: " + eventType
             );

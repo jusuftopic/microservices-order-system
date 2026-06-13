@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.commons.event.EventConstants;
-import org.example.commons.event.contracts.InventoryRequestedEvent;
+import org.example.commons.event.contracts.InventoryReserveRequestedEvent;
 import org.example.commons.event.contracts.PaymentRequestedEvent;
 import org.example.commons.event.utils.TopicResolver;
 import org.example.orderservice.entity.OutboxEvent;
@@ -70,7 +70,7 @@ public class KafkaPublisherService {
                 case EventConstants.EVENT_INVENTORY_CHECK_REQUESTED ->
                         objectMapper.readValue(
                                 event.getPayload(),
-                                InventoryRequestedEvent.class
+                                InventoryReserveRequestedEvent.class
                         );
 
                 case EventConstants.EVENT_PAYMENT_REQUESTED ->

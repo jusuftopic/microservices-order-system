@@ -3,7 +3,7 @@ package org.example.orderservice.unit.service.outbox;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.commons.event.EventConstants;
-import org.example.commons.event.contracts.InventoryRequestedEvent;
+import org.example.commons.event.contracts.InventoryReserveRequestedEvent;
 import org.example.orderservice.entity.OutboxEvent;
 import org.example.orderservice.repository.OutboxRepository;
 import org.example.orderservice.service.outbox.OrderOutboxService;
@@ -46,8 +46,8 @@ public class OrderOutboxServiceTest {
     void should_store_outbox_event() throws Exception {
 
         // GIVEN
-        InventoryRequestedEvent payload =
-                new InventoryRequestedEvent(
+        InventoryReserveRequestedEvent payload =
+                new InventoryReserveRequestedEvent(
                         1L,
                         List.of(),
                         "corr-123",

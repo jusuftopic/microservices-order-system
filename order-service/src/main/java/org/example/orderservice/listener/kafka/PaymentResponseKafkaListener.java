@@ -31,7 +31,6 @@ import org.springframework.stereotype.Service;
 )
 public class PaymentResponseKafkaListener {
 
-
     private final OrderService orderService;
 
     /**
@@ -66,7 +65,7 @@ public class PaymentResponseKafkaListener {
                 failed.correlationId()
         );
 
-     //   orderService.handlePaymentFailed(failed);
+        orderService.handlePaymentFailed(failed);
     }
 
     /**

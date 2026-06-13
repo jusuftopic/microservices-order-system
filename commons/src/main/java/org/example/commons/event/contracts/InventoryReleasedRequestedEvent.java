@@ -4,15 +4,14 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Event emitted to request inventory validation and reservation.
+ * Event emitted to request inventory release
  *
- * <p>This event represents the initiation of the inventory step in the order workflow.
- * It contains all items that must be checked and potentially reserved.</p>
+ * <p>This event represents one of the inventory steps in the order workflow.
+ * It contains all items that must be released after failed payment.</p>
  *
  * <p>Consumed by Inventory Service.</p>
  */
-
-public record InventoryRequestedEvent(
+public record InventoryReleasedRequestedEvent(
 
         /**
          * Unique identifier of the order.
@@ -29,12 +28,9 @@ public record InventoryRequestedEvent(
          */
         String correlationId,
 
-
         /**
          * Unique identifier of the message.
          */
         UUID messageId
-
-        ) implements BaseEvent {
+) implements BaseEvent {
 }
-

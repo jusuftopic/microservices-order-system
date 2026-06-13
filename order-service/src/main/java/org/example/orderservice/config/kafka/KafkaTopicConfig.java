@@ -65,4 +65,18 @@ public class KafkaTopicConfig {
                 .replicas(props.replicas())
                 .build();
     }
+
+    /**
+     * Creates the topic used to publish inventory finalization event.
+     *
+     * <p>This topic is part of the inventory workflow and is consumed by
+     * the inventory-service.</p>
+     */
+    @Bean
+    public NewTopic inventoryCommitRequestedV1Topic(KafkaTopicProperties props) {
+        return TopicBuilder.name(EventConstants.TOPIC_ORDER_INVENTORY_FINALIZATION_REQUEST)
+                .partitions(props.partitions())
+                .replicas(props.replicas())
+                .build();
+    }
 }

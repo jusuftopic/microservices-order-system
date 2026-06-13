@@ -54,7 +54,7 @@ public class OrderService {
                 saved.getId(),
                 "ORDER",
                 EVENT_INVENTORY_CHECK_REQUESTED,
-                new InventoryRequestedEvent(
+                new InventoryReserveRequestedEvent(
                         saved.getId(),
                         saved.getItems().stream()
                                 .map(item -> new OrderItemEvent(
@@ -128,8 +128,9 @@ public class OrderService {
      * Updates order status and triggers inventory commit step via outbox event.
      * </p>
      *
-     * @param event inventory reserved event
+     * @param event payment complete event
      */
+    @Transactional
     public void handlePaymentCompleted(PaymentCompletedEvent event) {
         int inserted = inboxRepository.insertIfNotExists(event.messageId());
 
@@ -146,7 +147,7 @@ public class OrderService {
                 order.getId(),
                 "ORDER",
                 EventConstants.EVENT_INVENTORY_COMMIT_REQUESTED,
-                new InventoryRequestedEvent(
+                new InventoryCommitEvent(
                         order.getId(),
                         order.getItems().stream()
                                 .map(o -> new OrderItemEvent(o.getProductId(), o.getQuantity()))
@@ -157,7 +158,55 @@ public class OrderService {
         );
     }
 
-        private Order storeOrder(final OrderRequest request, String correlationId) {
+    /**
+     * Handles failed payment.
+     *
+     * <p>
+     * Updates order status and triggers inventory release step via outbox event.
+     * </p>
+     *
+     * @param event payment failed event
+     */
+    @Transactional
+    public void handlePaymentFailed(PaymentFailedEvent event) {
+
+        int inserted = inboxRepository.insertIfNotExists(event.messageId());
+
+        if (inserted == 0) {
+            logAlreadyProcessed(event.messageId());
+            return;
+        }
+
+        Order order = workflowService.updateStatus(
+                event.orderId(),
+                OrderStatus.PAYMENT_FAILED
+        );
+
+        log.warn(
+                "[ORDER-SERVICE] Payment failed for order {} reason {}",
+                order.getId(),
+                event.reason()
+        );
+
+        outboxService.storeEvent(
+                order.getId(),
+                "ORDER",
+                EventConstants.EVENT_INVENTORY_RELEASE_REQUESTED,
+                new InventoryReleasedRequestedEvent(
+                        order.getId(),
+                        order.getItems().stream()
+                                .map(o -> new OrderItemEvent(
+                                        o.getProductId(),
+                                        o.getQuantity()
+                                ))
+                                .toList(),
+                        event.correlationId(),
+                        UUID.randomUUID()
+                )
+        );
+    }
+
+    private Order storeOrder(final OrderRequest request, String correlationId) {
         Order order = OrderMapper.toEntity(request);
         order.setCorrelationId(correlationId);
         return repository.save(order);
