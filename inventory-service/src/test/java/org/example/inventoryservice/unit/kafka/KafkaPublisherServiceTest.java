@@ -202,7 +202,7 @@ public class KafkaPublisherServiceTest {
 
         // THEN
         verify(kafkaTemplate).send(
-                eq(EventConstants.TOPIC_ORDER_INVENTORY_RESPONSE_V1),
+                eq(EventConstants.TOPIC_ORDER_INVENTORY_FINALIZATION_RESPONSE_V1),
                 eq("1"),
                 eq(payload)
         );
@@ -231,7 +231,7 @@ public class KafkaPublisherServiceTest {
 
         // THEN
         verify(kafkaTemplate).send(
-                eq(EventConstants.TOPIC_ORDER_INVENTORY_RESPONSE_V1),
+                eq(EventConstants.TOPIC_ORDER_INVENTORY_FINALIZATION_RESPONSE_V1),
                 eq("1"),
                 eq(payload)
         );
@@ -260,7 +260,7 @@ public class KafkaPublisherServiceTest {
 
         // THEN
         verify(kafkaTemplate).send(
-                eq(EventConstants.TOPIC_ORDER_INVENTORY_RESPONSE_V1),
+                eq(EventConstants.TOPIC_ORDER_INVENTORY_FINALIZATION_RESPONSE_V1),
                 eq("1"),
                 eq(payload)
         );
