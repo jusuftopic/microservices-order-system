@@ -17,6 +17,8 @@ public class EventConstants {
     public static final String EVENT_INVENTORY_COMMIT_COMPLETED = "EVENT_INVENTORY_COMMIT_COMPLETED";
     public static final String EVENT_INVENTORY_COMMIT_FAILED = "EVENT_INVENTORY_COMMIT_FAILED";
     public static final String EVENT_INVENTORY_RELEASE_COMPLETED = "EVENT_INVENTORY_RELEASE_COMPLETED";
+    public static final String EVENT_NOTIFICATION_REQUESTED = "EVENT_NOTIFICATION_REQUESTED";
+
 
     /* TOPICS */
     public static final String TOPIC_ORDER_INVENTORY_REQUEST_V1 = "order.inventory.request.v1";
@@ -25,8 +27,9 @@ public class EventConstants {
     public static final String TOPIC_ORDER_PAYMENT_RESPONSE_V1 = "order.payment.response.v1";
     public static final String TOPIC_ORDER_INVENTORY_FINALIZATION_REQUEST_V1 = "order.inventory.finalization.request.v1";
     public static final String TOPIC_ORDER_INVENTORY_FINALIZATION_RESPONSE_V1 = "order.inventory.finalization.response.v1";
+    public static final String TOPIC_NOTIFICATION_REQUEST_V1 = "notification.request.v1";
 
-
+    /* TOPICS - DLQ */
     public static final String TOPIC_ORDER_DLQ = "order.dlq";
     public static final String TOPIC_INVENTORY_DLQ = "inventory.dlq";
     public static final String TOPIC_PAYMENT_DLQ = "payment.dlq";

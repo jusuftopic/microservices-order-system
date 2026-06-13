@@ -53,6 +53,22 @@ services:
       timeout: 5s
       retries: 5
 
+  # NOTIFICATION DB
+  notification-db:
+    image: postgres:15
+    container_name: notification-db
+    environment:
+      POSTGRES_DB: notification_db
+      POSTGRES_USER: notification_user
+      POSTGRES_PASSWORD: notification_pass
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U payment_user" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   # INVENTORY DB
   inventory-db:
     image: postgres:15
@@ -116,3 +132,17 @@ services:
         condition: service_healthy
       kafka:
         condition: service_started
+
+  # NOTIFICATION-SERVICE
+  notification-service:
+    build:
+      context: .
+      dockerfile: notification-service/Dockerfile
+    container_name: notification-service
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on:
+      notification-db:
+        condition: service_healthy
