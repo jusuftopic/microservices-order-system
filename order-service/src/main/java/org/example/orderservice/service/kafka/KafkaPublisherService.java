@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.commons.event.EventConstants;
+import org.example.commons.event.contracts.InventoryCommitEvent;
+import org.example.commons.event.contracts.InventoryReleasedRequestedEvent;
 import org.example.commons.event.contracts.InventoryReserveRequestedEvent;
 import org.example.commons.event.contracts.PaymentRequestedEvent;
 import org.example.commons.event.utils.TopicResolver;
@@ -77,6 +79,18 @@ public class KafkaPublisherService {
                         objectMapper.readValue(
                                 event.getPayload(),
                                 PaymentRequestedEvent.class
+                        );
+
+                case EventConstants.EVENT_INVENTORY_COMMIT_REQUESTED ->
+                        objectMapper.readValue(
+                                event.getPayload(),
+                                InventoryCommitEvent.class
+                        );
+
+                case EventConstants.EVENT_INVENTORY_RELEASE_REQUESTED ->
+                        objectMapper.readValue(
+                                event.getPayload(),
+                                InventoryReleasedRequestedEvent.class
                         );
 
                 default -> throw new IllegalArgumentException(
