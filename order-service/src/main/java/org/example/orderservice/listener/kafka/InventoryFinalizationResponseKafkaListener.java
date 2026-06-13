@@ -26,7 +26,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 @Slf4j
 @KafkaListener(
-        topics = EventConstants.TOPIC_ORDER_INVENTORY_RESPONSE_V1,
+        topics = EventConstants.TOPIC_ORDER_INVENTORY_FINALIZATION_RESPONSE_V1,
         groupId = Constants.KAFKA_ORDER_GROUP_ID
 )
 public class InventoryFinalizationResponseKafkaListener {
