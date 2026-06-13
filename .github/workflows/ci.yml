@@ -29,6 +29,7 @@ jobs:
       order: ${{ steps.filter.outputs.order }}
       inventory: ${{ steps.filter.outputs.inventory }}
       payment: ${{ steps.filter.outputs.payment }}
+      notification: ${{ steps.filter.outputs.notification }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
