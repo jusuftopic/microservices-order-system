@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: payment-db
+  template:
+    metadata:
+      labels:
+        app: payment-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15
+          ports:
+            - containerPort: 5432
+
+          readinessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - payment_user
+            initialDelaySeconds: 5
+            periodSeconds: 5
+
+          env:
+            - name: POSTGRES_DB
+              value: payment_db
+            - name: POSTGRES_USER
+              value: payment_user
+            - name: POSTGRES_PASSWORD
+              value: payment_pass
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-db
+spec:
+  selector:
+    app: notification-db
+  ports:
+    - port: 5432
+      targetPort: 5432

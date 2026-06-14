@@ -36,7 +36,6 @@ services:
       timeout: 5s
       retries: 5
 
-
   # PAYMENT DB
   payment-db:
     image: postgres:15
