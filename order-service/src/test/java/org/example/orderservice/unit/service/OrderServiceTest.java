@@ -397,4 +397,73 @@ public class OrderServiceTest {
     }
 
 
+    @Test
+    void should_handle_inventory_release_completed_and_send_notification() {
+
+        // GIVEN
+        Long orderId = 1L;
+
+        Order order = Order.builder()
+                .id(orderId)
+                .customerEmail("test@mail.com")
+                .status(OrderStatus.PAYMENT_FAILED)
+                .build();
+
+        InventoryReleaseCompletedEvent event =
+                new InventoryReleaseCompletedEvent(
+                        orderId,
+                        "corr-123",
+                        UUID.randomUUID()
+                );
+
+        when(inboxRepository.insertIfNotExists(event.messageId()))
+                .thenReturn(1);
+
+        when(workflowService.updateStatus(
+                orderId,
+                OrderStatus.FAILED
+        )).thenReturn(order);
+
+        // WHEN
+        orderService.handleInventoryReleaseCompleted(event);
+
+        // THEN
+        verify(inboxRepository)
+                .insertIfNotExists(event.messageId());
+
+        verify(workflowService)
+                .updateStatus(orderId, OrderStatus.FAILED);
+
+        verify(outboxService).storeEvent(
+                eq(orderId),
+                eq("ORDER"),
+                eq(EventConstants.EVENT_NOTIFICATION_REQUESTED),
+                any(NotificationRequestedEvent.class)
+        );
+    }
+
+    @Test
+    void should_not_process_inventory_release_completed_twice() {
+
+        // GIVEN
+        InventoryReleaseCompletedEvent event =
+                new InventoryReleaseCompletedEvent(
+                        1L,
+                        "corr",
+                        UUID.randomUUID()
+                );
+
+        when(inboxRepository.insertIfNotExists(event.messageId()))
+                .thenReturn(0);
+
+        // WHEN
+        orderService.handleInventoryReleaseCompleted(event);
+
+        // THEN
+        verify(inboxRepository)
+                .insertIfNotExists(event.messageId());
+
+        verifyNoInteractions(workflowService);
+        verifyNoInteractions(outboxService);
+    }
 }

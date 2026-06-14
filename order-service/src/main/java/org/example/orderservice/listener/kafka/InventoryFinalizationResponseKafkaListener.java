@@ -89,7 +89,7 @@ public class InventoryFinalizationResponseKafkaListener {
                 event.correlationId()
         );
 
-        // orderService.handleInventoryReleaseCompleted(event);
+        orderService.handleInventoryReleaseCompleted(event);
     }
 
     /**

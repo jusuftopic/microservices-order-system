@@ -255,6 +255,55 @@ public class OrderService {
         );
     }
 
+    /**
+     * Handles successful inventory release event.
+     *
+     * <p>
+     * This method represents the final step of the compensation flow
+     * after a failed payment. It ensures that the order is marked as FAILED
+     * and triggers a notification to inform the customer.
+     * </p>
+     *
+     * @param event inventory release completed event
+     */
+    @Transactional
+    public void handleInventoryReleaseCompleted(InventoryReleaseCompletedEvent event) {
+
+        int inserted = inboxRepository.insertIfNotExists(event.messageId());
+
+        if (inserted == 0) {
+            logAlreadyProcessed(event.messageId());
+            return;
+        }
+
+        // 1. Update final status (in case not already finalized)
+        Order order = workflowService.updateStatus(
+                event.orderId(),
+                OrderStatus.FAILED
+        );
+
+        log.warn(
+                "[ORDER-SERVICE] Order {} finalized as FAILED after inventory release",
+                order.getId()
+        );
+
+        // 2. Emit notification event
+        outboxService.storeEvent(
+                order.getId(),
+                "ORDER",
+                EventConstants.EVENT_NOTIFICATION_REQUESTED,
+                new NotificationRequestedEvent(
+                        order.getId(),
+                        order.getCustomerEmail(),
+                        "ORDER_FAILED",
+                        "Your order could not be completed and has been cancelled.",
+                        event.correlationId(),
+                        UUID.randomUUID()
+                )
+        );
+
+    }
+
     private Order storeOrder(final OrderRequest request, String correlationId) {
         Order order = OrderMapper.toEntity(request);
         order.setCorrelationId(correlationId);
