@@ -44,6 +44,13 @@
             <artifactId>spring-kafka</artifactId>
         </dependency>
 
+        <!-- MAIL -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
+
         <!-- LOMBOK -->
         <dependency>
             <groupId>org.projectlombok</groupId>

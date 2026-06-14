@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.commons.event.EventConstants;
 import org.example.commons.event.contracts.NotificationRequestedEvent;
+import org.example.notificationservice.service.NotificationService;
 import org.example.notificationservice.utils.Constants;
 import org.springframework.kafka.annotation.KafkaHandler;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Service;
 )
 public class NotificationRequestKafkaListener {
 
+    private final NotificationService notificationService;
 
     /**
      * Handles incoming notification request events.
@@ -42,6 +44,8 @@ public class NotificationRequestKafkaListener {
                 event.recipientEmail(),
                 event.correlationId()
         );
+
+        notificationService.processNotification(event);
     }
 
     /**
