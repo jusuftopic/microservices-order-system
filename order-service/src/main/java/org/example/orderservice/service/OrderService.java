@@ -206,15 +206,64 @@ public class OrderService {
         );
     }
 
+    /**
+     * Handles successful inventory commit event.
+     *
+     * <p>
+     * This method represents the final step of the successful order workflow.
+     * It updates the order status to COMPLETED and triggers a notification
+     * event to inform the customer that the order has been successfully processed.
+     * </p>
+     *
+     * @param event inventory commit completed event
+     */
+    @Transactional
+    public void handleInventoryCommitCompleted(
+            InventoryCommitCompletedEvent event
+    ) {
+        int inserted = inboxRepository.insertIfNotExists(event.messageId());
+
+        if (inserted == 0) {
+            logAlreadyProcessed(event.messageId());
+            return;
+        }
+
+        // 1. Update final status
+        Order order = workflowService.updateStatus(
+                event.orderId(),
+                OrderStatus.COMPLETED
+        );
+
+        log.info(
+                "[ORDER-SERVICE] Order {} successfully completed",
+                order.getId()
+        );
+
+        // 2. Emit notification event
+        outboxService.storeEvent(
+                order.getId(),
+                "ORDER",
+                EventConstants.EVENT_NOTIFICATION_REQUESTED,
+                new NotificationRequestedEvent(
+                        order.getId(),
+                        order.getCustomerEmail(),
+                        "ORDER_COMPLETED",
+                        "Your order has been successfully completed.",
+                        event.correlationId(),
+                        UUID.randomUUID()
+                )
+        );
+    }
+
     private Order storeOrder(final OrderRequest request, String correlationId) {
         Order order = OrderMapper.toEntity(request);
         order.setCorrelationId(correlationId);
         return repository.save(order);
     }
 
-        private void logAlreadyProcessed(UUID messageId) {
-            log.warn("[ORDER-SERVICE] Event {} already processed.", messageId);
-        }
+    private void logAlreadyProcessed(UUID messageId) {
+        log.warn("[ORDER-SERVICE] Event {} already processed.", messageId);
+    }
 
     private BigDecimal calculateAmount(Order order) {
         return order.getItems().stream()

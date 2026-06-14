@@ -5,10 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.commons.event.EventConstants;
-import org.example.commons.event.contracts.InventoryCommitEvent;
-import org.example.commons.event.contracts.InventoryReleasedRequestedEvent;
-import org.example.commons.event.contracts.InventoryReserveRequestedEvent;
-import org.example.commons.event.contracts.PaymentRequestedEvent;
+import org.example.commons.event.contracts.*;
 import org.example.commons.event.utils.TopicResolver;
 import org.example.orderservice.entity.OutboxEvent;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -91,6 +88,12 @@ public class KafkaPublisherService {
                         objectMapper.readValue(
                                 event.getPayload(),
                                 InventoryReleasedRequestedEvent.class
+                        );
+
+                case EventConstants.EVENT_NOTIFICATION_REQUESTED ->
+                        objectMapper.readValue(
+                                event.getPayload(),
+                                NotificationRequestedEvent.class
                         );
 
                 default -> throw new IllegalArgumentException(

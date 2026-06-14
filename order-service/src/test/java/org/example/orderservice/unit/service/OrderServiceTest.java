@@ -323,4 +323,78 @@ public class OrderServiceTest {
                 any(InventoryReleasedRequestedEvent.class)
         );
     }
+
+
+    @Test
+    void should_handle_inventory_commit_completed_and_send_notification() {
+
+        // GIVEN
+        Long orderId = 1L;
+
+        Order order = Order.builder()
+                .id(orderId)
+                .customerEmail("test@mail.com")
+                .status(OrderStatus.INVENTORY_COMMIT_COMPLETED) // current before transition
+                .build();
+
+        InventoryCommitCompletedEvent event =
+                new InventoryCommitCompletedEvent(
+                        orderId,
+                        "corr-123",
+                        UUID.randomUUID()
+                );
+
+        when(inboxRepository.insertIfNotExists(event.messageId()))
+                .thenReturn(1);
+
+        when(workflowService.updateStatus(
+                orderId,
+                OrderStatus.COMPLETED
+        )).thenReturn(order);
+
+        // WHEN
+        orderService.handleInventoryCommitCompleted(event);
+
+        // THEN
+        verify(inboxRepository)
+                .insertIfNotExists(event.messageId());
+
+        verify(workflowService)
+                .updateStatus(orderId, OrderStatus.COMPLETED);
+
+        verify(outboxService).storeEvent(
+                eq(orderId),
+                eq("ORDER"),
+                eq(EventConstants.EVENT_NOTIFICATION_REQUESTED),
+                any(NotificationRequestedEvent.class)
+        );
+    }
+
+
+    @Test
+    void should_not_process_inventory_commit_completed_event_twice() {
+
+        // GIVEN
+        InventoryCommitCompletedEvent event =
+                new InventoryCommitCompletedEvent(
+                        1L,
+                        "corr-123",
+                        UUID.randomUUID()
+                );
+
+        when(inboxRepository.insertIfNotExists(event.messageId()))
+                .thenReturn(0);
+
+        // WHEN
+        orderService.handleInventoryCommitCompleted(event);
+
+        // THEN
+        verify(inboxRepository)
+                .insertIfNotExists(event.messageId());
+
+        verifyNoInteractions(workflowService);
+        verifyNoInteractions(outboxService);
+    }
+
+
 }

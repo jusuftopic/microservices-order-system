@@ -6,6 +6,7 @@ import org.example.commons.event.EventConstants;
 import org.example.commons.event.contracts.InventoryCommitCompletedEvent;
 import org.example.commons.event.contracts.InventoryCommitFailedEvent;
 import org.example.commons.event.contracts.InventoryReleaseCompletedEvent;
+import org.example.orderservice.service.OrderService;
 import org.example.orderservice.utils.Constants;
 import org.springframework.kafka.annotation.KafkaHandler;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -31,6 +32,7 @@ import org.springframework.stereotype.Service;
 )
 public class InventoryFinalizationResponseKafkaListener {
 
+    private final OrderService orderService;
 
     /**
      * Handles successful inventory commit event.
@@ -48,7 +50,7 @@ public class InventoryFinalizationResponseKafkaListener {
                 event.correlationId()
         );
 
-        // orderService.handleInventoryCommitCompleted(event);
+        orderService.handleInventoryCommitCompleted(event);
     }
 
     /**
