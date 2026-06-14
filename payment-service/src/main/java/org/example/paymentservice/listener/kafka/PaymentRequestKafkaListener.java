@@ -3,6 +3,7 @@ package org.example.paymentservice.listener.kafka;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.commons.event.EventConstants;
+import org.example.commons.event.contracts.PaymentRefundRequestedEvent;
 import org.example.commons.event.contracts.PaymentRequestedEvent;
 import org.example.paymentservice.service.PaymentService;
 import org.example.paymentservice.utils.Constants;
@@ -36,6 +37,29 @@ public class PaymentRequestKafkaListener {
                 event.orderId(), event.correlationId());
 
         paymentService.processPayment(event);
+    }
+
+
+    /**
+     * Handles incoming payment refund requests.
+     *
+     * <p>
+     * This event represents a compensation step in the order workflow.
+     * It is triggered when a previously successful payment needs to be refunded,
+     * typically due to a failure in downstream processing (e.g. inventory commit failure).
+     * </p>
+     *
+     * @param event payment refund request event
+     */
+    @KafkaHandler
+    public void handlePaymentRefundRequested(
+            PaymentRefundRequestedEvent event
+    ) {
+        log.warn(
+                "[PAYMENT-SERVICE][KAFKA-LISTENER] Received payment refund request for order {} correlationId {}",
+                event.orderId(),
+                event.correlationId()
+        );
     }
 
     /**

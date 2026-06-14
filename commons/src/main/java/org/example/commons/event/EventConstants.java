@@ -18,7 +18,7 @@ public class EventConstants {
     public static final String EVENT_INVENTORY_COMMIT_FAILED = "EVENT_INVENTORY_COMMIT_FAILED";
     public static final String EVENT_INVENTORY_RELEASE_COMPLETED = "EVENT_INVENTORY_RELEASE_COMPLETED";
     public static final String EVENT_NOTIFICATION_REQUESTED = "EVENT_NOTIFICATION_REQUESTED";
-
+    public static final String EVENT_PAYMENT_REFUND_REQUESTED = "EVENT_PAYMENT_REFUND_REQUESTED";
 
     /* TOPICS */
     public static final String TOPIC_ORDER_INVENTORY_REQUEST_V1 = "order.inventory.request.v1";

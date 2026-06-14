@@ -301,7 +301,69 @@ public class OrderService {
                         UUID.randomUUID()
                 )
         );
+    }
 
+    /**
+     * Handles failed inventory commit event.
+     *
+     * <p>
+     * This method represents a compensation step in the order workflow.
+     * It marks the order as FAILED, triggers a payment refund,
+     * and emits a notification event.
+     * </p>
+     *
+     * @param event inventory commit failed event
+     */
+    @Transactional
+    public void handleInventoryCommitFailed(
+            InventoryCommitFailedEvent event
+    ) {
+
+        int inserted = inboxRepository.insertIfNotExists(event.messageId());
+
+        if (inserted == 0) {
+            logAlreadyProcessed(event.messageId());
+            return;
+        }
+
+        // 1. Mark order as FAILED
+        Order order = workflowService.updateStatus(
+                event.orderId(),
+                OrderStatus.FAILED
+        );
+
+        log.error(
+                "[ORDER-SERVICE] Inventory commit failed for order {} reason {}",
+                order.getId(),
+                event.reason()
+        );
+
+        // 2. Trigger refund
+        outboxService.storeEvent(
+                order.getId(),
+                "ORDER",
+                EventConstants.EVENT_PAYMENT_REFUND_REQUESTED,
+                new PaymentRefundRequestedEvent(
+                        order.getId(),
+                        event.correlationId(),
+                        UUID.randomUUID()
+                )
+        );
+
+        // 3. Send notification
+        outboxService.storeEvent(
+                order.getId(),
+                "ORDER",
+                EventConstants.EVENT_NOTIFICATION_REQUESTED,
+                new NotificationRequestedEvent(
+                        order.getId(),
+                        order.getCustomerEmail(),
+                        "ORDER_FAILED",
+                        "Your order failed and a refund will be processed.",
+                        event.correlationId(),
+                        UUID.randomUUID()
+                )
+        );
     }
 
     private Order storeOrder(final OrderRequest request, String correlationId) {

@@ -96,6 +96,12 @@ public class KafkaPublisherService {
                                 NotificationRequestedEvent.class
                         );
 
+                case EventConstants.EVENT_PAYMENT_REFUND_REQUESTED ->
+                        objectMapper.readValue(
+                                event.getPayload(),
+                                PaymentRefundRequestedEvent.class
+                        );
+
                 default -> throw new IllegalArgumentException(
                         "Unsupported event type: " + event.getEventType()
                 );

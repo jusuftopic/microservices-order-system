@@ -70,7 +70,7 @@ public class InventoryFinalizationResponseKafkaListener {
                 event.correlationId()
         );
 
-        // orderService.handleInventoryCommitFailed(event);
+        orderService.handleInventoryCommitFailed(event);
     }
 
     /**

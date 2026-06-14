@@ -466,4 +466,48 @@ public class OrderServiceTest {
         verifyNoInteractions(workflowService);
         verifyNoInteractions(outboxService);
     }
+
+    @Test
+    void should_handle_inventory_commit_failed_and_trigger_refund_and_notification() {
+
+        // GIVEN
+        Long orderId = 1L;
+
+        Order order = Order.builder()
+                .id(orderId)
+                .customerEmail("test@mail.com")
+                .status(OrderStatus.PAYMENT_COMPLETED)
+                .items(List.of(
+                        OrderItem.builder().productId(1L).quantity(2).build()
+                ))
+                .build();
+
+        InventoryCommitFailedEvent event =
+                new InventoryCommitFailedEvent(
+                        orderId,
+                        "ERROR",
+                        "corr",
+                        UUID.randomUUID()
+                );
+
+        when(inboxRepository.insertIfNotExists(event.messageId()))
+                .thenReturn(1);
+
+        when(workflowService.updateStatus(orderId, OrderStatus.FAILED))
+                .thenReturn(order);
+
+        // WHEN
+        orderService.handleInventoryCommitFailed(event);
+
+        // THEN
+        verify(workflowService)
+                .updateStatus(orderId, OrderStatus.FAILED);
+
+        verify(outboxService, times(2)).storeEvent(
+                eq(orderId),
+                eq("ORDER"),
+                anyString(),
+                any()
+        );
+    }
 }
