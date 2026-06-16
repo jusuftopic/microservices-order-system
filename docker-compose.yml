@@ -145,3 +145,17 @@ services:
     depends_on:
       notification-db:
         condition: service_healthy
+
+  # PROMETHEUS
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml
+    depends_on:
+      - order-service
+      - notification-service
+      - inventory-service
+      - payment-service
