@@ -349,6 +349,11 @@ public class OrderServiceTest {
 
         when(workflowService.updateStatus(
                 orderId,
+                OrderStatus.INVENTORY_COMMIT_COMPLETED
+        )).thenReturn(order);
+
+        when(workflowService.updateStatus(
+                orderId,
                 OrderStatus.COMPLETED
         )).thenReturn(order);
 
@@ -359,6 +364,8 @@ public class OrderServiceTest {
         verify(inboxRepository)
                 .insertIfNotExists(event.messageId());
 
+        verify(workflowService)
+                .updateStatus(orderId, OrderStatus.INVENTORY_COMMIT_COMPLETED);
         verify(workflowService)
                 .updateStatus(orderId, OrderStatus.COMPLETED);
 
@@ -493,6 +500,8 @@ public class OrderServiceTest {
         when(inboxRepository.insertIfNotExists(event.messageId()))
                 .thenReturn(1);
 
+        when(workflowService.updateStatus(orderId, OrderStatus.INVENTORY_COMMIT_FAILED))
+                .thenReturn(order);
         when(workflowService.updateStatus(orderId, OrderStatus.FAILED))
                 .thenReturn(order);
 
@@ -500,6 +509,8 @@ public class OrderServiceTest {
         orderService.handleInventoryCommitFailed(event);
 
         // THEN
+        verify(workflowService)
+                .updateStatus(orderId, OrderStatus.INVENTORY_COMMIT_FAILED);
         verify(workflowService)
                 .updateStatus(orderId, OrderStatus.FAILED);
 

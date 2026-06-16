@@ -229,6 +229,11 @@ public class OrderService {
         }
 
         // 1. Update final status
+        workflowService.updateStatus(
+                event.orderId(),
+                OrderStatus.INVENTORY_COMMIT_COMPLETED
+        );
+
         Order order = workflowService.updateStatus(
                 event.orderId(),
                 OrderStatus.COMPLETED
@@ -327,6 +332,10 @@ public class OrderService {
         }
 
         // 1. Mark order as FAILED
+        workflowService.updateStatus(
+                event.orderId(),
+                OrderStatus.INVENTORY_COMMIT_FAILED
+        );
         Order order = workflowService.updateStatus(
                 event.orderId(),
                 OrderStatus.FAILED
