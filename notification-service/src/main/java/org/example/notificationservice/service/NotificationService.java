@@ -3,8 +3,7 @@ package org.example.notificationservice.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.commons.event.contracts.NotificationRequestedEvent;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
+import org.example.notificationservice.service.sender.NotificationSender;
 import org.springframework.stereotype.Service;
 
 
@@ -22,8 +21,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class NotificationService {
 
-    private final JavaMailSender mailSender;
-
+    private final NotificationSender notificationSender;
 
     /**
      * Processes incoming notification event and sends email.
@@ -46,46 +44,15 @@ public class NotificationService {
         );
 
         try {
-            SimpleMailMessage message = new SimpleMailMessage();
-
-            message.setTo(event.recipientEmail());
-            message.setSubject(buildSubject(event));
-            message.setText(event.message());
-
-            mailSender.send(message);
-
-            log.info(
-                    "[NOTIFICATION-SERVICE] Email successfully sent to {} for order {}",
-                    event.recipientEmail(),
-                    event.orderId()
-            );
-
+            notificationSender.send(event);
         } catch (Exception ex) {
-
             log.error(
-                    "[NOTIFICATION-SERVICE] Failed to send email to {} for order {}. Error: {}",
-                    event.recipientEmail(),
+                    "[NOTIFICATION-SERVICE] Unexpected error during notification handling. order={} recipient={} error={}",
                     event.orderId(),
+                    event.recipientEmail(),
                     ex.getMessage(),
                     ex
             );
         }
     }
-
-    /**
-     * Builds email subject based on notification type.
-     *
-     * @param event notification event
-     * @return subject string
-     */
-    private String buildSubject(NotificationRequestedEvent event) {
-
-        return switch (event.type()) {
-            case "ORDER_COMPLETED" -> "Your order has been completed";
-            case "ORDER_FAILED" -> "Your order has failed";
-            case "ORDER_COMPENSATED" -> "Your order has been refunded";
-            default -> "Order notification";
-        };
-    }
-
 }
