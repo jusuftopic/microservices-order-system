@@ -157,7 +157,7 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./_observability/prometheus.yml:/etc/prometheus/prometheus.yml
     depends_on:
       - order-service
       - notification-service
