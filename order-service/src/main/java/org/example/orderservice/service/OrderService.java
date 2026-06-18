@@ -1,5 +1,6 @@
 package org.example.orderservice.service;
 
+import io.micrometer.core.instrument.Counter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.commons.event.EventConstants;
@@ -9,6 +10,7 @@ import org.example.orderservice.dto.response.OrderResponse;
 import org.example.orderservice.entity.Order;
 import org.example.orderservice.enums.OrderStatus;
 import org.example.orderservice.mapper.OrderMapper;
+import org.example.orderservice.metrics.OrderMetrics;
 import org.example.orderservice.repository.InboxRepository;
 import org.example.orderservice.repository.OrderRepository;
 import org.example.orderservice.service.outbox.OrderOutboxService;
@@ -34,6 +36,7 @@ public class OrderService {
     private final InboxRepository inboxRepository;
     private final OrderOutboxService outboxService;
     private final OrderWorkflowService workflowService;
+    private final OrderMetrics orderMetrics;
 
     /**
      * Creates a new initial Order
@@ -69,6 +72,8 @@ public class OrderService {
 
         /* 3. return order details */
         log.info("[ORDER-SERVICE] Order {} successfully created. Status: {}", saved.getId(), saved.getStatus());
+        increaseMetricsCounter(orderMetrics.getOrdersCreated());
+
         return OrderMapper.toResponse(saved);
     }
 
@@ -244,6 +249,8 @@ public class OrderService {
                 order.getId()
         );
 
+        increaseMetricsCounter(orderMetrics.getOrdersCompleted());
+
         // 2. Emit notification event
         outboxService.storeEvent(
                 order.getId(),
@@ -291,6 +298,8 @@ public class OrderService {
                 "[ORDER-SERVICE] Order {} finalized as FAILED after inventory release",
                 order.getId()
         );
+
+        increaseMetricsCounter(orderMetrics.getOrdersFailed());
 
         // 2. Emit notification event
         outboxService.storeEvent(
@@ -347,6 +356,8 @@ public class OrderService {
                 event.reason()
         );
 
+        increaseMetricsCounter(orderMetrics.getOrdersFailed());
+
         // 2. Trigger refund
         outboxService.storeEvent(
                 order.getId(),
@@ -389,6 +400,10 @@ public class OrderService {
         return order.getItems().stream()
                 .map(item -> BigDecimal.valueOf(item.getQuantity()).multiply(BigDecimal.TEN))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private void increaseMetricsCounter(Counter counter) {
+        if (counter != null) counter.increment();
     }
 
     /**

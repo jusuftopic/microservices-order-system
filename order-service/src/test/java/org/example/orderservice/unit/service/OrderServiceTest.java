@@ -8,6 +8,7 @@ import org.example.orderservice.dto.response.OrderResponse;
 import org.example.orderservice.entity.Order;
 import org.example.orderservice.entity.OrderItem;
 import org.example.orderservice.enums.OrderStatus;
+import org.example.orderservice.metrics.OrderMetrics;
 import org.example.orderservice.repository.InboxRepository;
 import org.example.orderservice.repository.OrderRepository;
 import org.example.orderservice.service.OrderService;
@@ -46,13 +47,17 @@ public class OrderServiceTest {
     @Mock
     private InboxRepository inboxRepository;
 
+    @Mock
+    private OrderMetrics orderMetrics;
+
     /* class under test */
     private OrderService orderService;
 
     @BeforeEach
     public void setUp() {
         orderService = new OrderService(
-                repository, inboxRepository, outboxService, workflowService
+                repository, inboxRepository, outboxService, workflowService,
+                orderMetrics
         );
     }
 
