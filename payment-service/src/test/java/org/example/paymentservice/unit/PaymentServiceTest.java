@@ -8,6 +8,7 @@ import org.example.paymentservice.entity.OutboxEvent;
 import org.example.paymentservice.entity.Payment;
 import org.example.paymentservice.enums.PaymentStatus;
 import org.example.paymentservice.event.PaymentProcessingEvent;
+import org.example.paymentservice.metrics.PaymentMetrics;
 import org.example.paymentservice.repository.InboxRepository;
 import org.example.paymentservice.repository.OutboxRepository;
 import org.example.paymentservice.repository.PaymentRepository;
@@ -50,6 +51,9 @@ public class PaymentServiceTest {
     @Mock
     private OutboxDlqService outboxDlqService;
 
+    @Mock
+    private PaymentMetrics paymentMetrics;
+
     /* class under test */
     private PaymentService target;
 
@@ -57,8 +61,8 @@ public class PaymentServiceTest {
     public void setUp() {
         target = new PaymentService(
                 repository, inboxRepository, eventPublisher,
-                new ObjectMapper(), outboxRepository, outboxDlqService
-
+                new ObjectMapper(), outboxRepository, outboxDlqService,
+                paymentMetrics
         );
     }
 

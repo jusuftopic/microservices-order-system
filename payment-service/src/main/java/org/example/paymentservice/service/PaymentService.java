@@ -1,17 +1,20 @@
 package org.example.paymentservice.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.Counter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.commons.event.EventConstants;
 import org.example.commons.event.contracts.PaymentCompletedEvent;
 import org.example.commons.event.contracts.PaymentFailedEvent;
+import org.example.commons.event.contracts.PaymentRefundRequestedEvent;
 import org.example.commons.event.contracts.PaymentRequestedEvent;
 import org.example.paymentservice.dto.PaymentResultDTO;
 import org.example.paymentservice.entity.OutboxEvent;
 import org.example.paymentservice.entity.Payment;
 import org.example.paymentservice.enums.PaymentStatus;
 import org.example.paymentservice.event.PaymentProcessingEvent;
+import org.example.paymentservice.metrics.PaymentMetrics;
 import org.example.paymentservice.repository.InboxRepository;
 import org.example.paymentservice.repository.OutboxRepository;
 import org.example.paymentservice.repository.PaymentRepository;
@@ -40,6 +43,7 @@ public class PaymentService {
     private final ObjectMapper objectMapper;
     private final OutboxRepository outboxRepository;
     private final OutboxDlqService outboxDlqService;
+    private final PaymentMetrics paymentMetrics;
 
     /**
      * Creates a payment for a given order.
@@ -54,6 +58,8 @@ public class PaymentService {
             log.warn("[PAYMENT-SERVICE] Order {} already processed.", event.orderId());
             return;
         }
+
+        incrementMetrics(paymentMetrics.getPaymentRequestsTotal());
 
         Payment payment = Optional.ofNullable(repository.findByOrderId(event.orderId()))
                 .orElseGet(() -> createPayment(event));
@@ -120,6 +126,7 @@ public class PaymentService {
             payment.setTransactionId(result.transactionId());
             log.info("[PAYMENT-SERVICE] Payment {} processed successfully. Provider {}", paymentId, result.provider());
 
+            incrementMetrics(paymentMetrics.getPaymentCompletedTotal());
 
             storeOutbox(
                     new PaymentCompletedEvent(
@@ -137,6 +144,7 @@ public class PaymentService {
             log.warn("[PAYMENT-SERVICE] Payment {} processed failed. Provider {}. Reason: {}",
                     paymentId, result.provider(), result.failureReason());
 
+            incrementMetrics(paymentMetrics.getPaymentFailedTotal());
 
             storeOutbox(
                     new PaymentFailedEvent(
@@ -189,5 +197,19 @@ public class PaymentService {
                     e
             );
         }
+    }
+
+    /**
+     * Handles payment refund.
+     *
+     * @param event {@link PaymentRefundRequestedEvent} to handle
+     */
+    public void handleRefund(PaymentRefundRequestedEvent event) {
+        incrementMetrics(paymentMetrics.getPaymentRefundRequestsTotal());
+        incrementMetrics(paymentMetrics.getPaymentRefundCompletedTotal());
+    }
+
+    private void incrementMetrics(final Counter counter) {
+        if (counter != null) counter.increment();
     }
 }
