@@ -1,8 +1,10 @@
 package org.example.notificationservice.service;
 
+import io.micrometer.core.instrument.Counter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.commons.event.contracts.NotificationRequestedEvent;
+import org.example.notificationservice.metrics.NotificationMetrics;
 import org.example.notificationservice.service.sender.NotificationSender;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +24,7 @@ import org.springframework.stereotype.Service;
 public class NotificationService {
 
     private final NotificationSender notificationSender;
+    private final NotificationMetrics notificationMetrics;
 
     /**
      * Processes incoming notification event and sends email.
@@ -42,9 +45,11 @@ public class NotificationService {
                 event.type(),
                 event.recipientEmail()
         );
+        incrementMetrics(notificationMetrics.getNotificationRequestsTotal());
 
         try {
             notificationSender.send(event);
+            incrementMetrics(notificationMetrics.getNotificationSentTotal());
         } catch (Exception ex) {
             log.error(
                     "[NOTIFICATION-SERVICE] Unexpected error during notification handling. order={} recipient={} error={}",
@@ -53,6 +58,12 @@ public class NotificationService {
                     ex.getMessage(),
                     ex
             );
+
+            incrementMetrics(notificationMetrics.getNotificationFailedTotal());
         }
+    }
+
+    private void incrementMetrics(final Counter counter) {
+        if (counter != null) counter.increment();
     }
 }

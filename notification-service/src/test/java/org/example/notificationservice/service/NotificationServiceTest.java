@@ -1,6 +1,7 @@
 package org.example.notificationservice.service;
 
 import org.example.commons.event.contracts.NotificationRequestedEvent;
+import org.example.notificationservice.metrics.NotificationMetrics;
 import org.example.notificationservice.service.sender.NotificationSender;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,12 +23,15 @@ public class NotificationServiceTest {
     @Mock
     private NotificationSender notificationSender;
 
+    @Mock
+    private NotificationMetrics notificationMetrics;
+
     private NotificationService service;
 
 
     @BeforeEach
     void setUp() {
-        service = new NotificationService(notificationSender);
+        service = new NotificationService(notificationSender, notificationMetrics);
     }
 
 
