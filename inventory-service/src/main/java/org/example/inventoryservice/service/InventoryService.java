@@ -1,10 +1,12 @@
 package org.example.inventoryservice.service;
 
+import io.micrometer.core.instrument.Counter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.commons.event.EventConstants;
 import org.example.commons.event.contracts.*;
 import org.example.inventoryservice.entity.InventoryItem;
+import org.example.inventoryservice.metrics.InventoryMetrics;
 import org.example.inventoryservice.repository.InboxRepository;
 import org.example.inventoryservice.repository.InventoryRepository;
 import org.example.inventoryservice.service.outbox.OutboxStoreService;
@@ -31,6 +33,7 @@ public class InventoryService {
     private final InboxRepository inboxRepository;
     private final InventoryRepository inventoryRepository;
     private final OutboxStoreService outboxStoreService;
+    private final InventoryMetrics metrics;
 
     /**
      * Processes inventory check request.
@@ -50,6 +53,8 @@ public class InventoryService {
             return;
         }
 
+        incrementMetrics(metrics.getInventoryReservationsTotal());
+
         log.info("[INVENTORY-SERVICE] Processing inventory for order {}", event.orderId());
 
 
@@ -61,6 +66,10 @@ public class InventoryService {
 
             if (inventory == null) {
                 logItemNotFound(item);
+
+                incrementMetrics(metrics.getInventoryReservationsFailedTotal());
+                incrementMetrics(metrics.getInventoryItemNotFoundTotal());
+
                 storeOutboxEventFailure(event, "ITEM_NOT_FOUND");
                 return;
             }
@@ -73,6 +82,9 @@ public class InventoryService {
                         inventory.getAvailableQuantity()
                 );
 
+                incrementMetrics(metrics.getInventoryReservationsFailedTotal());
+                incrementMetrics(metrics.getInventoryOutOfStockTotal());
+
                 storeOutboxEventFailure(event, "OUT_OF_STOCK");
 
                 return;
@@ -83,6 +95,7 @@ public class InventoryService {
             inventoryRepository.save(inventory);
         }
 
+        incrementMetrics(metrics.getInventoryReservationsSuccessTotal());
         storeOutboxEventSuccess(event);
     }
 
@@ -121,6 +134,8 @@ public class InventoryService {
                     .orElse(null);
 
             if (inventory == null) {
+                incrementMetrics(metrics.getInventoryCommitFailedTotal());
+                incrementMetrics(metrics.getInventoryItemNotFoundTotal());
                 storeCommitFailure(event, "ITEM_NOT_FOUND");
                 return;
             }
@@ -133,6 +148,7 @@ public class InventoryService {
             inventoryRepository.save(inventory);
         }
 
+        incrementMetrics(metrics.getInventoryCommitSuccessTotal());
         storeCommitSuccess(event);
     }
 
@@ -180,6 +196,7 @@ public class InventoryService {
             inventoryRepository.save(inventory);
         }
 
+        incrementMetrics(metrics.getInventoryReleaseTotal());
         storeReleaseSuccess(event);
     }
 
@@ -258,5 +275,9 @@ public class InventoryService {
         outboxStoreService.store(payload,
                 EventConstants.EVENT_INVENTORY_RELEASE_COMPLETED,
                 event.orderId());
+    }
+
+    private void incrementMetrics(final Counter counter) {
+        if (counter != null) counter.increment();
     }
 }

@@ -4,6 +4,7 @@ import org.example.commons.event.EventConstants;
 import org.example.commons.event.contracts.InventoryReserveRequestedEvent;
 import org.example.commons.event.contracts.OrderItemEvent;
 import org.example.inventoryservice.entity.InventoryItem;
+import org.example.inventoryservice.metrics.InventoryMetrics;
 import org.example.inventoryservice.repository.InboxRepository;
 import org.example.inventoryservice.repository.InventoryRepository;
 import org.example.inventoryservice.service.InventoryService;
@@ -36,6 +37,9 @@ public class InventoryServiceTest {
     @Mock
     private InventoryRepository inventoryRepository;
 
+    @Mock
+    private InventoryMetrics inventoryMetrics;
+
 
     private InventoryService service;
 
@@ -45,7 +49,8 @@ public class InventoryServiceTest {
         service = new InventoryService(
                 inboxRepository,
                 inventoryRepository,
-                outboxStoreService
+                outboxStoreService,
+                inventoryMetrics
         );
     }
 
