@@ -1,6 +1,7 @@
 package org.example.inventoryservice.config;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.example.commons.event.EventConstants;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Component;
  */
 @Component("kafka")
 @RequiredArgsConstructor
+@Slf4j
 public class KafkaHealthIndicator implements HealthIndicator {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
@@ -29,11 +31,12 @@ public class KafkaHealthIndicator implements HealthIndicator {
                 return null;
             });
 
+            log.info("[INVENTORY-SERVICE][KAFKA] Kafka reports UP status.");
             return Health.up().build();
 
         } catch (Exception ex) {
+            log.warn("[INVENTORY-SERVICE][KAFKA] Kafka reports DOWN status.");
             return Health.down(ex).build();
         }
-
     }
 }

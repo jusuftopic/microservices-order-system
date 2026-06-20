@@ -1,4 +1,4 @@
-package org.example.orderservice.config.kafka;
+package org.example.notificationservice.config;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,17 +27,16 @@ public class KafkaHealthIndicator implements HealthIndicator {
 
         try {
             kafkaTemplate.execute(producer -> {
-                producer.partitionsFor(EventConstants.TOPIC_ORDER_INVENTORY_REQUEST_V1);
+                producer.partitionsFor(EventConstants.TOPIC_NOTIFICATION_REQUEST_V1);
                 return null;
             });
 
-            log.info("[ORDER-SERVICE][KAFKA] Kafka reports UP status.");
+            log.info("[NOTIFICATION-SERVICE][KAFKA] Kafka reports UP status.");
             return Health.up().build();
 
         } catch (Exception ex) {
-            log.warn("[ORDER-SERVICE][KAFKA] Kafka reports DOWN status.");
+            log.warn("[NOTIFICATION-SERVICE][KAFKA] Kafka reports DOWN status.");
             return Health.down(ex).build();
         }
-
     }
 }
