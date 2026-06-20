@@ -19,6 +19,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static org.example.commons.event.EventConstants.EVENT_INVENTORY_CHECK_REQUESTED;
@@ -250,6 +252,7 @@ public class OrderService {
         );
 
         increaseMetricsCounter(orderMetrics.getOrdersCompleted());
+        recordOrderProcessingDuration(order);
 
         // 2. Emit notification event
         outboxService.storeEvent(
@@ -404,6 +407,16 @@ public class OrderService {
 
     private void increaseMetricsCounter(Counter counter) {
         if (counter != null) counter.increment();
+    }
+
+    private void recordOrderProcessingDuration(Order order) {
+        Duration duration = Duration.between(
+                order.getCreatedAt(),
+                LocalDateTime.now());
+
+        if (orderMetrics.getOrderProcessingDuration() != null) {
+            orderMetrics.getOrderProcessingDuration().record(duration);
+        }
     }
 
     /**

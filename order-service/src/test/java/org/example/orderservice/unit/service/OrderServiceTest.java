@@ -340,6 +340,7 @@ public class OrderServiceTest {
                 .id(orderId)
                 .customerEmail("test@mail.com")
                 .status(OrderStatus.INVENTORY_COMMIT_COMPLETED) // current before transition
+                .createdAt(LocalDateTime.now())
                 .build();
 
         InventoryCommitCompletedEvent event =

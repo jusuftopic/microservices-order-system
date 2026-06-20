@@ -3,6 +3,7 @@ package org.example.orderservice.metrics;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import lombok.Getter;
 import org.springframework.stereotype.Component;
 
@@ -18,13 +19,16 @@ import org.springframework.stereotype.Component;
 @Getter
 public class OrderMetrics {
 
+    /* COUNTERS */
     private final Counter ordersCreated;
     private final Counter ordersCompleted;
     private final Counter ordersFailed;
 
+    /* TIMERS */
+    private final Timer orderProcessingDuration;
 
     public OrderMetrics(MeterRegistry registry) {
-
+        /* COUNTERS */
         this.ordersCreated = Counter.builder("orders.created.total")
                 .description("Total number of created orders")
                 .register(registry);
@@ -36,7 +40,12 @@ public class OrderMetrics {
         this.ordersFailed = Counter.builder("orders.failed.total")
                 .description("Total number of failed orders")
                 .register(registry);
-    }
 
+        /* TIMERS */
+        orderProcessingDuration =
+                Timer.builder("order.processing.duration")
+                        .description("Order end-to-end processing duration")
+                        .register(registry);
+    }
 
 }
