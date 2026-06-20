@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
  * Verifies that Kafka is reachable by attempting to fetch cluster metadata.
  * </p>
  */
-@Component
+@Component("kafka")
 @RequiredArgsConstructor
 @Slf4j
 public class KafkaHealthIndicator implements HealthIndicator {
