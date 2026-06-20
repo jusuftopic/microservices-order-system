@@ -174,3 +174,6 @@ services:
       - ./_observability/grafana/provisioning:/etc/grafana/provisioning
     depends_on:
       - prometheus
+
+volumes:
+  grafana-storage:
