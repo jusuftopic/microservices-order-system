@@ -23,7 +23,7 @@ import org.springframework.stereotype.Service;
 @ConditionalOnProperty(name = "notification.email.enabled", havingValue = "true")
 public class EmailNotificationSender implements NotificationSender {
 
-    private final JavaMailSender mailSender;
+   // private final JavaMailSender mailSender;
 
     @Override
 
@@ -43,7 +43,7 @@ public class EmailNotificationSender implements NotificationSender {
             message.setSubject(buildSubject(event));
             message.setText(event.message());
 
-            mailSender.send(message);
+        //    mailSender.send(message);
 
             log.info(
                     "[NOTIFICATION-SERVICE][EMAIL-SENDER] Email sent to {} for order {}",
