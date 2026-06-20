@@ -79,4 +79,18 @@ public class KafkaTopicConfig {
                 .replicas(props.replicas())
                 .build();
     }
+
+    /**
+     * Creates the topic used to publish notification request event.
+     *
+     * <p>This topic is part of the notification workflow and is consumed by
+     * the notification-service.</p>
+     */
+    @Bean
+    public NewTopic notificationRequestedV1Topic(KafkaTopicProperties props) {
+        return TopicBuilder.name(EventConstants.TOPIC_NOTIFICATION_REQUEST_V1)
+                .partitions(props.partitions())
+                .replicas(props.replicas())
+                .build();
+    }
 }
