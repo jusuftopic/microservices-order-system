@@ -29,9 +29,15 @@ spec:
 
           env:
             - name: POSTGRES_DB
-              value: order_db
+              valueFrom:
+                configMapKeyRef:
+                  key: DB_NAME
+                  name: order-service-config
             - name: POSTGRES_USER
-              value: order_user
+              valueFrom:
+                configMapKeyRef:
+                  key: DB_USERNAME
+                  name: order-service-config
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:

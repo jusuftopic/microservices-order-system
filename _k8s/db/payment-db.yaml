@@ -29,9 +29,15 @@ spec:
 
           env:
             - name: POSTGRES_DB
-              value: payment_db
+              valueFrom:
+                configMapKeyRef:
+                  key: DB_NAME
+                  name: payment-service-config
             - name: POSTGRES_USER
-              value: payment_user
+              valueFrom:
+                configMapKeyRef:
+                  key: DB_USERNAME
+                  name: payment-service-config
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:

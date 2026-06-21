@@ -54,6 +54,11 @@ spec:
                 configMapKeyRef:
                   key: DB_NAME
                   name: inventory-service-config
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  key: DB_HOST
+                  name: inventory-service-config
             - name: DB_PORT
               valueFrom:
                 configMapKeyRef:

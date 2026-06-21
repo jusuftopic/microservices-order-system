@@ -3,7 +3,8 @@ kind: ConfigMap
 metadata:
   name: inventory-service-config
 data:
-  DB_NAME: inventory-db
+  DB_HOST: inventory-db
+  DB_NAME: inventory_db
   DB_PORT: 5432
   DB_USERNAME: inventory_user
   KAFKA_BOOTSTRAP_SERVERS: kafka:9092
