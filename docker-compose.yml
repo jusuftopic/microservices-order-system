@@ -27,7 +27,7 @@ services:
     environment:
       POSTGRES_DB: order_db
       POSTGRES_USER: order_user
-      POSTGRES_PASSWORD: order_pass
+      POSTGRES_PASSWORD: change-me
     ports:
       - "5432:5432"
     healthcheck:
@@ -43,7 +43,7 @@ services:
     environment:
       POSTGRES_DB: payment_db
       POSTGRES_USER: payment_user
-      POSTGRES_PASSWORD: payment_pass
+      POSTGRES_PASSWORD: change-me
     ports:
       - "5433:5432"
     healthcheck:
@@ -59,7 +59,7 @@ services:
     environment:
       POSTGRES_DB: notification_db
       POSTGRES_USER: notification_user
-      POSTGRES_PASSWORD: notification_pass
+      POSTGRES_PASSWORD: change-me
     ports:
       - "5435:5432"
     healthcheck:
@@ -75,7 +75,7 @@ services:
     environment:
       POSTGRES_DB: inventory_db
       POSTGRES_USER: inventory_user
-      POSTGRES_PASSWORD: inventory_pass
+      POSTGRES_PASSWORD: change-me
     ports:
       - "5434:5432"
     healthcheck:
