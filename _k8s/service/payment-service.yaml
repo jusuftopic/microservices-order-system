@@ -47,6 +47,12 @@ spec:
           env:
             - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
               value: kafka:9092
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: password
+                  name: payment-db-secret
+
 ---
 apiVersion: v1
 kind: Service

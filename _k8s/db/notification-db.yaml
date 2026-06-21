@@ -33,7 +33,10 @@ spec:
             - name: POSTGRES_USER
               value: notification_user
             - name: POSTGRES_PASSWORD
-              value: notification_pass
+              valueFrom:
+                secretKeyRef:
+                  name: notification-db-secret
+                  key: password
 
 ---
 

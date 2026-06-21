@@ -33,7 +33,10 @@ spec:
             - name: POSTGRES_USER
               value: inventory_user
             - name: POSTGRES_PASSWORD
-              value: inventory_pass
+              valueFrom:
+                secretKeyRef:
+                  name: inventory-db-secret
+                  key: password
 
 ---
 

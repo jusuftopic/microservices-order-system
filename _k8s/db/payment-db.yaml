@@ -33,7 +33,10 @@ spec:
             - name: POSTGRES_USER
               value: payment_user
             - name: POSTGRES_PASSWORD
-              value: payment_pass
+              valueFrom:
+                secretKeyRef:
+                  name: payment-db-secret
+                  key: password
 
 ---
 
