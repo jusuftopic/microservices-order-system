@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: notification-service
-          image: microservices-order-system-notification-service:latest
+          image: notification-service:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

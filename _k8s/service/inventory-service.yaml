@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: inventory-service
-          image: microservices-order-system-inventory-service:latest
+          image: inventory-service:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
