@@ -15,6 +15,7 @@ spec:
       containers:
         - name: inventory-service
           image: microservices-order-system-inventory-service:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - name: http
               containerPort: 8083
