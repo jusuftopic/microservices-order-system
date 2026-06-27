@@ -18,7 +18,7 @@ WORKDIR /app
 
 # Create a system group and user with ID 1000
 RUN addgroup -g 1000 appgroup && \
-    adduser -u 1000 -G appgroup -D -S appuser \
+    adduser -u 1000 -G appgroup -D -S appuser
 
 COPY --from=build /app/inventory-service/target/*.jar app.jar
 
