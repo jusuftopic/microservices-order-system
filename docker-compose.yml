@@ -6,12 +6,11 @@ services:
   kafka:
     image: apache/kafka:4.0.2
     container_name: kafka
-    ports:
-      - "9092:9092"
     environment:
       CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
+      # TODO [FUTURE IMPROVEMENT] Add secure communication
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
@@ -28,8 +27,6 @@ services:
       POSTGRES_DB: order_db
       POSTGRES_USER: order_user
       POSTGRES_PASSWORD: change-me
-    ports:
-      - "5432:5432"
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U order_user" ]
       interval: 5s
@@ -44,8 +41,6 @@ services:
       POSTGRES_DB: payment_db
       POSTGRES_USER: payment_user
       POSTGRES_PASSWORD: change-me
-    ports:
-      - "5433:5432"
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U payment_user" ]
       interval: 5s
@@ -60,8 +55,6 @@ services:
       POSTGRES_DB: inventory_db
       POSTGRES_USER: inventory_user
       POSTGRES_PASSWORD: change-me
-    ports:
-      - "5434:5432"
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U inventory_user" ]
       interval: 5s
@@ -76,7 +69,6 @@ services:
     container_name: order-service
     ports:
       - "8080:8080"
-      - "8180:8180"
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     depends_on:
@@ -91,9 +83,6 @@ services:
       context: .
       dockerfile: payment-service/Dockerfile
     container_name: payment-service
-    ports:
-      - "8082:8082"
-      - "8182:8182"
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     depends_on:
@@ -108,9 +97,6 @@ services:
       context: .
       dockerfile: inventory-service/Dockerfile
     container_name: inventory-service
-    ports:
-      - "8083:8083"
-      - "8183:8183"
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     depends_on:
@@ -125,9 +111,6 @@ services:
       context: .
       dockerfile: notification-service/Dockerfile
     container_name: notification-service
-    ports:
-      - "8084:8084"
-      - "8184:8184"
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
 
@@ -150,8 +133,6 @@ services:
   loki:
     image: grafana/loki:latest
     container_name: loki
-    ports:
-      - "3100:3100"
     volumes:
       - loki-storage:/loki
 
@@ -179,6 +160,7 @@ services:
     depends_on:
       - prometheus
       - loki
+
 volumes:
   loki-storage:
   grafana-storage:
