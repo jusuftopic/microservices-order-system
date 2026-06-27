@@ -1,0 +1,22 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml # Tracks what log lines have already been read
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: docker-containers
+    # Promtail listens to the Docker daemon directly
+    docker_sd_config:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+
+    # Docker engine automatically tags every single log line with hidden metadata variables
+    relabel_configs:
+      - source_labels: [__meta_docker_container_name]
+        regex: '/(.*)'
+        target_label: container_name

@@ -6,5 +6,4 @@ data:
   DB_HOST: order-db
   DB_NAME: order_db
   DB_PORT: "5432"
-  DB_USERNAME: order_user
   KAFKA_BOOTSTRAP_SERVERS: kafka:9092

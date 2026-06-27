@@ -6,5 +6,4 @@ data:
   DB_HOST: payment-db
   DB_NAME: payment_db
   DB_PORT: "5432"
-  DB_USERNAME: payment_user
   KAFKA_BOOTSTRAP_SERVERS: kafka:9092

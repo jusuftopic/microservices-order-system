@@ -12,11 +12,19 @@ spec:
       labels:
         app: payment-db
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        fsGroup: 999
       containers:
         - name: postgres
           image: postgres:15
           ports:
             - containerPort: 5432
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
 
           readinessProbe:
             exec:
@@ -37,14 +45,14 @@ spec:
                   name: payment-service-config
             - name: POSTGRES_USER
               valueFrom:
-                configMapKeyRef:
+                secretKeyRef:
                   key: DB_USERNAME
-                  name: payment-service-config
+                  name: payment-db-secret
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: payment-db-secret
-                  key: password
+                  key: PASSWORD
 
 ---
 
@@ -53,6 +61,7 @@ kind: Service
 metadata:
   name: payment-db
 spec:
+  type: ClusterIP
   selector:
     app: payment-db
   ports:

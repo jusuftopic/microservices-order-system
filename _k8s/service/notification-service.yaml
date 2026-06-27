@@ -7,11 +7,16 @@ spec:
   selector:
     matchLabels:
       app: notification-service
+      kafka-client: "true"
   template:
     metadata:
       labels:
         app: notification-service
+        kafka-client: "true"
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
       containers:
         - name: notification-service
           image: notification-service:latest
@@ -21,6 +26,11 @@ spec:
               containerPort: 8084
             - name: management
               containerPort: 8184
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+
           startupProbe:
             httpGet:
                path: /actuator/health/liveness
@@ -50,37 +60,14 @@ spec:
                 configMapKeyRef:
                   key: KAFKA_BOOTSTRAP_SERVERS
                   name: notification-service-config
-            - name: DB_NAME
-              valueFrom:
-                configMapKeyRef:
-                  key: DB_NAME
-                  name: notification-service-config
-            - name: DB_HOST
-              valueFrom:
-                configMapKeyRef:
-                  key: DB_HOST
-                  name: notification-service-config
-            - name: DB_PORT
-              valueFrom:
-                configMapKeyRef:
-                  key: DB_PORT
-                  name: notification-service-config
-            - name: DB_USERNAME
-              valueFrom:
-                configMapKeyRef:
-                  key: DB_USERNAME
-                  name: notification-service-config
-            - name: DB_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  key: password
-                  name: notification-db-secret
+
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: notification-service
 spec:
+  type: ClusterIP
   selector:
     app: notification-service
   ports:

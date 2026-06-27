@@ -3,8 +3,4 @@ kind: ConfigMap
 metadata:
   name: notification-service-config
 data:
-  DB_HOST: notification-db
-  DB_NAME: notification_db
-  DB_PORT: "5432"
-  DB_USERNAME: notification_user
   KAFKA_BOOTSTRAP_SERVERS: kafka:9092

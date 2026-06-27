@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: order-db-allow-only-app
+spec:
+  podSelector:
+    matchLabels:
+      app: order-db
+  
+  # Filtering Ingress (Incoming traffic)
+  policyTypes:
+    - Ingress
+  
+  #  Whitelist Rules
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: order-service
+      ports:
+        - protocol: TCP
+          port: 5432

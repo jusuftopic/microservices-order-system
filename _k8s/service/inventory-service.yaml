@@ -7,11 +7,16 @@ spec:
   selector:
     matchLabels:
       app: inventory-service
+      kafka-client: "true"
   template:
     metadata:
       labels:
         app: inventory-service
+        kafka-client: "true"
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
       containers:
         - name: inventory-service
           image: inventory-service:latest
@@ -21,7 +26,9 @@ spec:
               containerPort: 8083
             - name: management
               containerPort: 8183
-
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
           startupProbe:
             httpGet:
               path: /actuator/health/liveness
@@ -67,13 +74,13 @@ spec:
                   name: inventory-service-config
             - name: DB_USERNAME
               valueFrom:
-                configMapKeyRef:
+                secretKeyRef:
                   key: DB_USERNAME
-                  name: inventory-service-config
+                  name: inventory-db-secret
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  key: password
+                  key: PASSWORD
                   name: inventory-db-secret
 ---
 apiVersion: v1
@@ -81,6 +88,7 @@ kind: Service
 metadata:
   name: inventory-service
 spec:
+  type: ClusterIP
   selector:
     app: inventory-service
   ports:

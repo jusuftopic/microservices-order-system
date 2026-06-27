@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: payment-db-allow-only-app
+spec:
+  podSelector:
+    matchLabels:
+      app: payment-db
+  
+  # Filtering Ingress (Incoming traffic)
+  policyTypes:
+    - Ingress
+  
+  #  Whitelist Rules
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: payment-service
+      ports:
+        - protocol: TCP
+          port: 5432

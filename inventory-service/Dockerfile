@@ -16,8 +16,18 @@ FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 
+# Create a system group and user with ID 1000
+RUN addgroup -g 1000 appgroup && \
+    adduser -u 1000 -G appgroup -D -S appuser \
+
 COPY --from=build /app/inventory-service/target/*.jar app.jar
 
-EXPOSE 8080
+# Change the ownership of the jar file so new user with ID 1000 can execute it
+RUN chown appuser:appgroup app.jar
+
+# disable root privileges!
+USER 1000
+
+EXPOSE 8083
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

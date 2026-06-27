@@ -12,6 +12,9 @@ spec:
       labels:
         app: payment-service
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
       containers:
         - name: payment-service
           image: payment-service:latest
@@ -21,6 +24,10 @@ spec:
               containerPort: 8082
             - name: management
               containerPort: 8182
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
 
           startupProbe:
             httpGet:
@@ -68,13 +75,13 @@ spec:
                   name: payment-service-config
             - name: DB_USERNAME
               valueFrom:
-                configMapKeyRef:
+                secretKeyRef:
                   key: DB_USERNAME
-                  name: payment-service-config
+                  name: payment-db-secret
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  key: password
+                  key: PASSWORD
                   name: payment-db-secret
 
 ---
@@ -83,6 +90,7 @@ kind: Service
 metadata:
   name: payment-service
 spec:
+  type: ClusterIP
   selector:
     app: payment-service
   ports:

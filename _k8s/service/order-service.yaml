@@ -7,11 +7,16 @@ spec:
   selector:
     matchLabels:
       app: order-service
+      kafka-client: "true"
   template:
     metadata:
       labels:
         app: order-service
+        kafka-client: "true"
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
       containers:
         - name: order-service
           image: order-service:latest
@@ -22,6 +27,9 @@ spec:
             - name: management
               containerPort: 8180
 
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
           startupProbe:
             httpGet:
               path: /actuator/health/liveness
@@ -68,13 +76,13 @@ spec:
                   name: order-service-config
             - name: DB_USERNAME
               valueFrom:
-                configMapKeyRef:
+                secretKeyRef:
                   key: DB_USERNAME
-                  name: order-service-config
+                  name: order-db-secret
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  key: password
+                  key: PASSWORD
                   name: order-db-secret
 ---
 apiVersion: v1
@@ -82,6 +90,7 @@ kind: Service
 metadata:
   name: order-service
 spec:
+  type: ClusterIP
   selector:
     app: order-service
   ports:

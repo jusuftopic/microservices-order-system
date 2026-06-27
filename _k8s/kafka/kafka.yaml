@@ -12,12 +12,20 @@ spec:
       labels:
         app: kafka
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
       containers:
         - name: kafka
           image: apache/kafka:4.0.2
           ports:
             - containerPort: 9092
             - containerPort: 9093
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
           env:
             - name: CLUSTER_ID
               value: "MkU3OEVBNTcwNTJENDM2Qk"
@@ -47,6 +55,7 @@ kind: Service
 metadata:
   name: kafka
 spec:
+  type: ClusterIP
   selector:
     app: kafka
   ports:

@@ -31,7 +31,7 @@ public class KafkaHealthIndicator implements HealthIndicator {
                 return null;
             });
 
-            log.info("[ORDER-SERVICE][KAFKA] Kafka reports UP status.");
+            log.debug("[ORDER-SERVICE][KAFKA] Kafka reports UP status.");
             return Health.up().build();
 
         } catch (Exception ex) {
