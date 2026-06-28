@@ -38,6 +38,7 @@ public class OrderService {
     private final InboxRepository inboxRepository;
     private final OrderOutboxService outboxService;
     private final OrderWorkflowService workflowService;
+    private final OrderCompensationService compensationService;
     private final OrderMetrics orderMetrics;
 
     /**
@@ -430,5 +431,55 @@ public class OrderService {
         return repository.findById(id)
                 .map(OrderMapper::toResponse)
                 .orElse(null);
+    }
+
+    /**
+     * Handles timeout of long-running orders.
+     *
+     * <p>
+     * An order is considered timed out when it remains
+     * in a non-final state longer than the configured
+     * timeout threshold.
+     *
+     * The timeout mechanism protects the saga from
+     * remaining indefinitely stuck when downstream
+     * services are unavailable or fail to return a result.
+     * </p>
+     */
+    @Transactional
+    public void handleTimeout(Order order) {
+
+        if (order.getStatus().isFinalState()) {
+            return;
+        }
+
+        /* 1. Update order status */
+        workflowService.updateStatus(order.getId(), OrderStatus.TIMED_OUT);
+
+        log.error(
+                "[ORDER-SERVICE] Order {} timed out after exceeding processing threshold.",
+                order.getId()
+        );
+
+        /* 2. Increase metrics for failed processing */
+        increaseMetricsCounter(orderMetrics.getOrdersFailed());
+
+        /* 3. Apply compensation actions */
+        compensationService.compensate(order);
+
+        /* 4. Send notifications */
+        outboxService.storeEvent(
+                order.getId(),
+                "ORDER",
+                EventConstants.EVENT_NOTIFICATION_REQUESTED,
+                new NotificationRequestedEvent(
+                        order.getId(),
+                        order.getCustomerEmail(),
+                        "ORDER_TIMED_OUT",
+                        "Your order processing timed out.",
+                        order.getCorrelationId(),
+                        UUID.randomUUID()
+                )
+        );
     }
 }

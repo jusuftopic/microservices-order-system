@@ -28,19 +28,22 @@ public class OrderWorkflowService {
                     OrderStatus.CREATED,
                     Set.of(
                             OrderStatus.INVENTORY_RESERVE_COMPLETED,
-                            OrderStatus.INVENTORY_RESERVE_FAILED
+                            OrderStatus.INVENTORY_RESERVE_FAILED,
+                            OrderStatus.TIMED_OUT
                     ),
 
                     OrderStatus.INVENTORY_RESERVE_COMPLETED,
                     Set.of(
                             OrderStatus.PAYMENT_COMPLETED,
-                            OrderStatus.PAYMENT_FAILED
+                            OrderStatus.PAYMENT_FAILED,
+                            OrderStatus.TIMED_OUT
                     ),
 
                     OrderStatus.PAYMENT_COMPLETED,
                     Set.of(
                             OrderStatus.INVENTORY_COMMIT_COMPLETED,
-                            OrderStatus.INVENTORY_COMMIT_FAILED
+                            OrderStatus.INVENTORY_COMMIT_FAILED,
+                            OrderStatus.TIMED_OUT
                     ),
 
                     OrderStatus.INVENTORY_COMMIT_COMPLETED,
@@ -49,10 +52,10 @@ public class OrderWorkflowService {
                     ),
 
                     OrderStatus.INVENTORY_RESERVE_FAILED,
-                    Set.of(OrderStatus.FAILED),
+                    Set.of(OrderStatus.FAILED, OrderStatus.TIMED_OUT),
 
                     OrderStatus.PAYMENT_FAILED,
-                    Set.of(OrderStatus.FAILED),
+                    Set.of(OrderStatus.FAILED, OrderStatus.TIMED_OUT),
 
                     OrderStatus.INVENTORY_COMMIT_FAILED,
                     Set.of(OrderStatus.FAILED)
@@ -70,6 +73,8 @@ public class OrderWorkflowService {
         Order order = repository.findById(orderId)
                 .orElseThrow();
         final OrderStatus currentStatus = order.getStatus();
+
+        if (currentStatus.isFinalState()) return order;
 
         validateTransition(currentStatus, targetStatus);
 

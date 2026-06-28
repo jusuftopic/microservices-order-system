@@ -16,5 +16,15 @@ public enum OrderStatus {
     INVENTORY_COMMIT_FAILED,
 
     COMPLETED,
-    FAILED
+    FAILED,
+    TIMED_OUT;
+
+    /**
+     * @return True if order status is in final state or not
+     */
+    public boolean isFinalState() {
+        return this == OrderStatus.COMPLETED ||
+                this == OrderStatus.FAILED ||
+                this == OrderStatus.TIMED_OUT;
+    }
 }

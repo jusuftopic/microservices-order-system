@@ -11,6 +11,7 @@ import org.example.orderservice.enums.OrderStatus;
 import org.example.orderservice.metrics.OrderMetrics;
 import org.example.orderservice.repository.InboxRepository;
 import org.example.orderservice.repository.OrderRepository;
+import org.example.orderservice.service.OrderCompensationService;
 import org.example.orderservice.service.OrderService;
 import org.example.orderservice.service.outbox.OrderOutboxService;
 import org.example.orderservice.service.workflow.OrderWorkflowService;
@@ -50,6 +51,9 @@ public class OrderServiceTest {
     @Mock
     private OrderMetrics orderMetrics;
 
+    @Mock
+    private OrderCompensationService compensationService;
+
     /* class under test */
     private OrderService orderService;
 
@@ -57,7 +61,7 @@ public class OrderServiceTest {
     public void setUp() {
         orderService = new OrderService(
                 repository, inboxRepository, outboxService, workflowService,
-                orderMetrics
+                compensationService, orderMetrics
         );
     }
 
