@@ -2,8 +2,10 @@ package org.example.orderservice.repository;
 
 import org.example.orderservice.entity.OutboxEvent;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -13,10 +15,16 @@ import java.util.UUID;
 @Repository
 public interface OutboxRepository extends JpaRepository<OutboxEvent, UUID> {
 
-    /**
-     * Find all outbox events needed to be sent to Kafka
-     *
-     * @return List of all unprocessed {@link OutboxEvent} retrieved by FIFO.
-     */
-    List<OutboxEvent> findByProcessedFalseOrderByCreatedAtAsc();
+    @Query("""
+    SELECT e
+    FROM OutboxEvent e
+    WHERE e.processed = false
+      AND (
+            e.nextRetryAt IS NULL
+            OR e.nextRetryAt <= :now
+          )
+    ORDER BY e.createdAt ASC
+    """)
+    List<OutboxEvent> findReadyForPublishing(LocalDateTime now);
+
 }

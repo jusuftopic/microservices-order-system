@@ -11,3 +11,4 @@ Problems:
 - The Ordering Trap: Moving a single stalled outbox item to a DLQ while letting newer rows pass by breaks message sequencing. This causes down-stream state machines to process steps out of order.
 - Log Pollution Control: Schedulers ticking every 3 seconds during a 2-hour outage will generate 2,400 identical error logs per microservice. Exponential backoff keeps logs clean so engineers can see the real root cause.
 - At-Least-Once Delivery Guarantee: You can only guarantee zero data loss if the Outbox row deletion/status update is triggered after receiving a successful RecordMetadata acknowledgment callback from the Kafka producer API.
+- No distinguishment between retriable and non-retriable errors

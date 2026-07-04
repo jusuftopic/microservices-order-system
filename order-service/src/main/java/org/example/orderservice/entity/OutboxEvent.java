@@ -76,6 +76,9 @@ public class OutboxEvent {
     @Column(name = "last_attempt_at")
     private LocalDateTime lastAttemptAt;
 
+    @Column(name = "next_retry_at")
+    private LocalDateTime nextRetryAt;
+
     /**
      * Timestamp when the event was created.
      */

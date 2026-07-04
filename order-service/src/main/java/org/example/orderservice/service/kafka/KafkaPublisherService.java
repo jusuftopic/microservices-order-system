@@ -4,6 +4,7 @@ package org.example.orderservice.service.kafka;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.common.errors.TimeoutException;
 import org.example.commons.event.EventConstants;
 import org.example.commons.event.contracts.*;
 import org.example.commons.event.utils.TopicResolver;

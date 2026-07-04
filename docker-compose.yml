@@ -28,10 +28,21 @@ services:
       POSTGRES_USER: order_user
       POSTGRES_PASSWORD: change-me
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U order_user" ]
+      test: [ "CMD-SHELL", "pg_isready -U order_user -d order_db" ]
       interval: 5s
       timeout: 5s
       retries: 5
+
+  # ORDER DB
+  order-db-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: order-db-exporter
+    environment:
+      DATA_SOURCE_NAME: "postgresql://order_user:change-me@order-db:5432/order_db?sslmode=disable"
+    depends_on:
+      order-db:
+        condition: service_healthy
+
 
   # PAYMENT DB
   payment-db:
@@ -42,10 +53,21 @@ services:
       POSTGRES_USER: payment_user
       POSTGRES_PASSWORD: change-me
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U payment_user" ]
+      test: [ "CMD-SHELL", "pg_isready -U payment_user -d payment_db" ]
       interval: 5s
       timeout: 5s
       retries: 5
+
+
+  # PAYMENT DB EXPORTER
+  payment-db-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: payment-db-exporter
+    environment:
+      DATA_SOURCE_NAME: "postgresql://payment_user:change-me@payment-db:5432/payment_db?sslmode=disable"
+    depends_on:
+      payment-db:
+        condition: service_healthy
 
   # INVENTORY DB
   inventory-db:
@@ -56,10 +78,20 @@ services:
       POSTGRES_USER: inventory_user
       POSTGRES_PASSWORD: change-me
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U inventory_user" ]
+      test: [ "CMD-SHELL", "pg_isready -U inventory_user -d inventory_db" ]
       interval: 5s
       timeout: 5s
       retries: 5
+
+  # INVENTORY DB EXPORTER
+  inventory-db-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: inventory-db-exporter
+    environment:
+      DATA_SOURCE_NAME: "postgresql://inventory_user:change-me@inventory-db:5432/inventory_db?sslmode=disable"
+    depends_on:
+      inventory-db:
+        condition: service_healthy
 
   # ORDER-SERVICE
   order-service:
@@ -133,10 +165,12 @@ services:
   loki:
     image: grafana/loki:latest
     container_name: loki
+    ports:
+      - "3100:3100"
     volumes:
       - loki-storage:/loki
 
-  # PROMTAIL (Log Shipper/Collector)
+  # PROMTAIL
   promtail:
     image: grafana/promtail:latest
     container_name: promtail
@@ -144,7 +178,7 @@ services:
       - ./_observability/loki/promtail-config.yml:/etc/promtail/config.yml
       - /var/run/docker.sock:/var/run/docker.sock:ro
     command:
-      - config.file=/etc/promtail/config.yml
+      - -config.file=/etc/promtail/config.yml
     depends_on:
       - loki
 

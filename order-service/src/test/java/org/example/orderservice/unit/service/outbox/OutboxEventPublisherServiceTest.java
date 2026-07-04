@@ -1,6 +1,7 @@
 package org.example.orderservice.unit.service.outbox;
 
 import org.apache.kafka.clients.producer.RecordMetadata;
+import org.apache.kafka.common.errors.TimeoutException;
 import org.example.commons.event.EventConstants;
 import org.example.commons.event.utils.Constants;
 import org.example.orderservice.entity.OutboxDlqEvent;
@@ -23,6 +24,7 @@ import java.util.concurrent.CompletableFuture;
 
 import static org.hibernate.validator.internal.util.Contracts.assertNotNull;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -50,7 +52,7 @@ public class OutboxEventPublisherServiceTest {
     void should_do_nothing_when_no_pending_events() {
 
         // GIVEN
-        when(outboxRepository.findByProcessedFalseOrderByCreatedAtAsc())
+        when(outboxRepository.findReadyForPublishing(any()))
                 .thenReturn(List.of());
 
         // WHEN
@@ -58,7 +60,7 @@ public class OutboxEventPublisherServiceTest {
 
         // THEN
         verifyNoInteractions(kafkaPublisherService);
-        verify(outboxRepository).findByProcessedFalseOrderByCreatedAtAsc();
+        verify(outboxRepository).findReadyForPublishing(any());
     }
 
     @Test
@@ -72,7 +74,7 @@ public class OutboxEventPublisherServiceTest {
         event.setRetryCount(0);
         event.setEventType(EventConstants.EVENT_INVENTORY_CHECK_REQUESTED);
 
-        when(outboxRepository.findByProcessedFalseOrderByCreatedAtAsc())
+        when(outboxRepository.findReadyForPublishing(any()))
                 .thenReturn(List.of(event));
 
         // simulate Kafka success
@@ -111,12 +113,12 @@ public class OutboxEventPublisherServiceTest {
         event.setEventType(EventConstants.EVENT_INVENTORY_CHECK_REQUESTED);
 
 
-        when(outboxRepository.findByProcessedFalseOrderByCreatedAtAsc())
+        when(outboxRepository.findReadyForPublishing(any()))
                 .thenReturn(List.of(event));
 
         // simulate Kafka failure
         CompletableFuture future = new CompletableFuture();
-        future.completeExceptionally(new RuntimeException("Kafka down"));
+        future.completeExceptionally(new TimeoutException("Kafka down"));
 
         when(kafkaPublisherService.publishEvent(event))
                 .thenReturn(future);
@@ -146,7 +148,7 @@ public class OutboxEventPublisherServiceTest {
         // simulate already retried N times
         event.setRetryCount(Constants.MAX_RETRIES_KAFKA - 1);
 
-        when(outboxRepository.findByProcessedFalseOrderByCreatedAtAsc())
+        when(outboxRepository.findReadyForPublishing(any()))
                 .thenReturn(List.of(event));
 
         CompletableFuture future = new CompletableFuture();
@@ -191,9 +193,8 @@ public class OutboxEventPublisherServiceTest {
         e2.setPayload("p2");
         e2.setEventType(EventConstants.EVENT_INVENTORY_CHECK_REQUESTED);
 
-        when(outboxRepository.findByProcessedFalseOrderByCreatedAtAsc())
+        when(outboxRepository.findReadyForPublishing(any()))
                 .thenReturn(List.of(e1, e2));
-
         // WHEN
         service.publishPendingEvents();
 

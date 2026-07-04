@@ -21,3 +21,17 @@ scrape_configs:
     metrics_path: '/actuator/prometheus'
     static_configs:
       - targets: ['payment-service:8182']
+
+  # PostgreSQL databases
+  - job_name: 'order-db'
+    static_configs:
+      - targets: ['order-db-exporter:9187']
+
+  - job_name: 'inventory-db'
+    static_configs:
+      - targets: [ 'inventory-db-exporter:9187' ]
+
+  - job_name: 'payment-db'
+    static_configs:
+      - targets: [ 'payment-db-exporter:9187' ]
+
