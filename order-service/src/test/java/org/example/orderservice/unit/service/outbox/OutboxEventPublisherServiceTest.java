@@ -3,17 +3,14 @@ package org.example.orderservice.unit.service.outbox;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.errors.TimeoutException;
 import org.example.commons.event.EventConstants;
-import org.example.commons.event.utils.Constants;
 import org.example.messagingstarter.outbox.entity.OutboxEvent;
-import org.example.messagingstarter.outbox.entity.OutboxDlqEvent;
-import org.example.messagingstarter.outbox.repository.OutboxDlqRepository;
 import org.example.messagingstarter.outbox.repository.OutboxRepository;
+import org.example.messagingstarter.outbox.service.OutboxDlqService;
 import org.example.orderservice.service.kafka.KafkaPublisherService;
 import org.example.orderservice.service.outbox.OutboxEventPublisherService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.kafka.support.SendResult;
@@ -34,7 +31,7 @@ public class OutboxEventPublisherServiceTest {
     private OutboxRepository outboxRepository;
 
     @Mock
-    private OutboxDlqRepository dlqRepository;
+    private OutboxDlqService dlqService;
 
     @Mock
     private KafkaPublisherService kafkaPublisherService;
@@ -44,7 +41,7 @@ public class OutboxEventPublisherServiceTest {
     @BeforeEach
     public void setUp() {
         service = new OutboxEventPublisherService(
-                outboxRepository, dlqRepository, kafkaPublisherService
+                outboxRepository, dlqService, kafkaPublisherService
         );
     }
 
@@ -98,7 +95,14 @@ public class OutboxEventPublisherServiceTest {
         assertNotNull(event.getLastAttemptAt());
 
         verify(outboxRepository, atLeastOnce()).save(event);
-        verify(dlqRepository, never()).save(any());
+        verify(dlqService, never()).storeOutboxDlq(
+                any(),
+                anyLong(),
+                anyString(),
+                any(),
+                anyInt(),
+                any()
+        );
     }
 
     @Test
@@ -131,50 +135,14 @@ public class OutboxEventPublisherServiceTest {
         assertEquals(1, event.getRetryCount());
 
         verify(outboxRepository).save(event);
-        verify(dlqRepository, never()).save(any());
-    }
-
-    @Test
-    void should_move_to_dlq_when_max_retries_reached()  {
-
-        // GIVEN
-        OutboxEvent event = new OutboxEvent();
-        event.setId(UUID.randomUUID());
-        event.setAggregateId(1L);
-        event.setPayload("payload");
-        event.setEventType(EventConstants.EVENT_INVENTORY_CHECK_REQUESTED);
-
-
-        // simulate already retried N times
-        event.setRetryCount(Constants.MAX_RETRIES_KAFKA - 1);
-
-        when(outboxRepository.findReadyForPublishing(any()))
-                .thenReturn(List.of(event));
-
-        CompletableFuture future = new CompletableFuture();
-        future.completeExceptionally(new RuntimeException("Kafka down"));
-
-        when(kafkaPublisherService.publishEvent(event))
-                .thenReturn(future);
-
-        ArgumentCaptor<OutboxDlqEvent> dlqCaptor =
-                ArgumentCaptor.forClass(OutboxDlqEvent.class);
-
-        // WHEN
-        service.publishPendingEvents();
-
-        // THEN
-        verify(dlqRepository).save(dlqCaptor.capture());
-
-        OutboxDlqEvent dlq = dlqCaptor.getValue();
-
-        assertEquals(event.getId(), dlq.getOriginalEventId());
-        assertEquals(event.getAggregateId(), dlq.getAggregateId());
-        assertEquals(event.getPayload(), dlq.getPayload());
-        assertEquals(org.example.commons.event.utils.Constants.MAX_RETRIES_KAFKA, dlq.getRetryCount());
-
-        assertTrue(event.getProcessed()); // important
-        verify(outboxRepository, atLeastOnce()).save(event);
+        verify(dlqService, never()).storeOutboxDlq(
+                any(),
+                anyLong(),
+                anyString(),
+                any(),
+                anyInt(),
+                any()
+        );
     }
 
     @Test

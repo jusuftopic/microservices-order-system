@@ -8,6 +8,7 @@ import org.example.messagingstarter.outbox.entity.OutboxEvent;
 import org.example.messagingstarter.outbox.entity.OutboxDlqEvent;
 import org.example.messagingstarter.outbox.repository.OutboxDlqRepository;
 import org.example.messagingstarter.outbox.repository.OutboxRepository;
+import org.example.messagingstarter.outbox.service.OutboxDlqService;
 import org.example.orderservice.service.kafka.KafkaPublisherService;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
@@ -37,7 +38,7 @@ import static org.example.commons.event.utils.KafkaUtils.calculateBackoff;
 public class OutboxEventPublisherService {
 
     private final OutboxRepository outboxRepository;
-    private final OutboxDlqRepository dlqRepository;
+    private final OutboxDlqService outboxDlqService;
     private final KafkaPublisherService kafkaPublisherService;
 
     /**
@@ -125,16 +126,14 @@ public class OutboxEventPublisherService {
     }
 
     private void moveToDlq(OutboxEvent event, Throwable ex) {
-        final OutboxDlqEvent dlqEvent = new OutboxDlqEvent();
-        dlqEvent.setOriginalEventId(event.getId());
-        dlqEvent.setAggregateId(event.getAggregateId());
-        dlqEvent.setEventType(event.getEventType());
-        dlqEvent.setPayload(event.getPayload());
-        dlqEvent.setErrorMessage(ex.getMessage());
-        dlqEvent.setRetryCount(event.getRetryCount());
-
-        /* persist in DLQ table */
-        dlqRepository.save(dlqEvent);
+        outboxDlqService.storeOutboxDlq(
+                event.getId(),
+                event.getAggregateId(),
+                event.getEventType(),
+                event.getPayload(),
+                event.getRetryCount(),
+                ex
+        );
 
         /* mark event as processed in Outbox table */
         event.setProcessed(true);
