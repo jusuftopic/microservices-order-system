@@ -3,8 +3,8 @@ package org.example.inventoryservice.service.outbox;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.inventoryservice.entity.OutboxEvent;
-import org.example.inventoryservice.repository.OutboxRepository;
+import org.example.messagingstarter.outbox.entity.OutboxEvent;
+import org.example.messagingstarter.outbox.repository.OutboxRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;

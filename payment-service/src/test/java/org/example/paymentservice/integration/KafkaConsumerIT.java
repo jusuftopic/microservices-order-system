@@ -2,8 +2,8 @@ package org.example.paymentservice.integration;
 
 import org.example.commons.event.EventConstants;
 import org.example.commons.event.contracts.PaymentRequestedEvent;
-import org.example.paymentservice.repository.InboxRepository;
-import org.example.paymentservice.repository.OutboxRepository;
+import org.example.messagingstarter.inbox.repository.InboxRepository;
+import org.example.messagingstarter.outbox.repository.OutboxRepository;
 import org.example.paymentservice.repository.PaymentRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -2,8 +2,8 @@ package org.example.paymentservice.unit.publisher;
 
 import org.example.commons.event.EventConstants;
 import org.example.commons.event.utils.Constants;
-import org.example.paymentservice.entity.OutboxEvent;
-import org.example.paymentservice.repository.OutboxRepository;
+import org.example.messagingstarter.outbox.entity.OutboxEvent;
+import org.example.messagingstarter.outbox.repository.OutboxRepository;
 import org.example.paymentservice.service.OutboxDlqService;
 import org.example.paymentservice.service.publisher.KafkaPublisherService;
 import org.example.paymentservice.service.publisher.OutboxPublisherService;
@@ -59,7 +59,7 @@ public class OutboxPublisherServiceTest {
                 EventConstants.EVENT_PAYMENT_SUCCESS
         );
 
-        when(repository.findPendingEvents())
+        when(repository.findReadyForPublishing(any()))
                 .thenReturn(List.of(event));
 
         when(kafkaPublisherService.publishEvent(event))
@@ -75,7 +75,7 @@ public class OutboxPublisherServiceTest {
         assertEquals(1, event.getRetryCount());
         assertNotNull(event.getLastAttemptAt());
 
-        verify(repository).findPendingEvents();
+        verify(repository).findReadyForPublishing(any());
         verify(kafkaPublisherService).publishEvent(event);
         verify(repository).save(event);
 
@@ -87,14 +87,14 @@ public class OutboxPublisherServiceTest {
     void should_do_nothing_when_no_pending_events_exist() {
 
         // GIVEN
-        when(repository.findPendingEvents())
+        when(repository.findReadyForPublishing(any()))
                 .thenReturn(Collections.emptyList());
 
         // WHEN
         service.publishPendingEvents();
 
         // THEN
-        verify(repository).findPendingEvents();
+        verify(repository).findReadyForPublishing(any());
 
         verifyNoInteractions(
                 kafkaPublisherService,
@@ -116,7 +116,7 @@ public class OutboxPublisherServiceTest {
 
         event.setRetryCount(0);
 
-        when(repository.findPendingEvents())
+        when(repository.findReadyForPublishing(any()))
                 .thenReturn(List.of(event));
 
         CompletableFuture<SendResult<String, Object>> failedFuture =
@@ -154,7 +154,7 @@ public class OutboxPublisherServiceTest {
 
         event.setRetryCount(Constants.MAX_RETRIES_KAFKA - 1);
 
-        when(repository.findPendingEvents())
+        when(repository.findReadyForPublishing(any()))
                 .thenReturn(List.of(event));
 
         CompletableFuture<SendResult<String, Object>> failedFuture =
@@ -198,7 +198,7 @@ public class OutboxPublisherServiceTest {
 
         event.setRetryCount(5);
 
-        when(repository.findPendingEvents())
+        when(repository.findReadyForPublishing(any()))
                 .thenReturn(List.of(event));
 
         when(kafkaPublisherService.publishEvent(event))
@@ -228,7 +228,7 @@ public class OutboxPublisherServiceTest {
                 EventConstants.EVENT_PAYMENT_FAILED
         );
 
-        when(repository.findPendingEvents())
+        when(repository.findReadyForPublishing(any()))
                 .thenReturn(List.of(first, second));
 
         when(kafkaPublisherService.publishEvent(any()))

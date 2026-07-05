@@ -1,6 +1,6 @@
-package org.example.inventoryservice.repository;
+package org.example.messagingstarter.inbox.repository;
 
-import org.example.inventoryservice.entity.InboxEvent;
+import org.example.messagingstarter.inbox.entity.InboxEvent;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -16,7 +16,6 @@ import java.util.UUID;
  * Supports idempotent processing of incoming events.
  * </p>
  */
-@Repository
 public interface InboxRepository extends JpaRepository<InboxEvent, UUID> {
 
     /**
@@ -24,7 +23,7 @@ public interface InboxRepository extends JpaRepository<InboxEvent, UUID> {
      *
      * This method is used to implement the Inbox Pattern for Kafka message
      * deduplication. It ensures that each event is processed at most once
-     * by relying on atomic unique constraint on the message_id column.
+     * by relying on atomic unique constraint on the correlation_id column.
      *
      * @param messageId unique identifier of the consumed Kafka event
      * @return number of affected rows

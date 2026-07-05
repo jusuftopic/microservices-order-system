@@ -1,10 +1,10 @@
 package org.example.orderservice.integration;
 
+import org.example.messagingstarter.outbox.entity.OutboxEvent;
 import org.example.orderservice.dto.request.OrderItemRequest;
 import org.example.orderservice.dto.request.OrderRequest;
 import org.example.orderservice.dto.response.OrderResponse;
-import org.example.orderservice.entity.OutboxEvent;
-import org.example.orderservice.repository.OutboxRepository;
+import org.example.messagingstarter.outbox.repository.OutboxRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

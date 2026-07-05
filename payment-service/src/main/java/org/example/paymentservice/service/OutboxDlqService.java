@@ -4,8 +4,8 @@ package org.example.paymentservice.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.paymentservice.entity.OutboxDlqEvent;
-import org.example.paymentservice.repository.OutboxDlqRepository;
+import org.example.messagingstarter.outbox.entity.OutboxDlqEvent;
+import org.example.messagingstarter.outbox.repository.OutboxDlqRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;

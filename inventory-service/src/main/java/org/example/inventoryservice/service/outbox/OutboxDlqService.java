@@ -4,8 +4,8 @@ package org.example.inventoryservice.service.outbox;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.inventoryservice.entity.OutboxDlqEvent;
-import org.example.inventoryservice.repository.OutboxDlqRepository;
+import org.example.messagingstarter.outbox.entity.OutboxDlqEvent;
+import org.example.messagingstarter.outbox.repository.OutboxDlqRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;

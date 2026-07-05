@@ -3,8 +3,8 @@ package org.example.paymentservice.service.publisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.commons.event.utils.Constants;
-import org.example.paymentservice.entity.OutboxEvent;
-import org.example.paymentservice.repository.OutboxRepository;
+import org.example.messagingstarter.outbox.entity.OutboxEvent;
+import org.example.messagingstarter.outbox.repository.OutboxRepository;
 import org.example.paymentservice.service.OutboxDlqService;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
@@ -28,7 +28,7 @@ public class OutboxPublisherService {
 
     @Transactional
     public void publishPendingEvents() {
-        List<OutboxEvent> events = repository.findPendingEvents();
+        List<OutboxEvent> events = repository.findReadyForPublishing(LocalDateTime.now());
 
         if (events == null || events.isEmpty()) {
             log.debug("[PAYMENT-SERVICE][OUTBOX-PUBLISHER] No pending events found.");

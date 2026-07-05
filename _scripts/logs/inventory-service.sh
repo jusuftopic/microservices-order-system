@@ -1,1 +1,0 @@
-docker logs -f inventory-service | grep "\[INVENTORY-SERVICE\]" | less

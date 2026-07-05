@@ -9,7 +9,7 @@ import org.example.orderservice.entity.Order;
 import org.example.orderservice.entity.OrderItem;
 import org.example.orderservice.enums.OrderStatus;
 import org.example.orderservice.metrics.OrderMetrics;
-import org.example.orderservice.repository.InboxRepository;
+import org.example.messagingstarter.inbox.repository.InboxRepository;
 import org.example.orderservice.repository.OrderRepository;
 import org.example.orderservice.service.OrderCompensationService;
 import org.example.orderservice.service.OrderService;

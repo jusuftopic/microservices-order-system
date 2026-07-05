@@ -1,6 +1,6 @@
-package org.example.orderservice.repository;
+package org.example.messagingstarter.outbox.repository;
 
-import org.example.orderservice.entity.OutboxDlqEvent;
+import org.example.messagingstarter.outbox.entity.OutboxDlqEvent;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /**

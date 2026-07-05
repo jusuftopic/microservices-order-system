@@ -8,7 +8,7 @@ import org.example.commons.event.EventConstants;
 import org.example.commons.event.contracts.PaymentCompletedEvent;
 import org.example.commons.event.contracts.PaymentFailedEvent;
 import org.example.commons.event.utils.TopicResolver;
-import org.example.paymentservice.entity.OutboxEvent;
+import org.example.messagingstarter.outbox.entity.OutboxEvent;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;

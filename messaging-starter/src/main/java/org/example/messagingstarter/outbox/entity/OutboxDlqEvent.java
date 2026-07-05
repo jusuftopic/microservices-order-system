@@ -1,4 +1,4 @@
-package org.example.paymentservice.entity;
+package org.example.messagingstarter.outbox.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "outbox_dlq")
+@Table(name = "order_outbox_dlq")
 @Getter
 @Setter
 public class OutboxDlqEvent {

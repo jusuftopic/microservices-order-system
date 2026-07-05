@@ -1,1 +1,0 @@
-docker logs -f order-service | grep "\[ORDER-SERVICE\]" | less

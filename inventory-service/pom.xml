@@ -70,6 +70,12 @@
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.example</groupId>
+            <artifactId>messaging-starter</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
         <!-- TEST STARTER -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

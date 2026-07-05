@@ -1,22 +1,20 @@
-package org.example.inventoryservice.entity;
-
+package org.example.messagingstarter.outbox.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * Entity representing an outgoing event to be published to Kafka.
+ * OutboxEvent represents a persisted domain event used in the
+ * Outbox Pattern for reliable event publishing.
  *
  * <p>
- * Implements the Outbox Pattern for reliable message delivery.
+ * Each record stores an event that will later be processed
+ * and published to an external Kafka messaging system.
  * </p>
  */
-
 @Entity
 @Table(name = "outbox_events")
 @Getter
@@ -37,69 +35,65 @@ public class OutboxEvent {
      * Type of the aggregate that produced the event
      * (e.g. "USER", "ORDER").
      */
-    @NotNull
-    @Column(name = "aggregate_type", length = 50)
+    @Column(name = "aggregate_type", nullable = false)
     private String aggregateType;
 
     /**
      * Identifier of the aggregate instance that produced the event.
      */
-    @NotNull
-    @Column(name = "aggregate_id")
+    @Column(name = "aggregate_id", nullable = false)
     private Long aggregateId;
 
     /**
      * Type of the event (e.g. "CREATED", "UPDATED", "DELETED").
      */
-    @NotNull
-    @Size(max = 50)
-    @Column(name = "event_type", length = 50)
+    @Column(name = "event_type", nullable = false)
     private String eventType;
 
     /**
      * Serialized event payload (typically JSON).
      */
-    @NotNull
     @Lob
-    @Column(columnDefinition = "TEXT")
+    @Column(nullable = false)
     private String payload;
 
     /**
      * Indicates whether the event has been processed
      * and published to the message broker.
      */
-    @NotNull
-    @Column(name = "processed", nullable = false)
-    private Boolean processed;
+    @Builder.Default
+    @Column(nullable = false)
+    private Boolean processed = false;
 
-
+    /**
+     * Counter how many times event retries
+     */
+    @Builder.Default
     @Column(name = "retry_count", nullable = false)
-    private int retryCount = 0;
+    private Integer retryCount = 0;
+
+    /**
+     * Calculated next retry schedule time including backoff
+     */
+    @Column(name = "next_retry_at")
+    private LocalDateTime nextRetryAt;
 
     @Column(name = "last_attempt_at")
     private LocalDateTime lastAttemptAt;
 
-    /**
-     * Timestamp when the event was created.
-     */
-    @NotNull
-    @Column(name = "created_at", nullable = false, updatable = false)
+
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    /**
-     * Initializes default values before persisting.
-     */
     @PrePersist
-    public void prePersist() {
+    void prePersist() {
+
         if (id == null) {
             id = UUID.randomUUID();
         }
+
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
         }
-        if (processed == null) {
-            processed = false;
-        }
     }
-
 }

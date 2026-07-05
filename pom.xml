@@ -23,11 +23,16 @@
     </properties>
 
     <modules>
+        <!-- common module -->
         <module>commons</module>
+        <module>messaging-starter</module>
+
+        <!-- services -->
         <module>order-service</module>
         <module>inventory-service</module>
         <module>payment-service</module>
         <module>notification-service</module>
+
     </modules>
 
     <build>

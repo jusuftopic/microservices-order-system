@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.commons.event.EventConstants;
 import org.example.commons.event.contracts.PaymentCompletedEvent;
 import org.example.commons.event.contracts.PaymentFailedEvent;
-import org.example.paymentservice.entity.OutboxEvent;
+import org.example.messagingstarter.outbox.entity.OutboxEvent;
 import org.example.paymentservice.service.publisher.KafkaPublisherService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

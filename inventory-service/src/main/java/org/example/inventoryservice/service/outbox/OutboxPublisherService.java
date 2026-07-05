@@ -3,9 +3,9 @@ package org.example.inventoryservice.service.outbox;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.commons.event.utils.Constants;
-import org.example.inventoryservice.entity.OutboxEvent;
-import org.example.inventoryservice.repository.OutboxRepository;
 import org.example.inventoryservice.service.kafka.KafkaPublisherService;
+import org.example.messagingstarter.outbox.entity.OutboxEvent;
+import org.example.messagingstarter.outbox.repository.OutboxRepository;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,7 +28,7 @@ public class OutboxPublisherService {
 
     @Transactional
     public void publishPendingEvents() {
-        List<OutboxEvent> events = repository.findPendingEvents();
+        List<OutboxEvent> events = repository.findReadyForPublishing(LocalDateTime.now());
 
         if (events == null || events.isEmpty()) {
             log.debug("[INVENTORY-SERVICE][OUTBOX-PUBLISHER] No pending events found.");

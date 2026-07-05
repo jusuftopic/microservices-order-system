@@ -2,8 +2,8 @@ package org.example.paymentservice.unit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.commons.event.EventConstants;
-import org.example.paymentservice.entity.OutboxDlqEvent;
-import org.example.paymentservice.repository.OutboxDlqRepository;
+import org.example.messagingstarter.outbox.entity.OutboxDlqEvent;
+import org.example.messagingstarter.outbox.repository.OutboxDlqRepository;
 import org.example.paymentservice.service.OutboxDlqService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

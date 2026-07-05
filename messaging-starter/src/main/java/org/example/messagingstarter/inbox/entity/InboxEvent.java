@@ -1,4 +1,4 @@
-package org.example.orderservice.entity;
+package org.example.messagingstarter.inbox.entity;
 
 
 import jakarta.persistence.*;

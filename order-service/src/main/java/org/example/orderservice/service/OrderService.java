@@ -11,7 +11,7 @@ import org.example.orderservice.entity.Order;
 import org.example.orderservice.enums.OrderStatus;
 import org.example.orderservice.mapper.OrderMapper;
 import org.example.orderservice.metrics.OrderMetrics;
-import org.example.orderservice.repository.InboxRepository;
+import org.example.messagingstarter.inbox.repository.InboxRepository;
 import org.example.orderservice.repository.OrderRepository;
 import org.example.orderservice.service.outbox.OrderOutboxService;
 import org.example.orderservice.service.workflow.OrderWorkflowService;

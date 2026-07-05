@@ -2,10 +2,10 @@ package org.example.inventoryservice.unit.outbox;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.example.inventoryservice.entity.OutboxEvent;
-import org.example.inventoryservice.repository.OutboxRepository;
 import org.example.inventoryservice.service.outbox.OutboxDlqService;
 import org.example.inventoryservice.service.outbox.OutboxStoreService;
+import org.example.messagingstarter.outbox.entity.OutboxEvent;
+import org.example.messagingstarter.outbox.repository.OutboxRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

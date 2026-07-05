@@ -3,7 +3,7 @@ package org.example.orderservice.unit.service.publisher;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.commons.event.EventConstants;
 import org.example.commons.event.contracts.InventoryReserveRequestedEvent;
-import org.example.orderservice.entity.OutboxEvent;
+import org.example.messagingstarter.outbox.entity.OutboxEvent;
 import org.example.orderservice.service.kafka.KafkaPublisherService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

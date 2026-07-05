@@ -7,9 +7,9 @@ import org.example.commons.event.EventConstants;
 import org.example.commons.event.contracts.*;
 import org.example.inventoryservice.entity.InventoryItem;
 import org.example.inventoryservice.metrics.InventoryMetrics;
-import org.example.inventoryservice.repository.InboxRepository;
 import org.example.inventoryservice.repository.InventoryRepository;
 import org.example.inventoryservice.service.outbox.OutboxStoreService;
+import org.example.messagingstarter.inbox.repository.InboxRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
