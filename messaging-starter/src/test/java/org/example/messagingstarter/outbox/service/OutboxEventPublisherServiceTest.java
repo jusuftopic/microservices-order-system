@@ -51,7 +51,7 @@ public class OutboxEventPublisherServiceTest {
         service.publishPendingEvents();
 
         // THEN
-        verifyNoInteractions();
+        verifyNoInteractions(eventPublisherService);
         verify(outboxRepository).findReadyForPublishing(any());
     }
 

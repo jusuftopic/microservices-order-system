@@ -5,6 +5,7 @@ on:
     branches: [ "master" ]
     paths:
       - "commons/**"
+      - "messaging-starter/**"
       - "order-service/**"
       - "inventory-service/**"
       - "payment-service/**"
@@ -15,6 +16,7 @@ on:
     branches: [ "master" ]
     paths:
       - "commons/**"
+      - "messaging-starter/**"
       - "order-service/**"
       - "inventory-service/**"
       - "payment-service/**"
@@ -42,12 +44,15 @@ jobs:
            order:
             - 'order-service/**'
             - 'commons/**'
+            - 'messaging-starter/**'
            inventory:
              - 'inventory-service/**'
-             - 'commons/**'          
+             - 'commons/**'
+             - 'messaging-starter/**' 
            payment:
             - 'payment-service/**'
             - 'commons/**'
+            - 'messaging-starter/**'
            notification:
             - 'notification-service/**'
             - 'commons/**'
