@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.commons.event.utils.Constants;
 import org.example.messagingstarter.outbox.entity.OutboxEvent;
 import org.example.messagingstarter.outbox.repository.OutboxRepository;
-import org.example.paymentservice.service.OutboxDlqService;
+import org.example.messagingstarter.outbox.service.OutboxDlqService;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

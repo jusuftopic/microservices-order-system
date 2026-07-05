@@ -1,10 +1,8 @@
-package org.example.paymentservice.unit;
+package org.example.messagingstarter.outbox.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.example.commons.event.EventConstants;
 import org.example.messagingstarter.outbox.entity.OutboxDlqEvent;
 import org.example.messagingstarter.outbox.repository.OutboxDlqRepository;
-import org.example.paymentservice.service.OutboxDlqService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,7 +23,6 @@ import static org.mockito.Mockito.when;
  */
 @ExtendWith(MockitoExtension.class)
 public class OutboxDlqServiceTest {
-
 
     @Mock
     private OutboxDlqRepository repository;
@@ -57,7 +54,7 @@ public class OutboxDlqServiceTest {
         service.storeOutboxDlq(
                 eventId,
                 10L,
-                EventConstants.EVENT_PAYMENT_FAILED,
+                "any",
                 Map.of("key", "value"),
                 3,
                 new RuntimeException("boom")
@@ -73,7 +70,7 @@ public class OutboxDlqServiceTest {
 
         assertEquals(eventId, saved.getOriginalEventId());
         assertEquals(10L, saved.getAggregateId());
-        assertEquals(EventConstants.EVENT_PAYMENT_FAILED, saved.getEventType());
+        assertEquals("any", saved.getEventType());
         assertEquals("{json}", saved.getPayload());
         assertEquals("boom", saved.getErrorMessage());
         assertEquals(3, saved.getRetryCount());
@@ -94,7 +91,7 @@ public class OutboxDlqServiceTest {
         service.storeOutboxDlq(
                 UUID.randomUUID(),
                 1L,
-                EventConstants.EVENT_PAYMENT_FAILED,
+                "any",
                 payload,
                 1,
                 new RuntimeException("failure")
@@ -110,7 +107,4 @@ public class OutboxDlqServiceTest {
 
         assertEquals(String.valueOf(payload), saved.getPayload());
     }
-
-
-
 }

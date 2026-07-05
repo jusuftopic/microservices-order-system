@@ -1,4 +1,4 @@
-package org.example.paymentservice.service;
+package org.example.messagingstarter.outbox.service;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -47,11 +47,11 @@ public class OutboxDlqService {
 
             repository.save(dlqEvent);
 
-            log.warn("[PAYMENT-SERVICE][DLQ] Stored event type={} aggregateId={} retryCount={}",
+            log.warn("[MESSAGING-STARTER][DLQ] Stored event type={} aggregateId={} retryCount={}",
                     eventType, aggregateId, retryCount, exception);
 
         } catch (Exception ex) {
-            log.error("[PAYMENT-SERVICE][DLQ] CRITICAL: Failed to persist DLQ event. Payload LOST!", ex);
+            log.error("[MESSAGING-STARTER][DLQ] CRITICAL: Failed to persist DLQ event. Payload LOST!", ex);
         }
     }
 

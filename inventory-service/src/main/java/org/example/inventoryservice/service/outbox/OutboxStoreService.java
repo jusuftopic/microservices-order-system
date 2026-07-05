@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.messagingstarter.outbox.entity.OutboxEvent;
 import org.example.messagingstarter.outbox.repository.OutboxRepository;
+import org.example.messagingstarter.outbox.service.OutboxDlqService;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;

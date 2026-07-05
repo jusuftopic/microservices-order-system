@@ -2,7 +2,7 @@ package org.example.inventoryservice.unit.outbox;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.example.inventoryservice.service.outbox.OutboxDlqService;
+import org.example.messagingstarter.outbox.service.OutboxDlqService;
 import org.example.inventoryservice.service.outbox.OutboxStoreService;
 import org.example.messagingstarter.outbox.entity.OutboxEvent;
 import org.example.messagingstarter.outbox.repository.OutboxRepository;

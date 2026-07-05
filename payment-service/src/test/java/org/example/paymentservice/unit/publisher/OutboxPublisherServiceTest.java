@@ -4,7 +4,7 @@ import org.example.commons.event.EventConstants;
 import org.example.commons.event.utils.Constants;
 import org.example.messagingstarter.outbox.entity.OutboxEvent;
 import org.example.messagingstarter.outbox.repository.OutboxRepository;
-import org.example.paymentservice.service.OutboxDlqService;
+import org.example.messagingstarter.outbox.service.OutboxDlqService;
 import org.example.paymentservice.service.publisher.KafkaPublisherService;
 import org.example.paymentservice.service.publisher.OutboxPublisherService;
 import org.junit.jupiter.api.BeforeEach;
