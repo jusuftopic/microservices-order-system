@@ -2,10 +2,9 @@ package org.example.paymentservice.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.paymentservice.service.publisher.OutboxPublisherService;
+import org.example.messagingstarter.outbox.service.OutboxEventPublisherService;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 
 /**
@@ -16,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class OutboxSchedulerService {
 
-    private final OutboxPublisherService publisher;
+    private final OutboxEventPublisherService publisher;
 
     @Scheduled(fixedDelay = 3000)
     public void publish() {

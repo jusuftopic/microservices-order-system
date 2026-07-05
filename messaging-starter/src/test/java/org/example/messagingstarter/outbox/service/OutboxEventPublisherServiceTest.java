@@ -1,13 +1,9 @@
-package org.example.orderservice.unit.service.outbox;
+package org.example.messagingstarter.outbox.service;
 
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.errors.TimeoutException;
-import org.example.commons.event.EventConstants;
 import org.example.messagingstarter.outbox.entity.OutboxEvent;
 import org.example.messagingstarter.outbox.repository.OutboxRepository;
-import org.example.messagingstarter.outbox.service.OutboxDlqService;
-import org.example.orderservice.service.kafka.KafkaPublisherService;
-import org.example.orderservice.service.outbox.OutboxEventPublisherService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,7 +15,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
-import static org.hibernate.validator.internal.util.Contracts.assertNotNull;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -34,14 +29,14 @@ public class OutboxEventPublisherServiceTest {
     private OutboxDlqService dlqService;
 
     @Mock
-    private KafkaPublisherService kafkaPublisherService;
+    private EventPublisherService eventPublisherService;
 
     private OutboxEventPublisherService service;
 
     @BeforeEach
     public void setUp() {
         service = new OutboxEventPublisherService(
-                outboxRepository, dlqService, kafkaPublisherService
+                outboxRepository, dlqService, eventPublisherService
         );
     }
 
@@ -56,7 +51,7 @@ public class OutboxEventPublisherServiceTest {
         service.publishPendingEvents();
 
         // THEN
-        verifyNoInteractions(kafkaPublisherService);
+        verifyNoInteractions();
         verify(outboxRepository).findReadyForPublishing(any());
     }
 
@@ -69,7 +64,7 @@ public class OutboxEventPublisherServiceTest {
         event.setAggregateId(1L);
         event.setPayload("payload");
         event.setRetryCount(0);
-        event.setEventType(EventConstants.EVENT_INVENTORY_CHECK_REQUESTED);
+        event.setEventType("any");
 
         when(outboxRepository.findReadyForPublishing(any()))
                 .thenReturn(List.of(event));
@@ -83,7 +78,7 @@ public class OutboxEventPublisherServiceTest {
         CompletableFuture<SendResult<String, Object>> future =
                 CompletableFuture.completedFuture(sendResult);
 
-        when(kafkaPublisherService.publishEvent(event))
+        when(eventPublisherService.publishEvent(event))
                 .thenReturn(future);
 
         // WHEN
@@ -114,7 +109,7 @@ public class OutboxEventPublisherServiceTest {
         event.setAggregateId(1L);
         event.setPayload("payload");
         event.setRetryCount(0);
-        event.setEventType(EventConstants.EVENT_INVENTORY_CHECK_REQUESTED);
+        event.setEventType("any");
 
 
         when(outboxRepository.findReadyForPublishing(any()))
@@ -124,7 +119,7 @@ public class OutboxEventPublisherServiceTest {
         CompletableFuture future = new CompletableFuture();
         future.completeExceptionally(new TimeoutException("Kafka down"));
 
-        when(kafkaPublisherService.publishEvent(event))
+        when(eventPublisherService.publishEvent(event))
                 .thenReturn(future);
 
         // WHEN
@@ -153,13 +148,13 @@ public class OutboxEventPublisherServiceTest {
         e1.setId(UUID.randomUUID());
         e1.setAggregateId(1L);
         e1.setPayload("p1");
-        e1.setEventType(EventConstants.EVENT_INVENTORY_CHECK_REQUESTED);
+        e1.setEventType("any");
 
         OutboxEvent e2 = new OutboxEvent();
         e2.setId(UUID.randomUUID());
         e2.setAggregateId(2L);
         e2.setPayload("p2");
-        e2.setEventType(EventConstants.EVENT_INVENTORY_CHECK_REQUESTED);
+        e2.setEventType("any");
 
         when(outboxRepository.findReadyForPublishing(any()))
                 .thenReturn(List.of(e1, e2));
@@ -167,8 +162,8 @@ public class OutboxEventPublisherServiceTest {
         service.publishPendingEvents();
 
         // THEN
-        verify(kafkaPublisherService).publishEvent(e1);
-        verify(kafkaPublisherService).publishEvent(e2);
+        verify(eventPublisherService).publishEvent(e1);
+        verify(eventPublisherService).publishEvent(e2);
 
         verify(outboxRepository, atLeast(2)).save(any());
     }

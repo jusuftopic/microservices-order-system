@@ -6,7 +6,6 @@ import org.example.messagingstarter.outbox.entity.OutboxEvent;
 import org.example.messagingstarter.outbox.repository.OutboxRepository;
 import org.example.messagingstarter.outbox.service.OutboxDlqService;
 import org.example.paymentservice.service.publisher.KafkaPublisherService;
-import org.example.paymentservice.service.publisher.OutboxPublisherService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

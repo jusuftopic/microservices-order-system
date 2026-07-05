@@ -3,7 +3,6 @@ package org.example.inventoryservice.unit.outbox;
 import org.example.commons.event.utils.Constants;
 import org.example.messagingstarter.outbox.service.OutboxDlqService;
 import org.example.inventoryservice.service.kafka.KafkaPublisherService;
-import org.example.inventoryservice.service.outbox.OutboxPublisherService;
 import org.example.messagingstarter.outbox.entity.OutboxEvent;
 import org.example.messagingstarter.outbox.repository.OutboxRepository;
 import org.junit.jupiter.api.BeforeEach;

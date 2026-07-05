@@ -1,15 +1,11 @@
-package org.example.orderservice.service.outbox;
+package org.example.messagingstarter.outbox.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.errors.*;
 import org.example.messagingstarter.outbox.entity.OutboxEvent;
-import org.example.messagingstarter.outbox.entity.OutboxDlqEvent;
-import org.example.messagingstarter.outbox.repository.OutboxDlqRepository;
 import org.example.messagingstarter.outbox.repository.OutboxRepository;
-import org.example.messagingstarter.outbox.service.OutboxDlqService;
-import org.example.orderservice.service.kafka.KafkaPublisherService;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,7 +14,6 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import static org.example.commons.event.utils.KafkaUtils.calculateBackoff;
 
 /**
  * Service responsible for publishing Outbox Events to Kafka.
@@ -39,7 +34,7 @@ public class OutboxEventPublisherService {
 
     private final OutboxRepository outboxRepository;
     private final OutboxDlqService outboxDlqService;
-    private final KafkaPublisherService kafkaPublisherService;
+    private final EventPublisherService eventPublisherService;
 
     /**
      * Publishes all pending outbox events.
@@ -55,7 +50,7 @@ public class OutboxEventPublisherService {
         List<OutboxEvent> events = outboxRepository.findReadyForPublishing(LocalDateTime.now());
 
         if (events == null || events.isEmpty()) {
-            log.debug("[ORDER-SERVICE][OUTBOX-PUBLISHER] No pending events found.");
+            log.debug("[MESSAGING-STARTER][OUTBOX-PUBLISHER] No pending events found.");
             return;
         }
 
@@ -75,7 +70,7 @@ public class OutboxEventPublisherService {
         event.setLastAttemptAt(LocalDateTime.now());
 
         try {
-            SendResult<String, Object> result = kafkaPublisherService.publishEvent(event).get();
+            SendResult<String, Object> result = eventPublisherService.publishEvent(event).get();
             handleSuccess(event, result);
         }
         catch (Exception e) {
@@ -91,7 +86,7 @@ public class OutboxEventPublisherService {
         final String topic = Optional.ofNullable(result.getRecordMetadata())
                         .map(RecordMetadata::topic).orElse(null);
 
-        log.debug("[ORDER-SERVICE][OUTBOX-PUBLISHER] Event id={} type={} successfully published." +
+        log.debug("[MESSAGING-STARTER][OUTBOX-PUBLISHER] Event id={} type={} successfully published." +
                         "Topic {}",
                 event.getId(), event.getEventType(), topic);
     }
@@ -111,7 +106,7 @@ public class OutboxEventPublisherService {
         outboxRepository.save(event);
 
         log.warn(
-                "[OUTBOX] Retryable failure for event {}. Retry {} scheduled at {}",
+                "[MESSAGING-STARTER][OUTBOX-PUBLISHER] Retryable failure for event {}. Retry {} scheduled at {}",
                 event.getId(),
                 event.getRetryCount(),
                 event.getNextRetryAt(),
@@ -121,7 +116,7 @@ public class OutboxEventPublisherService {
 
     private void handleNonRetryableFailure(OutboxEvent event, Throwable ex)
     {
-        log.error("[OUTBOX] Non-retryable failure for event {}", event.getId(), ex);
+        log.error("[MESSAGING-STARTER][OUTBOX-PUBLISHER] Non-retryable failure for event {}", event.getId(), ex);
         moveToDlq(event, ex);
     }
 
@@ -139,7 +134,7 @@ public class OutboxEventPublisherService {
         event.setProcessed(true);
         outboxRepository.save(event);
 
-        log.warn("[ORDER-SERVICE][OUTBOX-PUBLISHER] Event {} moved to DLQ table after {} retries.",
+        log.warn("[MESSAGING-STARTER][OUTBOX-PUBLISHER] Event {} moved to DLQ table after {} retries.",
                 event.getId(), event.getRetryCount());
     }
 
@@ -178,6 +173,24 @@ public class OutboxEventPublisherService {
         }
 
         return cause;
+    }
+
+    public Duration calculateBackoff(int retryCount) {
+
+        return switch (retryCount) {
+
+            case 1 -> Duration.ofSeconds(3);
+
+            case 2 -> Duration.ofSeconds(10);
+
+            case 3 -> Duration.ofSeconds(30);
+
+            case 4 -> Duration.ofMinutes(1);
+
+            case 5 -> Duration.ofMinutes(5);
+
+            default -> Duration.ofMinutes(15);
+        };
     }
 
 }

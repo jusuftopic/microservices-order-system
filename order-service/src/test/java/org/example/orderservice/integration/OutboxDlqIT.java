@@ -4,7 +4,7 @@ import org.example.messagingstarter.outbox.entity.OutboxEvent;
 import org.example.messagingstarter.outbox.entity.OutboxDlqEvent;
 import org.example.messagingstarter.outbox.repository.OutboxDlqRepository;
 import org.example.messagingstarter.outbox.repository.OutboxRepository;
-import org.example.orderservice.service.outbox.OutboxEventPublisherService;
+import org.example.messagingstarter.outbox.service.OutboxEventPublisherService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -8,6 +8,7 @@ import org.example.commons.event.EventConstants;
 import org.example.commons.event.contracts.*;
 import org.example.commons.event.utils.TopicResolver;
 import org.example.messagingstarter.outbox.entity.OutboxEvent;
+import org.example.messagingstarter.outbox.service.EventPublisherService;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
@@ -34,7 +35,7 @@ import java.util.concurrent.CompletableFuture;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class KafkaPublisherService {
+public class KafkaPublisherService implements EventPublisherService {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final ObjectMapper objectMapper;
@@ -45,6 +46,7 @@ public class KafkaPublisherService {
      * @param event outbox event containing metadata and serialized payload
      * @return send result metadata
      */
+    @Override
     public CompletableFuture<SendResult<String, Object>> publishEvent(OutboxEvent event) {
         String topic = TopicResolver.resolveTopic(event.getEventType());
 
