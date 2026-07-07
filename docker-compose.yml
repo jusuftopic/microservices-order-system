@@ -97,7 +97,7 @@ services:
   order-service:
     build:
       context: .
-      dockerfile: order-service/Dockerfile
+      dockerfile: order-service/Dockerfile.dev
     container_name: order-service
     ports:
       - "8080:8080"
@@ -113,7 +113,7 @@ services:
   payment-service:
     build:
       context: .
-      dockerfile: payment-service/Dockerfile
+      dockerfile: payment-service/Dockerfile.dev
     container_name: payment-service
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -127,7 +127,7 @@ services:
   inventory-service:
     build:
       context: .
-      dockerfile: inventory-service/Dockerfile
+      dockerfile: inventory-service/Dockerfile.dev
     container_name: inventory-service
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -141,7 +141,7 @@ services:
   notification-service:
     build:
       context: .
-      dockerfile: notification-service/Dockerfile
+      dockerfile: notification-service/Dockerfile.dev
     container_name: notification-service
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092

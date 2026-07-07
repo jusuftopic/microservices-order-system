@@ -1,4 +1,4 @@
-name: Order Service CI Pipeline
+name: Order System CI Pipeline
 
 on:
   push:
@@ -57,19 +57,34 @@ jobs:
             - 'notification-service/**'
             - 'commons/**'
 
-  # order-service build
-  build-order:
-    name: Build Order Service
+
+  # build services
+  build-service:
+    name: Build ${{ matrix.service }}
     needs: changes
-    if: needs.changes.outputs.order == 'true'
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        include:
+          - service: order-service
+            changed: order
+
+          - service: payment-service
+            changed: payment
+
+          - service: inventory-service
+            changed: inventory
+
+          - service: notification-service
+            changed: notification
+
+    if: ${{ needs.changes.outputs[matrix.changed] == 'true' }}
+
     steps:
-      # 1. Checkout repo
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. Setup environment Java 21
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -77,142 +92,21 @@ jobs:
           java-version: 21
           cache: maven
 
-      # 3. Make mvnw executable
       - name: Grant execute permission
         run: chmod +x mvnw
 
-      # 4. Compile Order Service
-      - name: Compile Order Service
-        run: ./mvnw -pl order-service -am clean compile
+      - name: Package service
+        run: ./mvnw -pl ${{ matrix.service }} -am clean package
 
-      # 5. Test Order Service
-      - name: Test Order Service
-        run: ./mvnw -pl order-service -am verify
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t ${{ matrix.service }}:${{ github.sha }} \
+            -f ${{ matrix.service }}/Dockerfile .
 
-      # 6 Upload test results in GitHub UI
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: order-test-results
-          path: "**/target/surefire-reports/*.xml"
-
-  # payment-service build
-  build-payment:
-    name: Build Payment Service
-    needs: changes
-    if: needs.changes.outputs.payment == 'true'
-    runs-on: ubuntu-latest
-
-    steps:
-      # 1. Checkout repo
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      # 2. Setup environment Java 21
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 21
-          cache: maven
-
-      # 3. Make mvnw executable
-      - name: Grant execute permission
-        run: chmod +x mvnw
-
-      # 4. Compile Payment Service
-      - name: Compile Payment Service
-        run: ./mvnw -pl payment-service -am clean compile
-
-      # 5. Test Payment Service
-      - name: Test Payment Service
-        run: ./mvnw -pl payment-service -am verify
-
-      # 6 Upload test results in GitHub UI
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: payment-test-results
-          path: "**/target/surefire-reports/*.xml"
-
-  # inventory-service build
-  build-inventory:
-    name: Build Inventory Service
-    needs: changes
-    if: needs.changes.outputs.inventory == 'true'
-    runs-on: ubuntu-latest
-
-    steps:
-      # 1. Checkout repo
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      # 2. Setup environment Java 21
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 21
-          cache: maven
-
-      # 3. Make mvnw executable
-      - name: Grant execute permission
-        run: chmod +x mvnw
-
-      # 4. Compile Inventory Service
-      - name: Compile Inventory Service
-        run: ./mvnw -pl inventory-service -am clean compile
-
-      # 5. Test Inventory Service
-      - name: Test Inventory Service
-        run: ./mvnw -pl inventory-service -am verify
-
-      # 6 Upload test results in GitHub UI
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: inventory-test-results
-          path: "**/target/surefire-reports/*.xml"
-
-  # notification-service build
-  build-notification:
-    name: Build Notification Service
-    needs: changes
-    if: needs.changes.outputs.notification == 'true'
-    runs-on: ubuntu-latest
-
-    steps:
-      # 1. Checkout repo
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      # 2. Setup environment Java 21
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 21
-          cache: maven
-
-      # 3. Make mvnw executable
-      - name: Grant execute permission
-        run: chmod +x mvnw
-
-      # 4. Compile Notification Service
-      - name: Compile Notification Service
-        run: ./mvnw -pl notification-service -am clean compile
-
-      # 5. Test Notification Service
-      - name: Test Notification Service
-        run: ./mvnw -pl notification-service -am verify
-
-      # 6 Upload test results in GitHub UI
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: notification-test-results
-          path: "**/target/surefire-reports/*.xml"
+          name: ${{ matrix.service }}-test-results
+          path: ${{ matrix.service }}/target/surefire-reports/*.xml
