@@ -9,6 +9,10 @@ import org.example.inventoryservice.metrics.InventoryMetrics;
 import org.example.inventoryservice.repository.InventoryRepository;
 import org.example.inventoryservice.service.outbox.OutboxStoreService;
 import org.example.messagingstarter.contracts.*;
+import org.example.messagingstarter.contracts.commands.CommitInventoryCommand;
+import org.example.messagingstarter.contracts.commands.ReleaseInventoryCommand;
+import org.example.messagingstarter.contracts.commands.ReserveInventoryCommand;
+import org.example.messagingstarter.contracts.events.*;
 import org.example.messagingstarter.inbox.repository.InboxRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,7 +49,7 @@ public class InventoryService {
      * @param event inventory check request event
      */
     @Transactional
-    public void processInventory(org.example.messagingstarter.contracts.InventoryReserveRequestedEvent event) {
+    public void processInventory(ReserveInventoryCommand event) {
         int inserted = inboxRepository.insertIfNotExists(event.messageId());
 
         if (inserted == 0) {
@@ -117,7 +121,7 @@ public class InventoryService {
      * @param event inventory commit request event
      */
     @Transactional
-    public void processCommit(org.example.messagingstarter.contracts.InventoryCommitEvent event) {
+    public void processCommit(CommitInventoryCommand event) {
 
         int inserted = inboxRepository.insertIfNotExists(event.messageId());
 
@@ -170,7 +174,7 @@ public class InventoryService {
      * @param event inventory release request event
      */
     @Transactional
-    public void processRelease(InventoryReleasedRequestedEvent event) {
+    public void processRelease(ReleaseInventoryCommand event) {
 
         int inserted = inboxRepository.insertIfNotExists(event.messageId());
 
@@ -208,7 +212,7 @@ public class InventoryService {
         log.warn("[INVENTORY-SERVICE] Event {} already processed.", event);
     }
 
-    private void storeOutboxEventSuccess(org.example.messagingstarter.contracts.InventoryReserveRequestedEvent event) {
+    private void storeOutboxEventSuccess(ReserveInventoryCommand event) {
         InventoryReservedEvent payload = new InventoryReservedEvent(
                 event.orderId(),
                 event.correlationId(),
@@ -218,7 +222,7 @@ public class InventoryService {
         outboxStoreService.store(payload, EventConstants.EVENT_INVENTORY_RESERVED, event.orderId());
     }
 
-    private void storeOutboxEventFailure(org.example.messagingstarter.contracts.InventoryReserveRequestedEvent event, String reason) {
+    private void storeOutboxEventFailure(ReserveInventoryCommand event, String reason) {
 
         InventoryFailedEvent payload = new InventoryFailedEvent(
                 event.orderId(),
@@ -230,7 +234,7 @@ public class InventoryService {
         outboxStoreService.store(payload, EventConstants.EVENT_INVENTORY_FAILED, event.orderId());
     }
 
-    private void storeCommitSuccess(org.example.messagingstarter.contracts.InventoryCommitEvent event) {
+    private void storeCommitSuccess(CommitInventoryCommand event) {
 
         InventoryCommitCompletedEvent payload =
                 new InventoryCommitCompletedEvent(
@@ -245,7 +249,7 @@ public class InventoryService {
     }
 
     private void storeCommitFailure(
-            org.example.messagingstarter.contracts.InventoryCommitEvent event,
+            CommitInventoryCommand event,
             String reason
     ) {
 
@@ -263,7 +267,7 @@ public class InventoryService {
     }
 
 
-    private void storeReleaseSuccess(InventoryReleasedRequestedEvent event) {
+    private void storeReleaseSuccess(ReleaseInventoryCommand event) {
 
         InventoryReleaseCompletedEvent payload =
                 new InventoryReleaseCompletedEvent(

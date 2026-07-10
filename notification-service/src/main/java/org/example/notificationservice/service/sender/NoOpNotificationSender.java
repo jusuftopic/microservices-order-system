@@ -2,7 +2,7 @@ package org.example.notificationservice.service.sender;
 
 
 import lombok.extern.slf4j.Slf4j;
-import org.example.messagingstarter.contracts.NotificationRequestedEvent;
+import org.example.messagingstarter.contracts.commands.SendNotificationCommand;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
@@ -30,7 +30,7 @@ public class NoOpNotificationSender implements NotificationSender {
 
 
     @Override
-    public void send(NotificationRequestedEvent event) {
+    public void send(SendNotificationCommand event) {
 
         log.info(
                 "[NOTIFICATION-SERVICE][NO-OP] Pretending to send notification: order={} type={} recipient={}",

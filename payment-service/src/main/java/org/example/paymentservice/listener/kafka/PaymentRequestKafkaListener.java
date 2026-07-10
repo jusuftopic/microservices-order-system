@@ -3,8 +3,8 @@ package org.example.paymentservice.listener.kafka;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.messagingstarter.EventConstants;
-import org.example.messagingstarter.contracts.PaymentRefundRequestedEvent;
-import org.example.messagingstarter.contracts.PaymentRequestedEvent;
+import org.example.messagingstarter.contracts.commands.RefundPaymentCommand;
+import org.example.messagingstarter.contracts.commands.ProcessPaymentCommand;
 import org.example.paymentservice.service.PaymentService;
 import org.example.paymentservice.utils.Constants;
 import org.springframework.kafka.annotation.KafkaHandler;
@@ -27,12 +27,12 @@ public class PaymentRequestKafkaListener {
     private final PaymentService paymentService;
 
     /**
-     * Listens and forwards processing of {@link PaymentRequestedEvent}
+     * Listens and forwards processing of {@link ProcessPaymentCommand}
      *
      * @param event Event to process
      */
     @KafkaHandler
-    public void handlePaymentRequested(PaymentRequestedEvent event) {
+    public void handlePaymentRequested(ProcessPaymentCommand event) {
         log.info("[PAYMENT-SERVICE][KAFKA-LISTENER] Received payment request for order {} for processing. Correlation ID {}",
                 event.orderId(), event.correlationId());
 
@@ -53,7 +53,7 @@ public class PaymentRequestKafkaListener {
      */
     @KafkaHandler
     public void handlePaymentRefundRequested(
-            PaymentRefundRequestedEvent event
+            RefundPaymentCommand event
     ) {
         log.warn(
                 "[PAYMENT-SERVICE][KAFKA-LISTENER] Received payment refund request for order {} correlationId {}",

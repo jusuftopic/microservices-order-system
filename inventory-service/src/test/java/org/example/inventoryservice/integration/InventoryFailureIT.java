@@ -2,7 +2,7 @@ package org.example.inventoryservice.integration;
 
 
 import org.example.messagingstarter.EventConstants;
-import org.example.messagingstarter.contracts.InventoryReserveRequestedEvent;
+import org.example.messagingstarter.contracts.commands.ReserveInventoryCommand;
 import org.example.messagingstarter.contracts.OrderItemEvent;
 import org.example.messagingstarter.inbox.repository.InboxRepository;
 import org.example.messagingstarter.outbox.entity.OutboxEvent;
@@ -34,7 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class InventoryFailureIT extends AbstractIntegrationTest {
 
     @Autowired
-    private KafkaTemplate<String, InventoryReserveRequestedEvent> kafkaTemplate;
+    private KafkaTemplate<String, ReserveInventoryCommand> kafkaTemplate;
 
     @Autowired
     private InboxRepository inboxRepository;
@@ -53,8 +53,8 @@ public class InventoryFailureIT extends AbstractIntegrationTest {
     void shouldProduceFailureEventWhenInventoryMissing() {
 
         // GIVEN
-        InventoryReserveRequestedEvent event =
-                new InventoryReserveRequestedEvent(
+        ReserveInventoryCommand event =
+                new ReserveInventoryCommand(
                         1L,
                         List.of(new OrderItemEvent(999L, 1)),
                         "corr-fail", UUID.randomUUID()

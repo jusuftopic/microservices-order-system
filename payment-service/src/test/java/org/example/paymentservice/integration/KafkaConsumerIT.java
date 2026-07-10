@@ -1,7 +1,7 @@
 package org.example.paymentservice.integration;
 
 import org.example.messagingstarter.EventConstants;
-import org.example.messagingstarter.contracts.PaymentRequestedEvent;
+import org.example.messagingstarter.contracts.commands.ProcessPaymentCommand;
 import org.example.messagingstarter.inbox.repository.InboxRepository;
 import org.example.messagingstarter.outbox.repository.OutboxRepository;
 import org.example.paymentservice.repository.PaymentRepository;
@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class KafkaConsumerIT extends AbstractIntegrationTest {
 
     @Autowired
-    private KafkaTemplate<String, PaymentRequestedEvent> kafkaTemplate;
+    private KafkaTemplate<String, ProcessPaymentCommand> kafkaTemplate;
 
     @Autowired
     private InboxRepository inboxRepository;
@@ -45,7 +45,7 @@ public class KafkaConsumerIT extends AbstractIntegrationTest {
     void shouldProcessPaymentFromKafka() {
 
         // given
-        PaymentRequestedEvent event = new PaymentRequestedEvent(
+        ProcessPaymentCommand event = new ProcessPaymentCommand(
                 1L, BigDecimal.ONE,
                 "test", "1x1", UUID.randomUUID()
         );

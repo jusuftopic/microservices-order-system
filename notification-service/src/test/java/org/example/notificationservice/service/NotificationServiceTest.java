@@ -1,6 +1,6 @@
 package org.example.notificationservice.service;
 
-import org.example.messagingstarter.contracts.NotificationRequestedEvent;
+import org.example.messagingstarter.contracts.commands.SendNotificationCommand;
 import org.example.notificationservice.metrics.NotificationMetrics;
 import org.example.notificationservice.service.sender.NotificationSender;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,8 +39,8 @@ public class NotificationServiceTest {
     void should_send_email_successfully() {
 
         // GIVEN
-        NotificationRequestedEvent event =
-                new NotificationRequestedEvent(
+        SendNotificationCommand event =
+                new SendNotificationCommand(
                         1L,
                         "test@mail.com",
                         "ORDER_COMPLETED",

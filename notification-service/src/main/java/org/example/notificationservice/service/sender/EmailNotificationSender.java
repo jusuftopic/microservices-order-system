@@ -2,7 +2,7 @@ package org.example.notificationservice.service.sender;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.messagingstarter.contracts.NotificationRequestedEvent;
+import org.example.messagingstarter.contracts.commands.SendNotificationCommand;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -26,7 +26,7 @@ public class EmailNotificationSender implements NotificationSender {
    // private final JavaMailSender mailSender;
 
     @Override
-    public void send(NotificationRequestedEvent event) {
+    public void send(SendNotificationCommand event) {
 
         log.info(
                 "[NOTIFICATION-SERVICE][EMAIL-SENDER] Sending email: order={} type={} recipient={}",
@@ -68,7 +68,7 @@ public class EmailNotificationSender implements NotificationSender {
      * @param event notification event
      * @return subject string
      */
-    private String buildSubject(NotificationRequestedEvent event) {
+    private String buildSubject(SendNotificationCommand event) {
         return switch (event.type()) {
             case "ORDER_COMPLETED" -> "Your order has been completed";
             case "ORDER_FAILED" -> "Your order has failed";

@@ -1,7 +1,7 @@
 package org.example.inventoryservice.unit;
 
 import org.example.messagingstarter.EventConstants;
-import org.example.messagingstarter.contracts.InventoryReserveRequestedEvent;
+import org.example.messagingstarter.contracts.commands.ReserveInventoryCommand;
 import org.example.messagingstarter.contracts.OrderItemEvent;
 import org.example.inventoryservice.entity.InventoryItem;
 import org.example.inventoryservice.metrics.InventoryMetrics;
@@ -62,8 +62,8 @@ public class InventoryServiceTest {
         String correlationId = "corr-1";
         UUID messageId = UUID.randomUUID();
 
-        InventoryReserveRequestedEvent event =
-                new InventoryReserveRequestedEvent(
+        ReserveInventoryCommand event =
+                new ReserveInventoryCommand(
                         1L,
                         List.of(new OrderItemEvent(10L, 2)),
                         correlationId,
@@ -99,8 +99,8 @@ public class InventoryServiceTest {
         String correlationId = "corr-dup";
         UUID messageId = UUID.randomUUID();
 
-        InventoryReserveRequestedEvent event =
-                new InventoryReserveRequestedEvent(1L, List.of(), correlationId, messageId);
+        ReserveInventoryCommand event =
+                new ReserveInventoryCommand(1L, List.of(), correlationId, messageId);
 
         when(inboxRepository.insertIfNotExists(messageId)).thenReturn(0);
 
@@ -120,8 +120,8 @@ public class InventoryServiceTest {
         String correlationId = "corr-2";
         UUID messageId = UUID.randomUUID();
 
-        InventoryReserveRequestedEvent event =
-                new InventoryReserveRequestedEvent(
+        ReserveInventoryCommand event =
+                new ReserveInventoryCommand(
                         1L,
                         List.of(new OrderItemEvent(99L, 1)),
                         correlationId,
@@ -150,8 +150,8 @@ public class InventoryServiceTest {
         String correlationId = "corr-2";
         UUID messageId = UUID.randomUUID();
 
-        InventoryReserveRequestedEvent event =
-                new InventoryReserveRequestedEvent(
+        ReserveInventoryCommand event =
+                new ReserveInventoryCommand(
                         1L,
                         List.of(new OrderItemEvent(productId, 10)),
                         correlationId,

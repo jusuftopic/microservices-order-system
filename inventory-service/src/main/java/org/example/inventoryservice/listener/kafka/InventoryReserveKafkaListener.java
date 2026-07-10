@@ -3,7 +3,7 @@ package org.example.inventoryservice.listener.kafka;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.messagingstarter.EventConstants;
-import org.example.messagingstarter.contracts.InventoryReserveRequestedEvent;
+import org.example.messagingstarter.contracts.commands.ReserveInventoryCommand;
 import org.example.inventoryservice.service.InventoryService;
 import org.example.inventoryservice.utils.Constants;
 import org.springframework.kafka.annotation.KafkaHandler;
@@ -37,7 +37,7 @@ public class InventoryReserveKafkaListener {
      */
     @KafkaHandler
     public void handleInventoryReserveRequested(
-            InventoryReserveRequestedEvent event
+            ReserveInventoryCommand event
     ) {
 
         log.info(

@@ -1,8 +1,8 @@
 package org.example.orderservice.unit.service;
 
 import org.example.messagingstarter.EventConstants;
-import org.example.messagingstarter.contracts.InventoryReleasedRequestedEvent;
-import org.example.messagingstarter.contracts.PaymentRefundRequestedEvent;
+import org.example.messagingstarter.contracts.commands.ReleaseInventoryCommand;
+import org.example.messagingstarter.contracts.commands.RefundPaymentCommand;
 import org.example.orderservice.entity.Order;
 import org.example.orderservice.entity.OrderItem;
 import org.example.orderservice.enums.OrderStatus;
@@ -62,7 +62,7 @@ public class OrderCompensationServiceTest {
                 eq(1L),
                 eq("ORDER"),
                 eq(EventConstants.EVENT_INVENTORY_RELEASE_REQUESTED),
-                any(InventoryReleasedRequestedEvent.class)
+                any(ReleaseInventoryCommand.class)
         );
 
         verifyNoMoreInteractions(outboxService);
@@ -93,14 +93,14 @@ public class OrderCompensationServiceTest {
                 eq(1L),
                 eq("ORDER"),
                 eq(EventConstants.EVENT_PAYMENT_REFUND_REQUESTED),
-                any(PaymentRefundRequestedEvent.class)
+                any(RefundPaymentCommand.class)
         );
 
         verify(outboxService).storeEvent(
                 eq(1L),
                 eq("ORDER"),
                 eq(EventConstants.EVENT_INVENTORY_RELEASE_REQUESTED),
-                any(InventoryReleasedRequestedEvent.class)
+                any(ReleaseInventoryCommand.class)
         );
 
         verify(outboxService, times(2))

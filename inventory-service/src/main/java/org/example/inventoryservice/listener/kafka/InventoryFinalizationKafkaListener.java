@@ -4,8 +4,8 @@ package org.example.inventoryservice.listener.kafka;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.messagingstarter.EventConstants;
-import org.example.messagingstarter.contracts.InventoryCommitEvent;
-import org.example.messagingstarter.contracts.InventoryReleasedRequestedEvent;
+import org.example.messagingstarter.contracts.commands.CommitInventoryCommand;
+import org.example.messagingstarter.contracts.commands.ReleaseInventoryCommand;
 import org.example.inventoryservice.service.InventoryService;
 import org.example.inventoryservice.utils.Constants;
 import org.springframework.kafka.annotation.KafkaHandler;
@@ -38,7 +38,7 @@ public class InventoryFinalizationKafkaListener {
      */
     @KafkaHandler
     public void handleInventoryCommitRequested(
-            InventoryCommitEvent event
+            CommitInventoryCommand event
     ) {
 
         log.info(
@@ -58,7 +58,7 @@ public class InventoryFinalizationKafkaListener {
      */
     @KafkaHandler
     public void handleInventoryReleaseRequested(
-            InventoryReleasedRequestedEvent event
+            ReleaseInventoryCommand event
     ) {
 
         log.info(

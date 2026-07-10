@@ -1,13 +1,15 @@
-package org.example.messagingstarter.contracts;
+package org.example.messagingstarter.contracts.commands;
 
+
+import org.example.messagingstarter.contracts.BaseEvent;
 
 import java.util.UUID;
 
 /**
- * Event emitted to request creation of a user notification.
+ * Command emitted to request creation of a user notification.
  *
  * <p>
- * This event represents a choreography-based communication mechanism
+ * This command represents a choreography-based communication mechanism
  * used by services (e.g. Order Service) to trigger notifications
  * without tightly coupling to the Notification Service.
  * </p>
@@ -21,7 +23,7 @@ import java.util.UUID;
  * Consumed by Notification Service.
  * </p>
  */
-public record NotificationRequestedEvent(
+public record SendNotificationCommand(
 
         /**
         * Unique identifier of the order.

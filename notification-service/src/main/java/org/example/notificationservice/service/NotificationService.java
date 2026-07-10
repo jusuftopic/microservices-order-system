@@ -3,7 +3,7 @@ package org.example.notificationservice.service;
 import io.micrometer.core.instrument.Counter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.messagingstarter.contracts.NotificationRequestedEvent;
+import org.example.messagingstarter.contracts.commands.SendNotificationCommand;
 import org.example.notificationservice.metrics.NotificationMetrics;
 import org.example.notificationservice.service.sender.NotificationSender;
 import org.springframework.stereotype.Service;
@@ -37,7 +37,7 @@ public class NotificationService {
      *
      * @param event notification request event
      */
-    public void processNotification(NotificationRequestedEvent event) {
+    public void processNotification(SendNotificationCommand event) {
 
         log.info(
                 "[NOTIFICATION-SERVICE] Processing notification for order {} type {} recipient {}",

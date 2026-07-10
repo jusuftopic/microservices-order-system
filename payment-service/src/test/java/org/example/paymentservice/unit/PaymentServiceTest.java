@@ -2,7 +2,7 @@ package org.example.paymentservice.unit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.messagingstarter.EventConstants;
-import org.example.messagingstarter.contracts.PaymentRequestedEvent;
+import org.example.messagingstarter.contracts.commands.ProcessPaymentCommand;
 import org.example.messagingstarter.inbox.repository.InboxRepository;
 import org.example.messagingstarter.outbox.entity.OutboxEvent;
 import org.example.messagingstarter.outbox.repository.OutboxRepository;
@@ -72,7 +72,7 @@ public class PaymentServiceTest {
         // GIVEN
         final String correlationId = "11x11";
         final UUID messageId = UUID.randomUUID();
-        PaymentRequestedEvent event = new PaymentRequestedEvent(1L, BigDecimal.ONE, "test", correlationId, messageId);
+        ProcessPaymentCommand event = new ProcessPaymentCommand(1L, BigDecimal.ONE, "test", correlationId, messageId);
 
         when(inboxRepository.insertIfNotExists(messageId)).thenReturn(1);
 
@@ -94,7 +94,7 @@ public class PaymentServiceTest {
         // GIVEN
         final String correlationId = "11x11";
         final UUID messageId = UUID.randomUUID();
-        PaymentRequestedEvent event = new PaymentRequestedEvent(1L, BigDecimal.ONE, "test", correlationId, messageId);
+        ProcessPaymentCommand event = new ProcessPaymentCommand(1L, BigDecimal.ONE, "test", correlationId, messageId);
 
         when(inboxRepository.insertIfNotExists(messageId)).thenReturn(0);
 
@@ -113,7 +113,7 @@ public class PaymentServiceTest {
         // GIVEN
         final String correlationId = "11x11";
         final UUID messageId = UUID.randomUUID();
-        PaymentRequestedEvent event = new PaymentRequestedEvent(1L, BigDecimal.ONE, "test", correlationId, messageId);
+        ProcessPaymentCommand event = new ProcessPaymentCommand(1L, BigDecimal.ONE, "test", correlationId, messageId);
 
         when(inboxRepository.insertIfNotExists(messageId)).thenReturn(1);
 

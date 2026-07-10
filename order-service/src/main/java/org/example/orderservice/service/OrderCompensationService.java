@@ -4,9 +4,9 @@ package org.example.orderservice.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.messagingstarter.EventConstants;
-import org.example.messagingstarter.contracts.InventoryReleasedRequestedEvent;
+import org.example.messagingstarter.contracts.commands.ReleaseInventoryCommand;
 import org.example.messagingstarter.contracts.OrderItemEvent;
-import org.example.messagingstarter.contracts.PaymentRefundRequestedEvent;
+import org.example.messagingstarter.contracts.commands.RefundPaymentCommand;
 import org.example.orderservice.entity.Order;
 import org.example.orderservice.service.outbox.OrderOutboxService;
 import org.springframework.stereotype.Service;
@@ -99,7 +99,7 @@ public class OrderCompensationService {
                 order.getId(),
                 "ORDER",
                 EventConstants.EVENT_PAYMENT_REFUND_REQUESTED,
-                new PaymentRefundRequestedEvent(
+                new RefundPaymentCommand(
                         order.getId(),
                         order.getCorrelationId(),
                         UUID.randomUUID()
@@ -123,7 +123,7 @@ public class OrderCompensationService {
                 order.getId(),
                 "ORDER",
                 EventConstants.EVENT_INVENTORY_RELEASE_REQUESTED,
-                new InventoryReleasedRequestedEvent(
+                new ReleaseInventoryCommand(
                         order.getId(),
                         order.getItems()
                                 .stream()

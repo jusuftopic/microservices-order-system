@@ -1,17 +1,21 @@
-package org.example.messagingstarter.contracts;
+package org.example.messagingstarter.contracts.commands;
+
+import org.example.messagingstarter.contracts.BaseEvent;
+import org.example.messagingstarter.contracts.OrderItemEvent;
 
 import java.util.List;
 import java.util.UUID;
 
 /**
- * Event emitted to request inventory validation and commit.
+ * Command emitted to request inventory release
  *
- * <p>This event represents the initiation of the inventory commit step in the order workflow.
- * It contains all items which availability must be commited.</p>
+ * <p>This command represents one of the inventory steps in the order workflow.
+ * It contains all items that must be released after failed payment.</p>
  *
  * <p>Consumed by Inventory Service.</p>
  */
-public record InventoryCommitEvent(
+public record ReleaseInventoryCommand(
+
         /**
          * Unique identifier of the order.
          */
@@ -27,10 +31,9 @@ public record InventoryCommitEvent(
          */
         String correlationId,
 
-
         /**
          * Unique identifier of the message.
          */
         UUID messageId
- ) implements BaseEvent {
+) implements BaseEvent {
 }

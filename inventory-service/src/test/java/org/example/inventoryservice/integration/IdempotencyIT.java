@@ -1,7 +1,7 @@
 package org.example.inventoryservice.integration;
 
 import org.example.messagingstarter.EventConstants;
-import org.example.messagingstarter.contracts.InventoryReserveRequestedEvent;
+import org.example.messagingstarter.contracts.commands.ReserveInventoryCommand;
 import org.example.messagingstarter.contracts.OrderItemEvent;
 import org.example.inventoryservice.entity.InventoryItem;
 import org.example.inventoryservice.repository.InventoryRepository;
@@ -31,7 +31,7 @@ public class IdempotencyIT extends AbstractIntegrationTest {
 
 
     @Autowired
-    private KafkaTemplate<String, InventoryReserveRequestedEvent> kafkaTemplate;
+    private KafkaTemplate<String, ReserveInventoryCommand> kafkaTemplate;
 
     @Autowired
     private InboxRepository inboxRepository;
@@ -62,8 +62,8 @@ public class IdempotencyIT extends AbstractIntegrationTest {
 
         inventoryRepository.save(item);
 
-        InventoryReserveRequestedEvent event =
-                new InventoryReserveRequestedEvent(
+        ReserveInventoryCommand event =
+                new ReserveInventoryCommand(
                         1L,
                         List.of(new OrderItemEvent(10L, 1)),
                         "same-corr", UUID.randomUUID()

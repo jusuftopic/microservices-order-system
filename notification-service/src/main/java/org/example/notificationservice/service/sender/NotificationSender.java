@@ -1,6 +1,6 @@
 package org.example.notificationservice.service.sender;
 
-import org.example.messagingstarter.contracts.NotificationRequestedEvent;
+import org.example.messagingstarter.contracts.commands.SendNotificationCommand;
 
 /**
  * Abstraction for sending notifications.
@@ -29,6 +29,6 @@ public interface NotificationSender {
      *
      * @param event notification request event
      */
-    void send(NotificationRequestedEvent event);
+    void send(SendNotificationCommand event);
 
 }

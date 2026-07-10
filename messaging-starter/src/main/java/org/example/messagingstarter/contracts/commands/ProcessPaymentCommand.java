@@ -1,16 +1,18 @@
-package org.example.messagingstarter.contracts;
+package org.example.messagingstarter.contracts.commands;
+
+import org.example.messagingstarter.contracts.BaseEvent;
 
 import java.math.BigDecimal;
 import java.util.UUID;
 
 /**
- * Event emitted by Order Service to request payment processing.
+ * Command emitted by Order Service to request payment processing.
  *
- * <p>This event is sent only after successful inventory reservation.</p>
+ * <p>This command is sent only after successful inventory reservation.</p>
  *
  * <p>Consumed by Payment Service.</p>
  */
-public record PaymentRequestedEvent(
+public record ProcessPaymentCommand(
 
         /**
          * Unique identifier of the order.

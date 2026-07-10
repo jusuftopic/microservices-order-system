@@ -1,17 +1,20 @@
-package org.example.messagingstarter.contracts;
+package org.example.messagingstarter.contracts.commands;
+
+import org.example.messagingstarter.contracts.BaseEvent;
+import org.example.messagingstarter.contracts.OrderItemEvent;
 
 import java.util.List;
 import java.util.UUID;
 
 /**
- * Event emitted to request inventory validation and reservation.
+ * Command emitted to request inventory validation and reservation.
  *
- * <p>This event represents the initiation of the inventory step in the order workflow.
+ * <p>This command represents the initiation of the inventory step in the order workflow.
  * It contains all items that must be checked and potentially reserved.</p>
  *
  * <p>Consumed by Inventory Service.</p>
  */
-public record InventoryReserveRequestedEvent(
+public record ReserveInventoryCommand(
 
         /**
          * Unique identifier of the order.

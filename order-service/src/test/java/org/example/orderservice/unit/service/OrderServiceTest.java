@@ -1,7 +1,8 @@
 package org.example.orderservice.unit.service;
 
 import org.example.messagingstarter.EventConstants;
-import org.example.messagingstarter.contracts.*;
+import org.example.messagingstarter.contracts.commands.*;
+import org.example.messagingstarter.contracts.events.*;
 import org.example.orderservice.dto.request.OrderItemRequest;
 import org.example.orderservice.dto.request.OrderRequest;
 import org.example.orderservice.dto.response.OrderResponse;
@@ -108,7 +109,7 @@ public class OrderServiceTest {
                 eq(1L),
                 eq("ORDER"),
                 eq(EventConstants.EVENT_INVENTORY_CHECK_REQUESTED),
-                any(org.example.messagingstarter.contracts.InventoryReserveRequestedEvent.class));
+                any(ReserveInventoryCommand.class));
     }
 
 
@@ -189,7 +190,7 @@ public class OrderServiceTest {
                 eq(orderId),
                 eq("ORDER"),
                 eq(EventConstants.EVENT_PAYMENT_REQUESTED),
-                any(PaymentRequestedEvent.class)
+                any(ProcessPaymentCommand.class)
         );
     }
 
@@ -273,7 +274,7 @@ public class OrderServiceTest {
                 eq(orderId),
                 eq("ORDER"),
                 eq(EventConstants.EVENT_INVENTORY_COMMIT_REQUESTED),
-                any(InventoryCommitEvent.class)
+                any(CommitInventoryCommand.class)
         );
     }
 
@@ -329,7 +330,7 @@ public class OrderServiceTest {
                 eq(orderId),
                 eq("ORDER"),
                 eq(EventConstants.EVENT_INVENTORY_RELEASE_REQUESTED),
-                any(InventoryReleasedRequestedEvent.class)
+                any(ReleaseInventoryCommand.class)
         );
     }
 
@@ -383,7 +384,7 @@ public class OrderServiceTest {
                 eq(orderId),
                 eq("ORDER"),
                 eq(EventConstants.EVENT_NOTIFICATION_REQUESTED),
-                any(NotificationRequestedEvent.class)
+                any(SendNotificationCommand.class)
         );
     }
 
@@ -455,7 +456,7 @@ public class OrderServiceTest {
                 eq(orderId),
                 eq("ORDER"),
                 eq(EventConstants.EVENT_NOTIFICATION_REQUESTED),
-                any(NotificationRequestedEvent.class)
+                any(SendNotificationCommand.class)
         );
     }
 

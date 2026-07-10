@@ -1,5 +1,7 @@
-package org.example.messagingstarter.contracts;
+package org.example.messagingstarter.contracts.events;
 
+
+import org.example.messagingstarter.contracts.BaseEvent;
 
 import java.util.UUID;
 

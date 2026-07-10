@@ -2,7 +2,7 @@ package org.example.orderservice.unit.service.publisher;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.messagingstarter.EventConstants;
-import org.example.messagingstarter.contracts.InventoryReserveRequestedEvent;
+import org.example.messagingstarter.contracts.commands.ReserveInventoryCommand;
 import org.example.messagingstarter.outbox.entity.OutboxEvent;
 import org.example.orderservice.service.kafka.KafkaPublisherService;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,7 +54,7 @@ public class KafkaPublisherServiceTest {
         when(kafkaTemplate.send(
                 eq(EventConstants.TOPIC_ORDER_INVENTORY_REQUEST_V1),
                 eq("1"),
-                any(InventoryReserveRequestedEvent.class)
+                any(ReserveInventoryCommand.class)
         )).thenReturn(future);
 
         // WHEN
@@ -67,7 +67,7 @@ public class KafkaPublisherServiceTest {
         verify(kafkaTemplate).send(
                 eq(EventConstants.TOPIC_ORDER_INVENTORY_REQUEST_V1),
                 eq("1"),
-                any(InventoryReserveRequestedEvent.class)
+                any(ReserveInventoryCommand.class)
         );
 
     }

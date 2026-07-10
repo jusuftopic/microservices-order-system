@@ -5,10 +5,10 @@ import io.micrometer.core.instrument.Counter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.messagingstarter.EventConstants;
-import org.example.messagingstarter.contracts.PaymentCompletedEvent;
-import org.example.messagingstarter.contracts.PaymentFailedEvent;
-import org.example.messagingstarter.contracts.PaymentRefundRequestedEvent;
-import org.example.messagingstarter.contracts.PaymentRequestedEvent;
+import org.example.messagingstarter.contracts.events.PaymentCompletedEvent;
+import org.example.messagingstarter.contracts.events.PaymentFailedEvent;
+import org.example.messagingstarter.contracts.commands.RefundPaymentCommand;
+import org.example.messagingstarter.contracts.commands.ProcessPaymentCommand;
 import org.example.messagingstarter.inbox.repository.InboxRepository;
 import org.example.messagingstarter.outbox.entity.OutboxEvent;
 import org.example.messagingstarter.outbox.repository.OutboxRepository;
@@ -52,7 +52,7 @@ public class PaymentService {
      * @param event Payment request
      */
     @Transactional
-    public void processPayment(PaymentRequestedEvent event) {
+    public void processPayment(ProcessPaymentCommand event) {
         int inserted = inboxRepository.insertIfNotExists(event.messageId());
 
         if (inserted == 0) {
@@ -92,7 +92,7 @@ public class PaymentService {
      *  - DB lock should not be active during the network call
      *  - retry/rollback can get messy in slow 3rd party call
      */
-    private void publishPaymentEvent(final Payment payment, final PaymentRequestedEvent event) {
+    private void publishPaymentEvent(final Payment payment, final ProcessPaymentCommand event) {
         eventPublisher.publishEvent(
                 new PaymentProcessingEvent(
                         payment.getId(),
@@ -102,7 +102,7 @@ public class PaymentService {
         );
     }
 
-    private Payment createPayment(PaymentRequestedEvent event) {
+    private Payment createPayment(ProcessPaymentCommand event) {
         return Payment.builder()
                 .orderId(event.orderId())
                 .status(PaymentStatus.PENDING)
@@ -203,9 +203,9 @@ public class PaymentService {
     /**
      * Handles payment refund.
      *
-     * @param event {@link PaymentRefundRequestedEvent} to handle
+     * @param event {@link RefundPaymentCommand} to handle
      */
-    public void handleRefund(PaymentRefundRequestedEvent event) {
+    public void handleRefund(RefundPaymentCommand event) {
         incrementMetrics(paymentMetrics.getPaymentRefundRequestsTotal());
         incrementMetrics(paymentMetrics.getPaymentRefundCompletedTotal());
     }

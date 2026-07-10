@@ -5,9 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.messagingstarter.EventConstants;
+import org.example.messagingstarter.contracts.commands.*;
 import org.example.messagingstarter.utils.TopicResolver;
-import org.example.messagingstarter.contracts.NotificationRequestedEvent;
-import org.example.messagingstarter.contracts.PaymentRequestedEvent;
 import org.example.messagingstarter.outbox.entity.OutboxEvent;
 import org.example.messagingstarter.outbox.service.EventPublisherService;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -72,37 +71,37 @@ public class KafkaPublisherService implements EventPublisherService {
                 case EventConstants.EVENT_INVENTORY_CHECK_REQUESTED ->
                         objectMapper.readValue(
                                 event.getPayload(),
-                                org.example.messagingstarter.contracts.InventoryReserveRequestedEvent.class
+                                ReserveInventoryCommand.class
                         );
 
                 case EventConstants.EVENT_PAYMENT_REQUESTED ->
                         objectMapper.readValue(
                                 event.getPayload(),
-                                PaymentRequestedEvent.class
+                                ProcessPaymentCommand.class
                         );
 
                 case EventConstants.EVENT_INVENTORY_COMMIT_REQUESTED ->
                         objectMapper.readValue(
                                 event.getPayload(),
-                                org.example.messagingstarter.contracts.InventoryCommitEvent.class
+                                CommitInventoryCommand.class
                         );
 
                 case EventConstants.EVENT_INVENTORY_RELEASE_REQUESTED ->
                         objectMapper.readValue(
                                 event.getPayload(),
-                                org.example.messagingstarter.contracts.InventoryReleasedRequestedEvent.class
+                                ReleaseInventoryCommand.class
                         );
 
                 case EventConstants.EVENT_NOTIFICATION_REQUESTED ->
                         objectMapper.readValue(
                                 event.getPayload(),
-                                NotificationRequestedEvent.class
+                                SendNotificationCommand.class
                         );
 
                 case EventConstants.EVENT_PAYMENT_REFUND_REQUESTED ->
                         objectMapper.readValue(
                                 event.getPayload(),
-                                org.example.messagingstarter.contracts.PaymentRefundRequestedEvent.class
+                                RefundPaymentCommand.class
                         );
 
                 default -> throw new IllegalArgumentException(

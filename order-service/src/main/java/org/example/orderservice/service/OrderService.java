@@ -5,6 +5,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.messagingstarter.EventConstants;
 import org.example.messagingstarter.contracts.*;
+import org.example.messagingstarter.contracts.commands.*;
+import org.example.messagingstarter.contracts.events.*;
 import org.example.orderservice.dto.request.OrderRequest;
 import org.example.orderservice.dto.response.OrderResponse;
 import org.example.orderservice.entity.Order;
@@ -60,7 +62,7 @@ public class OrderService {
                 saved.getId(),
                 "ORDER",
                 EVENT_INVENTORY_CHECK_REQUESTED,
-                new org.example.messagingstarter.contracts.InventoryReserveRequestedEvent(
+                new ReserveInventoryCommand(
                         saved.getId(),
                         saved.getItems().stream()
                                 .map(item -> new OrderItemEvent(
@@ -103,7 +105,7 @@ public class OrderService {
                 order.getId(),
                 "ORDER",
                 EventConstants.EVENT_PAYMENT_REQUESTED,
-                new PaymentRequestedEvent(
+                new ProcessPaymentCommand(
                         order.getId(),
                         calculateAmount(order),
                         order.getCustomerEmail(),
@@ -155,7 +157,7 @@ public class OrderService {
                 order.getId(),
                 "ORDER",
                 EventConstants.EVENT_INVENTORY_COMMIT_REQUESTED,
-                new InventoryCommitEvent(
+                new CommitInventoryCommand(
                         order.getId(),
                         order.getItems().stream()
                                 .map(o -> new OrderItemEvent(o.getProductId(), o.getQuantity()))
@@ -200,7 +202,7 @@ public class OrderService {
                 order.getId(),
                 "ORDER",
                 EventConstants.EVENT_INVENTORY_RELEASE_REQUESTED,
-                new InventoryReleasedRequestedEvent(
+                new ReleaseInventoryCommand(
                         order.getId(),
                         order.getItems().stream()
                                 .map(o -> new OrderItemEvent(
@@ -260,7 +262,7 @@ public class OrderService {
                 order.getId(),
                 "ORDER",
                 EventConstants.EVENT_NOTIFICATION_REQUESTED,
-                new NotificationRequestedEvent(
+                new SendNotificationCommand(
                         order.getId(),
                         order.getCustomerEmail(),
                         "ORDER_COMPLETED",
@@ -310,7 +312,7 @@ public class OrderService {
                 order.getId(),
                 "ORDER",
                 EventConstants.EVENT_NOTIFICATION_REQUESTED,
-                new NotificationRequestedEvent(
+                new SendNotificationCommand(
                         order.getId(),
                         order.getCustomerEmail(),
                         "ORDER_FAILED",
@@ -367,7 +369,7 @@ public class OrderService {
                 order.getId(),
                 "ORDER",
                 EventConstants.EVENT_PAYMENT_REFUND_REQUESTED,
-                new PaymentRefundRequestedEvent(
+                new RefundPaymentCommand(
                         order.getId(),
                         event.correlationId(),
                         UUID.randomUUID()
@@ -379,7 +381,7 @@ public class OrderService {
                 order.getId(),
                 "ORDER",
                 EventConstants.EVENT_NOTIFICATION_REQUESTED,
-                new NotificationRequestedEvent(
+                new SendNotificationCommand(
                         order.getId(),
                         order.getCustomerEmail(),
                         "ORDER_FAILED",
@@ -472,7 +474,7 @@ public class OrderService {
                 order.getId(),
                 "ORDER",
                 EventConstants.EVENT_NOTIFICATION_REQUESTED,
-                new NotificationRequestedEvent(
+                new SendNotificationCommand(
                         order.getId(),
                         order.getCustomerEmail(),
                         "ORDER_TIMED_OUT",

@@ -1,12 +1,14 @@
-package org.example.messagingstarter.contracts;
+package org.example.messagingstarter.contracts.commands;
+
+import org.example.messagingstarter.contracts.BaseEvent;
 
 import java.util.UUID;
 
 /**
- * Event emitted to request payment refund.
+ * Command emitted to request payment refund.
  *
  * <p>
- * This event represents a compensation step in the order workflow.
+ * This command represents a compensation step in the order workflow.
  * It is triggered when an order fails after payment completion.
  * </p>
  *
@@ -14,7 +16,7 @@ import java.util.UUID;
  * Consumed by Payment Service.
  * </p>
  */
-public record PaymentRefundRequestedEvent(
+public record RefundPaymentCommand(
         Long orderId,
         String correlationId,
         UUID messageId

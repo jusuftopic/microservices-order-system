@@ -4,7 +4,7 @@ package org.example.notificationservice.listener.kafka;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.messagingstarter.EventConstants;
-import org.example.messagingstarter.contracts.NotificationRequestedEvent;
+import org.example.messagingstarter.contracts.commands.SendNotificationCommand;
 import org.example.notificationservice.service.NotificationService;
 import org.example.notificationservice.utils.Constants;
 import org.springframework.kafka.annotation.KafkaHandler;
@@ -34,7 +34,7 @@ public class NotificationRequestKafkaListener {
      */
     @KafkaHandler
     public void handleNotificationRequested(
-            NotificationRequestedEvent event
+            SendNotificationCommand event
     ) {
 
         log.info(
