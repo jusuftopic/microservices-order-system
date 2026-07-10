@@ -1,7 +1,7 @@
 package org.example.paymentservice.config;
 
 import org.apache.kafka.clients.admin.NewTopic;
-import org.example.commons.event.EventConstants;
+import org.example.messagingstarter.EventConstants;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

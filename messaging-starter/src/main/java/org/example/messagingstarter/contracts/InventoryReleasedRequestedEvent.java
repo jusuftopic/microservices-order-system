@@ -1,4 +1,4 @@
-package org.example.commons.event.contracts;
+package org.example.messagingstarter.contracts;
 
 import java.util.List;
 import java.util.UUID;

@@ -1,7 +1,7 @@
 package org.example.inventoryservice.config;
 
 import org.apache.kafka.common.TopicPartition;
-import org.example.commons.event.EventConstants;
+import org.example.messagingstarter.EventConstants;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.core.KafkaTemplate;

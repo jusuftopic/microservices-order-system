@@ -1,20 +1,22 @@
-package org.example.commons.event.contracts;
+package org.example.messagingstarter.contracts;
 
 import java.util.UUID;
 
+
 /**
- * Event emitted to indicate successful inventory commit.
+ * Event emitted to indicate successful inventory release.
  *
  * <p>
- * This event represents the finalization of the inventory step in the order workflow.
- * It signals that previously reserved inventory has been permanently deducted.
+ * This event represents the completion of a compensation step in the order workflow.
+ * It signals that previously reserved inventory has been successfully released
+ * and returned to available stock.
  * </p>
  *
  * <p>
  * Consumed by Order Service.
  * </p>
  */
-public record InventoryCommitCompletedEvent(
+public record InventoryReleaseCompletedEvent(
 
         /**
          * Unique identifier of the order.
@@ -26,7 +28,7 @@ public record InventoryCommitCompletedEvent(
          */
         String correlationId,
 
-         /**
+        /**
          * Unique identifier of the message.
          */
         UUID messageId

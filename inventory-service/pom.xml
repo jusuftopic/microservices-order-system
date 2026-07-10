@@ -63,13 +63,6 @@
         </dependency>
 
         <!-- INTERNAL DEPENDENCIES -->
-        <!-- COMMONS  -->
-        <dependency>
-            <groupId>org.example</groupId>
-            <artifactId>commons</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
-        </dependency>
-
         <dependency>
             <groupId>org.example</groupId>
             <artifactId>messaging-starter</artifactId>

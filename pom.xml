@@ -23,8 +23,7 @@
     </properties>
 
     <modules>
-        <!-- common module -->
-        <module>commons</module>
+        <!-- common modules -->
         <module>messaging-starter</module>
 
         <!-- services -->

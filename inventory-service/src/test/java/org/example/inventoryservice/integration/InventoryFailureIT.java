@@ -1,9 +1,9 @@
 package org.example.inventoryservice.integration;
 
 
-import org.example.commons.event.EventConstants;
-import org.example.commons.event.contracts.InventoryReserveRequestedEvent;
-import org.example.commons.event.contracts.OrderItemEvent;
+import org.example.messagingstarter.EventConstants;
+import org.example.messagingstarter.contracts.InventoryReserveRequestedEvent;
+import org.example.messagingstarter.contracts.OrderItemEvent;
 import org.example.messagingstarter.inbox.repository.InboxRepository;
 import org.example.messagingstarter.outbox.entity.OutboxEvent;
 import org.example.messagingstarter.outbox.repository.OutboxRepository;

@@ -1,6 +1,6 @@
 package org.example.notificationservice.service.sender;
 
-import org.example.commons.event.contracts.NotificationRequestedEvent;
+import org.example.messagingstarter.contracts.NotificationRequestedEvent;
 
 /**
  * Abstraction for sending notifications.

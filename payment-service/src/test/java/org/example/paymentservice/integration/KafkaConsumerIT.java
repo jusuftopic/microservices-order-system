@@ -1,7 +1,7 @@
 package org.example.paymentservice.integration;
 
-import org.example.commons.event.EventConstants;
-import org.example.commons.event.contracts.PaymentRequestedEvent;
+import org.example.messagingstarter.EventConstants;
+import org.example.messagingstarter.contracts.PaymentRequestedEvent;
 import org.example.messagingstarter.inbox.repository.InboxRepository;
 import org.example.messagingstarter.outbox.repository.OutboxRepository;
 import org.example.paymentservice.repository.PaymentRepository;

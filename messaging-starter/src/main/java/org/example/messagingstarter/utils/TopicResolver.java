@@ -1,6 +1,6 @@
-package org.example.commons.event.utils;
+package org.example.messagingstarter.utils;
 
-import static org.example.commons.event.EventConstants.*;
+import static org.example.messagingstarter.EventConstants.*;
 
 /**
  * Utils class help to resolve topic based on happened event type

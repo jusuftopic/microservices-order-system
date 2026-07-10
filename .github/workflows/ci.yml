@@ -4,7 +4,6 @@ on:
   push:
     branches: [ "master" ]
     paths:
-      - "commons/**"
       - "messaging-starter/**"
       - "order-service/**"
       - "inventory-service/**"
@@ -15,7 +14,6 @@ on:
   pull_request:
     branches: [ "master" ]
     paths:
-      - "commons/**"
       - "messaging-starter/**"
       - "order-service/**"
       - "inventory-service/**"
@@ -43,19 +41,15 @@ jobs:
           filters: |
            order:
             - 'order-service/**'
-            - 'commons/**'
             - 'messaging-starter/**'
            inventory:
              - 'inventory-service/**'
-             - 'commons/**'
              - 'messaging-starter/**' 
            payment:
             - 'payment-service/**'
-            - 'commons/**'
             - 'messaging-starter/**'
            notification:
             - 'notification-service/**'
-            - 'commons/**'
 
 
   # build services

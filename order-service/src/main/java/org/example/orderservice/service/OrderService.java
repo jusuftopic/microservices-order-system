@@ -3,8 +3,8 @@ package org.example.orderservice.service;
 import io.micrometer.core.instrument.Counter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.commons.event.EventConstants;
-import org.example.commons.event.contracts.*;
+import org.example.messagingstarter.EventConstants;
+import org.example.messagingstarter.contracts.*;
 import org.example.orderservice.dto.request.OrderRequest;
 import org.example.orderservice.dto.response.OrderResponse;
 import org.example.orderservice.entity.Order;
@@ -23,7 +23,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import static org.example.commons.event.EventConstants.EVENT_INVENTORY_CHECK_REQUESTED;
+import static org.example.messagingstarter.EventConstants.EVENT_INVENTORY_CHECK_REQUESTED;
 
 
 /**
@@ -60,7 +60,7 @@ public class OrderService {
                 saved.getId(),
                 "ORDER",
                 EVENT_INVENTORY_CHECK_REQUESTED,
-                new InventoryReserveRequestedEvent(
+                new org.example.messagingstarter.contracts.InventoryReserveRequestedEvent(
                         saved.getId(),
                         saved.getItems().stream()
                                 .map(item -> new OrderItemEvent(

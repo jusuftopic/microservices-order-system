@@ -1,8 +1,8 @@
 package org.example.orderservice.unit.service;
 
-import org.example.commons.event.EventConstants;
-import org.example.commons.event.contracts.InventoryReleasedRequestedEvent;
-import org.example.commons.event.contracts.PaymentRefundRequestedEvent;
+import org.example.messagingstarter.EventConstants;
+import org.example.messagingstarter.contracts.InventoryReleasedRequestedEvent;
+import org.example.messagingstarter.contracts.PaymentRefundRequestedEvent;
 import org.example.orderservice.entity.Order;
 import org.example.orderservice.entity.OrderItem;
 import org.example.orderservice.enums.OrderStatus;

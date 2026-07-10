@@ -1,6 +1,6 @@
 package org.example.notificationservice.service;
 
-import org.example.commons.event.contracts.NotificationRequestedEvent;
+import org.example.messagingstarter.contracts.NotificationRequestedEvent;
 import org.example.notificationservice.metrics.NotificationMetrics;
 import org.example.notificationservice.service.sender.NotificationSender;
 import org.junit.jupiter.api.BeforeEach;

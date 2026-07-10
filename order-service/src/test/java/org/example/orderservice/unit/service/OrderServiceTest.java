@@ -1,7 +1,7 @@
 package org.example.orderservice.unit.service;
 
-import org.example.commons.event.EventConstants;
-import org.example.commons.event.contracts.*;
+import org.example.messagingstarter.EventConstants;
+import org.example.messagingstarter.contracts.*;
 import org.example.orderservice.dto.request.OrderItemRequest;
 import org.example.orderservice.dto.request.OrderRequest;
 import org.example.orderservice.dto.response.OrderResponse;
@@ -108,7 +108,7 @@ public class OrderServiceTest {
                 eq(1L),
                 eq("ORDER"),
                 eq(EventConstants.EVENT_INVENTORY_CHECK_REQUESTED),
-                any(InventoryReserveRequestedEvent.class));
+                any(org.example.messagingstarter.contracts.InventoryReserveRequestedEvent.class));
     }
 
 

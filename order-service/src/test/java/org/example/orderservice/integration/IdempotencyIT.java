@@ -1,7 +1,7 @@
 package org.example.orderservice.integration;
 
-import org.example.commons.event.EventConstants;
-import org.example.commons.event.contracts.InventoryReservedEvent;
+import org.example.messagingstarter.EventConstants;
+import org.example.messagingstarter.contracts.InventoryReservedEvent;
 import org.example.orderservice.entity.Order;
 import org.example.orderservice.enums.OrderStatus;
 import org.example.messagingstarter.inbox.repository.InboxRepository;

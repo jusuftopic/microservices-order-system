@@ -3,8 +3,8 @@ package org.example.notificationservice.listener.kafka;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.commons.event.EventConstants;
-import org.example.commons.event.contracts.NotificationRequestedEvent;
+import org.example.messagingstarter.EventConstants;
+import org.example.messagingstarter.contracts.NotificationRequestedEvent;
 import org.example.notificationservice.service.NotificationService;
 import org.example.notificationservice.utils.Constants;
 import org.springframework.kafka.annotation.KafkaHandler;

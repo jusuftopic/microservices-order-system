@@ -1,11 +1,10 @@
 package org.example.paymentservice.config;
 
-import org.apache.kafka.clients.admin.NewTopic;
+
 import org.apache.kafka.common.TopicPartition;
-import org.example.commons.event.EventConstants;
+import org.example.messagingstarter.EventConstants;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.kafka.config.TopicBuilder;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
 import org.springframework.kafka.listener.DefaultErrorHandler;

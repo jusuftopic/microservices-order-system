@@ -4,9 +4,10 @@ package org.example.orderservice.service.kafka;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.commons.event.EventConstants;
-import org.example.commons.event.contracts.*;
-import org.example.commons.event.utils.TopicResolver;
+import org.example.messagingstarter.EventConstants;
+import org.example.messagingstarter.utils.TopicResolver;
+import org.example.messagingstarter.contracts.NotificationRequestedEvent;
+import org.example.messagingstarter.contracts.PaymentRequestedEvent;
 import org.example.messagingstarter.outbox.entity.OutboxEvent;
 import org.example.messagingstarter.outbox.service.EventPublisherService;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -71,7 +72,7 @@ public class KafkaPublisherService implements EventPublisherService {
                 case EventConstants.EVENT_INVENTORY_CHECK_REQUESTED ->
                         objectMapper.readValue(
                                 event.getPayload(),
-                                InventoryReserveRequestedEvent.class
+                                org.example.messagingstarter.contracts.InventoryReserveRequestedEvent.class
                         );
 
                 case EventConstants.EVENT_PAYMENT_REQUESTED ->
@@ -83,13 +84,13 @@ public class KafkaPublisherService implements EventPublisherService {
                 case EventConstants.EVENT_INVENTORY_COMMIT_REQUESTED ->
                         objectMapper.readValue(
                                 event.getPayload(),
-                                InventoryCommitEvent.class
+                                org.example.messagingstarter.contracts.InventoryCommitEvent.class
                         );
 
                 case EventConstants.EVENT_INVENTORY_RELEASE_REQUESTED ->
                         objectMapper.readValue(
                                 event.getPayload(),
-                                InventoryReleasedRequestedEvent.class
+                                org.example.messagingstarter.contracts.InventoryReleasedRequestedEvent.class
                         );
 
                 case EventConstants.EVENT_NOTIFICATION_REQUESTED ->
@@ -101,7 +102,7 @@ public class KafkaPublisherService implements EventPublisherService {
                 case EventConstants.EVENT_PAYMENT_REFUND_REQUESTED ->
                         objectMapper.readValue(
                                 event.getPayload(),
-                                PaymentRefundRequestedEvent.class
+                                org.example.messagingstarter.contracts.PaymentRefundRequestedEvent.class
                         );
 
                 default -> throw new IllegalArgumentException(

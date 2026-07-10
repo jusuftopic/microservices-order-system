@@ -3,7 +3,7 @@ package org.example.notificationservice.service;
 import io.micrometer.core.instrument.Counter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.commons.event.contracts.NotificationRequestedEvent;
+import org.example.messagingstarter.contracts.NotificationRequestedEvent;
 import org.example.notificationservice.metrics.NotificationMetrics;
 import org.example.notificationservice.service.sender.NotificationSender;
 import org.springframework.stereotype.Service;

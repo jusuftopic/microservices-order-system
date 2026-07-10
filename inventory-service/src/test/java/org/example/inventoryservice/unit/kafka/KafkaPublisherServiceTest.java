@@ -2,9 +2,9 @@ package org.example.inventoryservice.unit.kafka;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.example.commons.event.EventConstants;
-import org.example.commons.event.contracts.*;
+import org.example.messagingstarter.EventConstants;
 import org.example.inventoryservice.service.kafka.KafkaPublisherService;
+import org.example.messagingstarter.contracts.*;
 import org.example.messagingstarter.outbox.entity.OutboxEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

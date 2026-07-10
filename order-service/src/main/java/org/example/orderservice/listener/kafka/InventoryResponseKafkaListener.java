@@ -2,9 +2,9 @@ package org.example.orderservice.listener.kafka;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.commons.event.EventConstants;
-import org.example.commons.event.contracts.InventoryFailedEvent;
-import org.example.commons.event.contracts.InventoryReservedEvent;
+import org.example.messagingstarter.EventConstants;
+import org.example.messagingstarter.contracts.InventoryFailedEvent;
+import org.example.messagingstarter.contracts.InventoryReservedEvent;
 import org.example.orderservice.service.OrderService;
 import org.example.orderservice.utils.Constants;
 import org.springframework.kafka.annotation.KafkaHandler;

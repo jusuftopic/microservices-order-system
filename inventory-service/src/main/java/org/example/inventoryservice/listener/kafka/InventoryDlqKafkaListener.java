@@ -3,7 +3,7 @@ package org.example.inventoryservice.listener.kafka;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.commons.event.EventConstants;
+import org.example.messagingstarter.EventConstants;
 import org.example.inventoryservice.utils.Constants;
 import org.springframework.kafka.annotation.KafkaHandler;
 import org.springframework.kafka.annotation.KafkaListener;

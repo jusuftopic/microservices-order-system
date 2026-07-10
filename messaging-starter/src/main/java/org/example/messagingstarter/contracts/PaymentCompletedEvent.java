@@ -1,15 +1,15 @@
-package org.example.commons.event.contracts;
+package org.example.messagingstarter.contracts;
 
 import java.util.UUID;
 
 /**
- * Event emitted when inventory has been successfully reserved.
+ * Event emitted by Payment Service when payment has been successfully processed.
  *
- * <p>This indicates that all required items are available and reserved for the order.</p>
+ * <p>This indicates that the transaction was successfully completed.</p>
  *
- * <p>Consumed by Order Service to proceed with payment processing.</p>
+ * <p>Consumed by Order Service to mark the order as completed.</p>
  */
-public record InventoryReservedEvent(
+public record PaymentCompletedEvent(
 
         /**
          * Unique identifier of the order.

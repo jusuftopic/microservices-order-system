@@ -3,10 +3,10 @@ package org.example.orderservice.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.commons.event.EventConstants;
-import org.example.commons.event.contracts.InventoryReleasedRequestedEvent;
-import org.example.commons.event.contracts.OrderItemEvent;
-import org.example.commons.event.contracts.PaymentRefundRequestedEvent;
+import org.example.messagingstarter.EventConstants;
+import org.example.messagingstarter.contracts.InventoryReleasedRequestedEvent;
+import org.example.messagingstarter.contracts.OrderItemEvent;
+import org.example.messagingstarter.contracts.PaymentRefundRequestedEvent;
 import org.example.orderservice.entity.Order;
 import org.example.orderservice.service.outbox.OrderOutboxService;
 import org.springframework.stereotype.Service;

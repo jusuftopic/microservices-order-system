@@ -1,4 +1,4 @@
-package org.example.commons.event.contracts;
+package org.example.messagingstarter.contracts;
 
 /**
  * Represents a single item within an order used in event communication.

@@ -1,7 +1,7 @@
 package org.example.paymentservice.listener.kafka;
 
 import lombok.extern.slf4j.Slf4j;
-import org.example.commons.event.EventConstants;
+import org.example.messagingstarter.EventConstants;
 import org.example.paymentservice.utils.Constants;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;

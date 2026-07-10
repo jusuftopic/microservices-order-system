@@ -1,8 +1,8 @@
 package org.example.paymentservice.unit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.example.commons.event.EventConstants;
-import org.example.commons.event.contracts.PaymentRequestedEvent;
+import org.example.messagingstarter.EventConstants;
+import org.example.messagingstarter.contracts.PaymentRequestedEvent;
 import org.example.messagingstarter.inbox.repository.InboxRepository;
 import org.example.messagingstarter.outbox.entity.OutboxEvent;
 import org.example.messagingstarter.outbox.repository.OutboxRepository;

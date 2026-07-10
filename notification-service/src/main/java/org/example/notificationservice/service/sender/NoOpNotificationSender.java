@@ -2,7 +2,7 @@ package org.example.notificationservice.service.sender;
 
 
 import lombok.extern.slf4j.Slf4j;
-import org.example.commons.event.contracts.NotificationRequestedEvent;
+import org.example.messagingstarter.contracts.NotificationRequestedEvent;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 

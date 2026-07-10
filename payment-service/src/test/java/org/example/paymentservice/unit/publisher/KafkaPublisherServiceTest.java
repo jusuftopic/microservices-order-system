@@ -2,9 +2,9 @@ package org.example.paymentservice.unit.publisher;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.example.commons.event.EventConstants;
-import org.example.commons.event.contracts.PaymentCompletedEvent;
-import org.example.commons.event.contracts.PaymentFailedEvent;
+import org.example.messagingstarter.EventConstants;
+import org.example.messagingstarter.contracts.PaymentCompletedEvent;
+import org.example.messagingstarter.contracts.PaymentFailedEvent;
 import org.example.messagingstarter.outbox.entity.OutboxEvent;
 import org.example.paymentservice.service.publisher.KafkaPublisherService;
 import org.junit.jupiter.api.BeforeEach;
