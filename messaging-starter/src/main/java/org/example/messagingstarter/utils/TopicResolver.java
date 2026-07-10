@@ -3,7 +3,7 @@ package org.example.messagingstarter.utils;
 import static org.example.messagingstarter.EventConstants.*;
 
 /**
- * Utils class help to resolve topic based on happened event type
+ * Utils class help to resolve topic based on happened event types
  */
 public class TopicResolver {
 
