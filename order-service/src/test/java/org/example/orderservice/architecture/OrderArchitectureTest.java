@@ -45,22 +45,20 @@ public class OrderArchitectureTest {
                     .whereLayer("Repository").mayOnlyBeAccessedByLayers("Service");
 
     /**
-     * Restricts usage of OutboxRepository to approved services only.
+     * Ensures that OrderService is enforced to use inbox and outbox pattern.
      *
-     * <p>Only OrderService and OutboxEventPublisherService may access it.</p>
+     * <p>This enforces correct usage of the inbox pattern for idempotency handling
+     * and outbox pattern for reliable message handling.</p>
      */
     @ArchTest
-    static final ArchRule outbox_must_be_used =
-            methods()
-                    .that().areDeclaredInClassesThat()
-                    .haveSimpleName("OutboxRepository")
-                    .should().onlyBeCalled()
-                    .byClassesThat()
-                    .haveSimpleName("OrderService")
-                    .orShould()
-                    .onlyBeCalled()
-                    .byClassesThat()
-                    .haveSimpleName("OutboxEventPublisherService");
+    static final ArchRule order_service_uses_inbox_and_outbox =
+            classes()
+                    .that().haveSimpleName("OrderService")
+                    .should().dependOnClassesThat()
+                    .haveSimpleName("InboxRepository")
+                    .andShould()
+                    .dependOnClassesThat()
+                    .haveSimpleName("OrderOutboxService");
 
 
 

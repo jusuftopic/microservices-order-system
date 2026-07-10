@@ -1,7 +1,7 @@
 package org.example.messagingstarter;
 
 /**
- * Class holds well-known event constants
+ * Class holds well-known event-relevant constants
  */
 public class EventConstants {
 
