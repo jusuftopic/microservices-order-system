@@ -30,6 +30,7 @@ jobs:
       inventory: ${{ steps.filter.outputs.inventory }}
       payment: ${{ steps.filter.outputs.payment }}
       notification: ${{ steps.filter.outputs.notification }}
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -39,41 +40,45 @@ jobs:
         uses: dorny/paths-filter@v3
         with:
           filters: |
-           order:
-            - 'order-service/**'
-            - 'messaging-starter/**'
-           inventory:
-             - 'inventory-service/**'
-             - 'messaging-starter/**' 
-           payment:
-            - 'payment-service/**'
-            - 'messaging-starter/**'
-           notification:
-            - 'notification-service/**'
+            order:
+              - 'order-service/**'
+              - 'messaging-starter/**'
+            inventory:
+              - 'inventory-service/**'
+              - 'messaging-starter/**'
+            payment:
+              - 'payment-service/**'
+              - 'messaging-starter/**'
+            notification:
+              - 'notification-service/**'
+              - 'messaging-starter/**'
 
+      - name: Build matrix
+        id: set-matrix
+        run: |
+          matrix=$(jq -nc \
+            --arg order "${{ steps.filter.outputs.order }}" \
+            --arg payment "${{ steps.filter.outputs.payment }}" \
+            --arg inventory "${{ steps.filter.outputs.inventory }}" \
+            --arg notification "${{ steps.filter.outputs.notification }}" \
+            '{include: [
+              (if $order=="true" then {service:"order-service"} else empty end),
+              (if $payment=="true" then {service:"payment-service"} else empty end),
+              (if $inventory=="true" then {service:"inventory-service"} else empty end),
+              (if $notification=="true" then {service:"notification-service"} else empty end)
+            ]}')
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          echo "Computed matrix: $matrix"
 
   # build services
   build-service:
     name: Build ${{ matrix.service }}
     needs: changes
+    if: ${{ needs.changes.outputs.matrix != '{"include":[]}' }}
     runs-on: ubuntu-latest
 
     strategy:
-      matrix:
-        include:
-          - service: order-service
-            changed: order
-
-          - service: payment-service
-            changed: payment
-
-          - service: inventory-service
-            changed: inventory
-
-          - service: notification-service
-            changed: notification
-
-    if: ${{ needs.changes.outputs[matrix.changed] == 'true' }}
+      matrix: ${{ fromJSON(needs.changes.outputs.matrix) }}
 
     steps:
       - name: Checkout code
