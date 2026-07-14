@@ -78,6 +78,10 @@ public class PaymentServiceTest {
 
         when(repository.findByOrderId(1L)).thenReturn(null);
 
+        final Payment saved = new Payment();
+        saved.setId(1L);
+
+        when(repository.save(any())).thenReturn(saved);
 
         // WHEN
         target.processPayment(event);
