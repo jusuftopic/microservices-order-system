@@ -76,7 +76,8 @@ public class OrderService {
         );
 
         /* 3. return order details */
-        log.info("[ORDER-SERVICE] Order {} successfully created. Status: {}", saved.getId(), saved.getStatus());
+        log.info("[ORDER-SERVICE] Order {} successfully created. Status: {}. Correlation ID {}",
+                saved.getId(), saved.getStatus(), correlationId);
         increaseMetricsCounter(orderMetrics.getOrdersCreated());
 
         return OrderMapper.toResponse(saved);

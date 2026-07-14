@@ -80,10 +80,11 @@ public class InventoryService {
 
             if (!inventory.canReserve(item.quantity())) {
 
-                log.warn("[INVENTORY-SERVICE] Not enough stock for product {} requested {} available {}",
+                log.warn("[INVENTORY-SERVICE] Not enough stock for product {} requested {} available {}. Order ID {}",
                         item.productId(),
                         item.quantity(),
-                        inventory.getAvailableQuantity()
+                        inventory.getAvailableQuantity(),
+                        event.orderId()
                 );
 
                 incrementMetrics(metrics.getInventoryReservationsFailedTotal());

@@ -77,7 +77,9 @@ public class PaymentService {
 
         /* process payment progress */
         payment.setStatus(PaymentStatus.PROCESSING);
-        repository.save(payment);
+        final Payment saved = repository.save(payment);
+
+        log.info("[PAYMENT-SERVICE] Payment {} for order {} set in processing state.", event.orderId(), saved.getId());
 
         /* publish event to initiate request to 3rd party payment provider */
         publishPaymentEvent(payment, event);

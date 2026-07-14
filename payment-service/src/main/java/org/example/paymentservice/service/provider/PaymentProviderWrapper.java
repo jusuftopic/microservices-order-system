@@ -35,10 +35,17 @@ public class PaymentProviderWrapper {
      */
     private PaymentResultDTO fallback(Long orderId, String idempotencyKey,
                                       Throwable ex) {
-        log.warn(
-                "[PAYMENT-PROVIDER] fallback triggered for orderId={}.",
-                orderId, ex
-        );
+        if (ex instanceof
+                io.github.resilience4j.circuitbreaker.CallNotPermittedException) {
+
+            log.warn("[PAYMENT-SERVICE][PAYMENT-PROVIDER-WRAPPER] request rejected because circuit breaker " +
+                            "is open. orderId={} idempotencyKey={}. Sending fallback response.", orderId, idempotencyKey);
+        }
+        else {
+            log.error("[PAYMENT-SERVICE][PAYMENT-PROVIDER-WRAPPER]  provider call failed after resilience " +
+                            "handling. orderId={} idempotencyKey={} exceptionType={}. Sending fallback response.",
+                    orderId, idempotencyKey, ex.getClass().getSimpleName(), ex);
+        }
 
         return new PaymentResultDTO(
                 false,
