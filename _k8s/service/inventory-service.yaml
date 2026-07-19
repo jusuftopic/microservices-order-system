@@ -14,6 +14,7 @@ spec:
         app: inventory-service
         kafka-client: "true"
     spec:
+      terminationGracePeriodSeconds: 40
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000

@@ -3,6 +3,7 @@ package org.example.orderservice.service.outbox;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.messagingstarter.outbox.service.OutboxEventPublisherService;
+import org.example.orderservice.lifecycle.ShutdownState;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -21,12 +22,20 @@ import org.springframework.stereotype.Service;
 public class OutboxEventScheduler {
 
     private final OutboxEventPublisherService publisherService;
+    private final ShutdownState shutdownState;
 
     /**
      * Runs every 3 second to publish unprocessed outbox events.
      */
-    @Scheduled(fixedDelay = 3000)
+    @Scheduled(
+            fixedDelayString = "${outbox.publisher.fixed-delay:3000}"
+    )
     public void publishOutboxEvents() {
+        if (shutdownState.isShuttingDown()) {
+            log.debug("[ORDER-SERVICE][OUTBOX-EVENT-SCHEDULER] Skipping Outbox publication because shutdown is in progress");
+            return;
+        }
+
         publisherService.publishPendingEvents();
     }
 }

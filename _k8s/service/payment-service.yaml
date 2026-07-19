@@ -12,6 +12,7 @@ spec:
       labels:
         app: payment-service
     spec:
+      terminationGracePeriodSeconds: 40
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000

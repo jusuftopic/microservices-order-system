@@ -46,7 +46,6 @@ public class OutboxEventPublisherService {
      */
     @Transactional
     public void publishPendingEvents() {
-
         List<OutboxEvent> events = outboxRepository.findReadyForPublishing(LocalDateTime.now());
 
         if (events == null || events.isEmpty()) {
