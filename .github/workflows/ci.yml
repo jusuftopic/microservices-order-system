@@ -77,6 +77,10 @@ jobs:
     if: ${{ needs.changes.outputs.matrix != '{"include":[]}' }}
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+      id-token: write
+
     strategy:
       matrix: ${{ fromJSON(needs.changes.outputs.matrix) }}
 
@@ -102,6 +106,35 @@ jobs:
           docker build \
             -t ${{ matrix.service }}:${{ github.sha }} \
             -f ${{ matrix.service }}/Dockerfile .
+
+      # ECR publishing is intentionally disabled until the AWS infrastructure
+      # exists. Enable it by setting the repository variable
+      # ENABLE_ECR_PUBLISHING=true and configuring AWS_ECR_PUBLISH_ROLE_ARN
+      # and AWS_REGION.
+      - name: Obtain temporary AWS credentials through GitHub OIDC
+        if: ${{ github.event_name == 'push' && vars.ENABLE_ECR_PUBLISHING == 'true' }}
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_ECR_PUBLISH_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-session-name: GitHubActions-${{ github.run_id }}
+
+      - name: Log in to Amazon ECR
+        if: ${{ github.event_name == 'push' && vars.ENABLE_ECR_PUBLISHING == 'true' }}
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Publish Docker image to Amazon ECR
+        if: ${{ github.event_name == 'push' && vars.ENABLE_ECR_PUBLISHING == 'true' }}
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: microservices-order-system/${{ matrix.service }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker tag \
+            "${{ matrix.service }}:${IMAGE_TAG}" \
+            "${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
+          docker push "${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
 
       - name: Upload test results
         if: always()
