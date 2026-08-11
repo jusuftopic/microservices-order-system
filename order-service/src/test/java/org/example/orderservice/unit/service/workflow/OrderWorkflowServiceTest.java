@@ -1,17 +1,23 @@
 package org.example.orderservice.unit.service.workflow;
 
+import org.example.messagingstarter.EventConstants;
+import org.example.messagingstarter.contracts.events.OrderLifecycleTransitionedEvent;
 import org.example.orderservice.entity.Order;
 import org.example.orderservice.enums.OrderStatus;
 import org.example.orderservice.repository.OrderRepository;
+import org.example.orderservice.service.outbox.OrderOutboxService;
 import org.example.orderservice.service.workflow.OrderWorkflowService;
+import org.example.orderservice.service.workflow.OrderTransitionContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -27,11 +33,14 @@ public class OrderWorkflowServiceTest {
     @Mock
     private OrderRepository repository;
 
+    @Mock
+    private OrderOutboxService outboxService;
+
     private OrderWorkflowService service;
 
     @BeforeEach
     void setUp() {
-        service = new OrderWorkflowService(repository);
+        service = new OrderWorkflowService(repository, outboxService);
     }
 
     @Test
@@ -65,6 +74,57 @@ public class OrderWorkflowServiceTest {
 
         verify(repository).findById(orderId);
         verify(repository).save(order);
+    }
+
+    @Test
+    void should_store_lifecycle_evidence_in_same_transition() {
+
+        Long orderId = 1L;
+        UUID sourceEventId = UUID.randomUUID();
+        UUID paymentCommandId = UUID.randomUUID();
+
+        Order order = Order.builder()
+                .id(orderId)
+                .status(OrderStatus.CREATED)
+                .correlationId("corr-123")
+                .build();
+
+        when(repository.findById(orderId)).thenReturn(Optional.of(order));
+        when(repository.save(order)).thenReturn(order);
+
+        service.updateStatus(
+                orderId,
+                OrderStatus.INVENTORY_RESERVE_COMPLETED,
+                OrderTransitionContext.causedBy(
+                                "INVENTORY_RESERVED",
+                                "INVENTORY_SERVICE",
+                                EventConstants.EVENT_INVENTORY_RESERVED,
+                                sourceEventId
+                        )
+                        .withDecision("PROCESS_PAYMENT", "PAYMENT_SERVICE", paymentCommandId)
+        );
+
+        ArgumentCaptor<Object> payload = ArgumentCaptor.forClass(Object.class);
+        verify(outboxService).storeEvent(
+                eq(orderId),
+                eq("ORDER"),
+                eq(EventConstants.EVENT_ORDER_LIFECYCLE_TRANSITIONED),
+                payload.capture()
+        );
+
+        OrderLifecycleTransitionedEvent lifecycleEvent =
+                assertInstanceOf(OrderLifecycleTransitionedEvent.class, payload.getValue());
+
+        assertEquals("CREATED", lifecycleEvent.previousStatus());
+        assertEquals("INVENTORY_RESERVE_COMPLETED", lifecycleEvent.newStatus());
+        assertEquals("INVENTORY_RESERVED", lifecycleEvent.reasonCode());
+        assertEquals(sourceEventId, lifecycleEvent.causationId());
+        assertEquals(paymentCommandId, lifecycleEvent.orchestrationDecision().commandId());
+        assertEquals("corr-123", lifecycleEvent.correlationId());
+        assertFalse(lifecycleEvent.compensation().required());
+        assertNotNull(lifecycleEvent.occurredAt());
+        assertNotNull(lifecycleEvent.messageId());
+        assertEquals(1, lifecycleEvent.eventVersion());
     }
 
     @Test
@@ -243,6 +303,7 @@ public class OrderWorkflowServiceTest {
         );
 
         verify(repository, never()).save(any());
+        verifyNoInteractions(outboxService);
     }
 
     @Test
@@ -265,6 +326,7 @@ public class OrderWorkflowServiceTest {
 
         verify(repository).findById(orderId);
         verify(repository, never()).save(any());
+        verifyNoInteractions(outboxService);
     }
 
 }

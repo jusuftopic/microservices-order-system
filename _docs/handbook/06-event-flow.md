@@ -38,6 +38,29 @@ This distinction keeps responsibilities clear. Services never instruct another s
 | PaymentFailed              | Payment processing failed                        |
 | InventoryCommitted         | Reserved inventory has been permanently deducted |
 | InventoryReleased          | Reserved inventory has been returned             |
+| OrderLifecycleTransitioned | The Order Service committed a lifecycle change   |
+
+## Investigation Evidence
+
+Every valid Order Service status transition also creates an
+`OrderLifecycleTransitioned` outbox record. The record is published to
+`order.lifecycle.v1` and describes the authoritative transition, its cause and
+the next orchestration decision selected by the saga.
+
+For example, a payment failure can produce lifecycle evidence that the order
+moved from `INVENTORY_RESERVE_COMPLETED` to `PAYMENT_FAILED`, that the
+transition was caused by a Payment Service event, and that an inventory release
+command was selected as compensation.
+
+The selected command is an intention, not proof of completion. Inventory
+release is considered complete only after the Inventory Service publishes its
+own completion event. This distinction allows the future Investigation Service
+to build explanations from owned facts without making the Order Service the
+owner of downstream service details.
+
+Lifecycle evidence contains correlation, causation and command identifiers so
+it can be joined with capability outcome events. It intentionally excludes
+customer and payment data that is unnecessary for investigation.
 
 ## Happy Path
 

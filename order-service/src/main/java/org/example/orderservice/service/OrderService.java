@@ -17,6 +17,7 @@ import org.example.messagingstarter.inbox.repository.InboxRepository;
 import org.example.orderservice.repository.OrderRepository;
 import org.example.orderservice.service.outbox.OrderOutboxService;
 import org.example.orderservice.service.workflow.OrderWorkflowService;
+import org.example.orderservice.service.workflow.OrderTransitionContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -100,7 +101,18 @@ public class OrderService {
             return;
         }
 
-        Order order = workflowService.updateStatus(event.orderId(), OrderStatus.INVENTORY_RESERVE_COMPLETED);
+        UUID paymentCommandId = UUID.randomUUID();
+        Order order = workflowService.updateStatus(
+                event.orderId(),
+                OrderStatus.INVENTORY_RESERVE_COMPLETED,
+                OrderTransitionContext.causedBy(
+                                "INVENTORY_RESERVED",
+                                "INVENTORY_SERVICE",
+                                EventConstants.EVENT_INVENTORY_RESERVED,
+                                event.messageId()
+                        )
+                        .withDecision("PROCESS_PAYMENT", "PAYMENT_SERVICE", paymentCommandId)
+        );
 
         outboxService.storeEvent(
                 order.getId(),
@@ -111,7 +123,7 @@ public class OrderService {
                         calculateAmount(order),
                         order.getCustomerEmail(),
                         event.correlationId(),
-                        UUID.randomUUID()
+                        paymentCommandId
                 )
         );
     }
@@ -127,7 +139,16 @@ public class OrderService {
      */
     @Transactional
     public void handleInventoryFailed(InventoryFailedEvent event) {
-        final Order order = workflowService.updateStatus(event.orderId(), OrderStatus.INVENTORY_RESERVE_FAILED);
+        final Order order = workflowService.updateStatus(
+                event.orderId(),
+                OrderStatus.INVENTORY_RESERVE_FAILED,
+                OrderTransitionContext.causedBy(
+                        "INVENTORY_RESERVATION_FAILED",
+                        "INVENTORY_SERVICE",
+                        EventConstants.EVENT_INVENTORY_FAILED,
+                        event.messageId()
+                )
+        );
         log.warn("[ORDER-SERVICE] Inventory failed for order {} reason {}. No further processing.",
                 order.getId(), event.reason());
     }
@@ -150,7 +171,18 @@ public class OrderService {
             return;
         }
 
-        Order order = workflowService.updateStatus(event.orderId(), OrderStatus.PAYMENT_COMPLETED);
+        UUID commitInventoryCommandId = UUID.randomUUID();
+        Order order = workflowService.updateStatus(
+                event.orderId(),
+                OrderStatus.PAYMENT_COMPLETED,
+                OrderTransitionContext.causedBy(
+                                "PAYMENT_COMPLETED",
+                                "PAYMENT_SERVICE",
+                                EventConstants.EVENT_PAYMENT_SUCCESS,
+                                event.messageId()
+                        )
+                        .withDecision("COMMIT_INVENTORY", "INVENTORY_SERVICE", commitInventoryCommandId)
+        );
 
         log.info("[ORDER-SERVICE] Payment completed for order {}", order.getId());
 
@@ -164,7 +196,7 @@ public class OrderService {
                                 .map(o -> new OrderItemEvent(o.getProductId(), o.getQuantity()))
                                 .toList(),
                         event.correlationId(),
-                        UUID.randomUUID()
+                        commitInventoryCommandId
                 )
         );
     }
@@ -188,9 +220,18 @@ public class OrderService {
             return;
         }
 
+        UUID releaseInventoryCommandId = UUID.randomUUID();
         Order order = workflowService.updateStatus(
                 event.orderId(),
-                OrderStatus.PAYMENT_FAILED
+                OrderStatus.PAYMENT_FAILED,
+                OrderTransitionContext.causedBy(
+                                "PAYMENT_FAILED",
+                                "PAYMENT_SERVICE",
+                                EventConstants.EVENT_PAYMENT_FAILED,
+                                event.messageId()
+                        )
+                        .withDecision("RELEASE_INVENTORY", "INVENTORY_SERVICE", releaseInventoryCommandId)
+                        .withCompensation("INVENTORY_RELEASE")
         );
 
         log.warn(
@@ -212,7 +253,7 @@ public class OrderService {
                                 ))
                                 .toList(),
                         event.correlationId(),
-                        UUID.randomUUID()
+                        releaseInventoryCommandId
                 )
         );
     }
@@ -242,12 +283,26 @@ public class OrderService {
         // 1. Update final status
         workflowService.updateStatus(
                 event.orderId(),
-                OrderStatus.INVENTORY_COMMIT_COMPLETED
+                OrderStatus.INVENTORY_COMMIT_COMPLETED,
+                OrderTransitionContext.causedBy(
+                        "INVENTORY_COMMITTED",
+                        "INVENTORY_SERVICE",
+                        EventConstants.EVENT_INVENTORY_COMMIT_COMPLETED,
+                        event.messageId()
+                )
         );
 
+        UUID notificationCommandId = UUID.randomUUID();
         Order order = workflowService.updateStatus(
                 event.orderId(),
-                OrderStatus.COMPLETED
+                OrderStatus.COMPLETED,
+                OrderTransitionContext.causedBy(
+                                "ORDER_WORKFLOW_COMPLETED",
+                                "ORDER_SERVICE",
+                                EventConstants.EVENT_INVENTORY_COMMIT_COMPLETED,
+                                event.messageId()
+                        )
+                        .withDecision("SEND_NOTIFICATION", "NOTIFICATION_SERVICE", notificationCommandId)
         );
 
         log.info(
@@ -269,7 +324,7 @@ public class OrderService {
                         "ORDER_COMPLETED",
                         "Your order has been successfully completed.",
                         event.correlationId(),
-                        UUID.randomUUID()
+                        notificationCommandId
                 )
         );
     }
@@ -296,9 +351,17 @@ public class OrderService {
         }
 
         // 1. Update final status (in case not already finalized)
+        UUID notificationCommandId = UUID.randomUUID();
         Order order = workflowService.updateStatus(
                 event.orderId(),
-                OrderStatus.FAILED
+                OrderStatus.FAILED,
+                OrderTransitionContext.causedBy(
+                                "COMPENSATION_COMPLETED",
+                                "INVENTORY_SERVICE",
+                                EventConstants.EVENT_INVENTORY_RELEASE_COMPLETED,
+                                event.messageId()
+                        )
+                        .withDecision("SEND_NOTIFICATION", "NOTIFICATION_SERVICE", notificationCommandId)
         );
 
         log.warn(
@@ -319,7 +382,7 @@ public class OrderService {
                         "ORDER_FAILED",
                         "Your order could not be completed and has been cancelled.",
                         event.correlationId(),
-                        UUID.randomUUID()
+                        notificationCommandId
                 )
         );
     }
@@ -350,11 +413,26 @@ public class OrderService {
         // 1. Mark order as FAILED
         workflowService.updateStatus(
                 event.orderId(),
-                OrderStatus.INVENTORY_COMMIT_FAILED
+                OrderStatus.INVENTORY_COMMIT_FAILED,
+                OrderTransitionContext.causedBy(
+                        "INVENTORY_COMMIT_FAILED",
+                        "INVENTORY_SERVICE",
+                        EventConstants.EVENT_INVENTORY_COMMIT_FAILED,
+                        event.messageId()
+                )
         );
+        UUID refundCommandId = UUID.randomUUID();
         Order order = workflowService.updateStatus(
                 event.orderId(),
-                OrderStatus.FAILED
+                OrderStatus.FAILED,
+                OrderTransitionContext.causedBy(
+                                "PAYMENT_REFUND_REQUIRED",
+                                "ORDER_SERVICE",
+                                EventConstants.EVENT_INVENTORY_COMMIT_FAILED,
+                                event.messageId()
+                        )
+                        .withDecision("REFUND_PAYMENT", "PAYMENT_SERVICE", refundCommandId)
+                        .withCompensation("PAYMENT_REFUND")
         );
 
         log.error(
@@ -373,7 +451,7 @@ public class OrderService {
                 new RefundPaymentCommand(
                         order.getId(),
                         event.correlationId(),
-                        UUID.randomUUID()
+                        refundCommandId
                 )
         );
 
@@ -457,7 +535,17 @@ public class OrderService {
         }
 
         /* 1. Update order status */
-        workflowService.updateStatus(order.getId(), OrderStatus.TIMED_OUT);
+        workflowService.updateStatus(
+                order.getId(),
+                OrderStatus.TIMED_OUT,
+                OrderTransitionContext.causedBy(
+                                "ORDER_PROCESSING_TIMEOUT",
+                                "ORDER_SERVICE",
+                                "ORDER_TIMEOUT_DETECTED",
+                                null
+                        )
+                        .withCompensation("STATUS_DEPENDENT_COMPENSATION")
+        );
 
         log.error(
                 "[ORDER-SERVICE] Order {} timed out after exceeding processing threshold.",
