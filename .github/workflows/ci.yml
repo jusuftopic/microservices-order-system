@@ -9,6 +9,7 @@ on:
       - "inventory-service/**"
       - "payment-service/**"
       - "notification-service/**"
+      - "investigation-service/**"
       - "pom.xml"
 
   pull_request:
