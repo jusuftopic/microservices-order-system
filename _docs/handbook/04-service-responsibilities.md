@@ -22,6 +22,7 @@ The Order Service is the authority for the overall order lifecycle. Other servic
 | Inventory Service    | Manages stock reservation and finalization | Inventory items, available quantity, reserved quantity                                         | Order status, payment state                               |
 | Payment Service      | Handles payment processing                 | Payment records, payment status, provider interaction result                                   | Order completion decision, inventory state                |
 | Notification Service | Sends customer notifications               | Notification delivery logic                                                                    | Business workflow decisions, order status                 |
+| Investigation Service | Provides validated LLM-supported order status | Its local timeline projection, generated explanations and deterministic fallback              | Authoritative order state, workflow decisions             |
 
 ## Order Service
 
@@ -102,6 +103,35 @@ The Notification Service does not make business decisions. Failed notification d
 
 This makes notification delivery a supporting capability rather than a dependency that controls the core business flow.
 
+## Investigation Service
+
+The Investigation Service is an LLM-supported order status provider. It
+consumes authoritative lifecycle facts, builds a local timeline projection and
+uses that evidence to generate a human-readable explanation of the distributed
+workflow.
+
+It is responsible for:
+
+* consuming order lifecycle evidence without blocking order processing
+* maintaining its own order timeline projection
+* deriving the latest known authoritative status from collected evidence
+* generating an LLM-supported order status grounded in collected evidence
+* validating the generated response against the evidence and response contract
+* using a deterministic explanation when generation or validation fails
+* exposing the result through `GET /api/v1/investigations/orders/{orderId}`
+
+The Investigation Service does not own or update order state. It remains
+outside the critical workflow. The generated explanation is a first-class API
+response only after validation; the collected lifecycle evidence remains the
+source of authoritative business facts.
+
+The current endpoint returns an empty investigation report for every positive
+order ID because timeline persistence is not implemented yet. Zero, negative
+and non-numeric identifiers return `400 Bad Request`. Unknown endpoints and
+unsupported methods preserve `404 Not Found` and `405 Method Not Allowed`
+semantics, while unexpected failures return a sanitized `500 Internal Server
+Error` response.
+
 ## Shared Technical Capabilities
 
 ### `messaging-starter`
@@ -176,6 +206,14 @@ Owns:
 • Notification delivery
 • Sender integrations
 • Delivery metrics"]
+
+            InvestigationService["🔎 Investigation Service
+
+Owns:
+• Timeline projection
+• Evidence queries
+• LLM-supported order status
+• Validation and deterministic fallback"]
         end
 
         MessagingStarter["📨 messaging-starter
@@ -191,10 +229,13 @@ Shared technical capability:
         InventoryService -. "uses" .-> MessagingStarter
         PaymentService -. "uses" .-> MessagingStarter
         NotificationService -. "uses" .-> MessagingStarter
+        InvestigationService -. "uses" .-> MessagingStarter
     end
 
     Customer -->|"Places orders"| OrderService
     OrderService -->|"Order status"| Customer
+    Customer -->|"Investigates order"| InvestigationService
+    InvestigationService -->|"Timeline and explanation"| Customer
 
     InventoryService -->|"Reports inventory outcomes"| OrderService
     PaymentService -->|"Reports payment outcomes"| OrderService
@@ -206,9 +247,9 @@ Shared technical capability:
     style InventoryService fill:#3b5fc0,stroke:#1f3a8a,color:#ffffff
     style PaymentService fill:#3b5fc0,stroke:#1f3a8a,color:#ffffff
     style NotificationService fill:#3b5fc0,stroke:#1f3a8a,color:#ffffff
+    style InvestigationService fill:#3b5fc0,stroke:#1f3a8a,color:#ffffff
 
     style MessagingStarter fill:#fff4e5,stroke:#c98a1c,color:#222222
 
     style Customer fill:#f5f5f5,stroke:#888888
 ```
-

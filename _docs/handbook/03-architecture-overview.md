@@ -14,6 +14,7 @@ The system is designed as an event-driven microservice architecture. Each servic
 | Inventory Service | Reserves, confirms, or releases inventory based on order progress.      |
 | Payment Service | Reliably processes payment requests and reports payment outcomes.       |
 | Notification Service | Sends customer-facing notifications based on order events.              |
+| Investigation Service | Provides validated LLM-supported order status with deterministic fallback. |
 | Kafka | Enables asynchronous communication between services.                    |
 | Service Databases | Each service owns its data and persists its local state independently.  |
 
@@ -40,6 +41,7 @@ flowchart TB
         InventoryService["📦 Inventory Service"]
         PaymentService["💳 Payment Service"]
         NotificationService["🔔 Notification Service"]
+        InvestigationService["🔎 Investigation Service"]
 
         OrderDb[("Order DB")]
         InventoryDb[("Inventory DB")]
@@ -55,12 +57,14 @@ flowchart TB
         Kafka --> InventoryService
         Kafka --> PaymentService
         Kafka --> NotificationService
+        Kafka --> InvestigationService
     end
 
     PaymentProvider["External Payment Provider"]
     NotificationProvider["External Notification Provider"]
 
     Client --> OrderService
+    Client --> InvestigationService
 
     PaymentService --> PaymentProvider
     NotificationService --> NotificationProvider
@@ -71,6 +75,7 @@ flowchart TB
     style InventoryService fill:#3b5fc0,stroke:#1f3a8a,color:#fff
     style PaymentService fill:#3b5fc0,stroke:#1f3a8a,color:#fff
     style NotificationService fill:#3b5fc0,stroke:#1f3a8a,color:#fff
+    style InvestigationService fill:#3b5fc0,stroke:#1f3a8a,color:#fff
 
     style Kafka fill:#fff4e5,stroke:#c98a1c
 

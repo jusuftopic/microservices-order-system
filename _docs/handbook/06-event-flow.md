@@ -45,7 +45,8 @@ This distinction keeps responsibilities clear. Services never instruct another s
 Every valid Order Service status transition also creates an
 `OrderLifecycleTransitioned` outbox record. The record is published to
 `order.lifecycle.v1` and describes the authoritative transition, its cause and
-the next orchestration decision selected by the saga.
+the next orchestration decision selected by the saga. The Investigation Service
+consumes these facts to build its order-centric read model.
 
 For example, a payment failure can produce lifecycle evidence that the order
 moved from `INVENTORY_RESERVE_COMPLETED` to `PAYMENT_FAILED`, that the
@@ -54,7 +55,7 @@ command was selected as compensation.
 
 The selected command is an intention, not proof of completion. Inventory
 release is considered complete only after the Inventory Service publishes its
-own completion event. This distinction allows the future Investigation Service
+own completion event. This distinction allows the Investigation Service
 to build explanations from owned facts without making the Order Service the
 owner of downstream service details.
 

@@ -68,6 +68,7 @@ flowchart TB
         InventoryService["📦 Inventory Service"]
         PaymentService["💳 Payment Service"]
         NotificationService["🔔 Notification Service"]
+        InvestigationService["🔎 Investigation Service"]
 
         OrderDb[("Order DB")]
         InventoryDb[("Inventory DB")]
@@ -83,12 +84,14 @@ flowchart TB
         Kafka --> InventoryService
         Kafka --> PaymentService
         Kafka --> NotificationService
+        Kafka --> InvestigationService
     end
 
     PaymentProvider["External Payment Provider"]
     NotificationProvider["External Notification Provider"]
 
     Client --> OrderService
+    Client --> InvestigationService
 
     PaymentService --> PaymentProvider
     NotificationService --> NotificationProvider
@@ -99,6 +102,7 @@ flowchart TB
     style InventoryService fill:#3b5fc0,stroke:#1f3a8a,color:#fff
     style PaymentService fill:#3b5fc0,stroke:#1f3a8a,color:#fff
     style NotificationService fill:#3b5fc0,stroke:#1f3a8a,color:#fff
+    style InvestigationService fill:#3b5fc0,stroke:#1f3a8a,color:#fff
 
     style Kafka fill:#fff4e5,stroke:#c98a1c
 
@@ -136,6 +140,7 @@ The current implementation focuses on production-oriented architectural capabili
 - Inventory Service – inventory reservation and commit
 - Payment Service – resilient payment processing
 - Notification Service – customer notification delivery
+- Investigation Service – validated LLM-supported order status with deterministic fallback
 
 ### Distributed Communication
 - Apache Kafka for asynchronous messaging

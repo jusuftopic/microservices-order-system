@@ -12,7 +12,8 @@ Service changed an order by joining implementation-specific logs and service
 data.
 
 The planned Investigation Service needs a reliable, order-centric history that
-can support deterministic explanations and, later, grounded LLM explanations.
+can support grounded LLM explanations, validate generated responses against
+the available evidence and provide deterministic explanations as fallback.
 It must not become part of the critical order workflow or infer authoritative
 state from logs.
 
@@ -66,6 +67,9 @@ publishing their own relevant outcomes.
 - Contract evolution requires versioning and backward compatibility.
 - The lifecycle topic provides business-level evidence; deeper technical root
   cause still requires capability-owned events or observability data.
+- LLM-generated explanations must be validated against collected evidence and
+  the response contract; failed generation or validation uses a deterministic
+  fallback.
 
 ## Outcome
 
