@@ -134,6 +134,20 @@ Error` response.
 
 ## Shared Technical Capabilities
 
+### API Gateway
+
+The API Gateway is the external boundary for application APIs. It provides:
+
+- one stable public entry point
+- path-based routing to Order and Investigation services
+- rate limiting for both APIs
+- stricter traffic and concurrency limits for the LLM-supported investigation path
+- isolation of internal service endpoints from direct external access
+
+The gateway does not contain workflow or domain logic. Request validation,
+authorization decisions and validation of LLM-supported responses remain with
+the service that owns the capability.
+
 ### `messaging-starter`
 
 The `messaging-starter` module provides a reusable messaging foundation shared across all services. It encapsulates the technical aspects of reliable asynchronous communication while allowing each service to remain focused on its own business responsibilities.
@@ -171,6 +185,13 @@ flowchart TB
 
     subgraph System["Ordering System"]
         direction TB
+
+        ApiGateway["🛡️ API Gateway
+
+Provides:
+• Public API boundary
+• Path-based routing
+• Rate limiting"]
 
         subgraph BusinessServices["Business Services"]
             direction LR
@@ -232,10 +253,12 @@ Shared technical capability:
         InvestigationService -. "uses" .-> MessagingStarter
     end
 
-    Customer -->|"Places orders"| OrderService
-    OrderService -->|"Order status"| Customer
-    Customer -->|"Investigates order"| InvestigationService
-    InvestigationService -->|"Timeline and explanation"| Customer
+    LlmProvider["External LLM Provider"]
+
+    Customer --> ApiGateway
+    ApiGateway -->|"Places orders"| OrderService
+    ApiGateway -->|"Investigates order"| InvestigationService
+    InvestigationService -->|"Grounded prompt"| LlmProvider
 
     InventoryService -->|"Reports inventory outcomes"| OrderService
     PaymentService -->|"Reports payment outcomes"| OrderService
@@ -248,8 +271,10 @@ Shared technical capability:
     style PaymentService fill:#3b5fc0,stroke:#1f3a8a,color:#ffffff
     style NotificationService fill:#3b5fc0,stroke:#1f3a8a,color:#ffffff
     style InvestigationService fill:#3b5fc0,stroke:#1f3a8a,color:#ffffff
+    style ApiGateway fill:#2f855a,stroke:#1f5f40,color:#ffffff
 
     style MessagingStarter fill:#fff4e5,stroke:#c98a1c,color:#222222
 
     style Customer fill:#f5f5f5,stroke:#888888
+    style LlmProvider fill:#fff4e5,stroke:#c98a1c,color:#222222
 ```

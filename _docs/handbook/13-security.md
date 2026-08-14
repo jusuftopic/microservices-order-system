@@ -12,12 +12,20 @@ The central principle is:
 
 ## Controlled Service Exposure
 
-Application services are deployed using the Kubernetes `ClusterIP` service type.
+The API Gateway is the controlled public entry point for the Order and
+Investigation APIs. It exposes stable paths while the application services
+remain private. Locally, only the gateway API port is published by Docker
+Compose. In Kubernetes, application services remain internal behind the
+gateway.
 
-A `ClusterIP` service is reachable only from within the Kubernetes cluster and is not directly exposed through a public load balancer.
+Path-based routing prevents clients from depending on internal service
+addresses. Rate limiting is applied at the boundary before requests consume
+application resources.
 
 This keeps internal components private by default, including:
 
+* Order Service
+* Investigation Service
 * Payment Service
 * Inventory Service
 * Notification Service
@@ -25,9 +33,16 @@ This keeps internal components private by default, including:
 * Kafka
 * internal monitoring components
 
-External access should be introduced deliberately through a controlled entry point such as an Ingress, API Gateway, or external load balancer.
+The Investigation API receives stricter rate and concurrent-request limits.
+Its planned LLM integration calls a third-party service that can introduce
+variable latency and significant usage cost. Edge limits reduce abusive or
+accidental traffic before it reaches that dependency. Application-level usage
+budgets, authorization and LLM response validation are still required because
+gateway limits alone cannot enforce business policy.
 
-Using `ClusterIP` reduces accidental exposure, but it does not by itself authenticate or encrypt internal traffic. It represents the first boundary in a broader security model.
+Private service exposure reduces accidental access, but it does not by itself
+authenticate or encrypt internal traffic. It represents one boundary in a
+broader security model.
 
 During the design phase, principles aligned with a zero-trust architecture were considered, such as enforcing encrypted communication (for example, TLS between services and Kafka) and requiring explicit authentication for every interaction. However, as this project is a side project with limited scope, these mechanisms were not fully implemented. Despite this, the design acknowledges the benefits of zero-trust approaches, including stronger protection against lateral movement, improved data confidentiality, and more robust identity-based access control, and these considerations inform how the system could be further hardened in a production environment.
 
@@ -167,7 +182,9 @@ The security model consists of several complementary boundaries:
 ```text
 External Access Control
           ↓
-ClusterIP Service Exposure
+API Gateway Rate Limiting
+          ↓
+Private Service Exposure
           ↓
 NetworkPolicy Segmentation
           ↓
@@ -180,7 +197,8 @@ No individual control is considered sufficient on its own.
 
 For example:
 
-* `ClusterIP` reduces public exposure but does not restrict all internal traffic.
+* The API Gateway reduces public exposure and request volume but does not replace authentication or application validation.
+* Private service exposure does not restrict all internal traffic.
 * NetworkPolicies restrict internal communication but do not protect leaked credentials.
 * Kubernetes Secrets protect configuration ownership but do not replace application authentication.
 * Container security contexts reduce runtime privileges but do not validate incoming requests.
@@ -192,6 +210,8 @@ Security is achieved by combining these layers.
 The current deployment provides protection through:
 
 * private internal Kubernetes services
+* a single API Gateway entry point
+* path-based routing and rate limiting
 * restricted service-to-service communication
 * isolated database credentials
 * separation of configuration and secrets
@@ -220,16 +240,24 @@ The current implementation establishes a secure deployment foundation, while the
 **System Exposure Model**
 > ```mermaid
 > graph TD
->     External[External Entry Point]
->     Ingress[Ingress / API Gateway]
->     Services[ClusterIP Services]
+>     Client[External Client]
+>     Gateway[API Gateway]
+>     Order[Order Service]
+>     Investigation[Investigation Service]
+>     Internal[Other Internal Services]
 >     Kafka[Kafka]
->     RDS[AWS RDS Databases]
+>     Databases[Service Databases]
+>     LLM[Third-Party LLM]
 >
->     External --> Ingress
->     Ingress --> Services
->     Services --> Kafka
->     Services --> RDS
+>     Client --> Gateway
+>     Gateway --> Order
+>     Gateway --> Investigation
+>     Order --> Kafka
+>     Investigation --> Kafka
+>     Internal --> Kafka
+>     Order --> Databases
+>     Internal --> Databases
+>     Investigation --> LLM
 > ```
 
 
@@ -238,7 +266,9 @@ The current implementation establishes a secure deployment foundation, while the
 > ```text
 > External Access Control
 >           ↓
-> ClusterIP Service Exposure
+> API Gateway Rate Limiting
+>           ↓
+> Private Service Exposure
 >           ↓
 > NetworkPolicy Segmentation
 >           ↓

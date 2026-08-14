@@ -52,6 +52,8 @@ This repository demonstrates practical implementation of:
 
 ✓ Evolutionary architecture
 
+✓ API Gateway with path-based routing and rate limiting
+
 ## Architecture Overview
 
 ```mermaid
@@ -61,6 +63,7 @@ flowchart TB
     subgraph System["Ordering System"]
         direction TB
 
+        ApiGateway["🛡️ API Gateway"]
         OrderService["📦 Order Service"]
 
         Kafka[("📨 Kafka")]
@@ -74,6 +77,9 @@ flowchart TB
         InventoryDb[("Inventory DB")]
         PaymentDb[("Payment DB")]
         NotificationDb[("Notification DB")]
+
+        ApiGateway -->|"/api/v1/orders"| OrderService
+        ApiGateway -->|"/api/v1/investigations"| InvestigationService
 
         OrderService --> OrderDb
         InventoryService --> InventoryDb
@@ -89,12 +95,13 @@ flowchart TB
 
     PaymentProvider["External Payment Provider"]
     NotificationProvider["External Notification Provider"]
+    LlmProvider["External LLM Provider"]
 
-    Client --> OrderService
-    Client --> InvestigationService
+    Client --> ApiGateway
 
     PaymentService --> PaymentProvider
     NotificationService --> NotificationProvider
+    InvestigationService --> LlmProvider
 
     style System fill:#eef4ff,stroke:#3b5fc0,stroke-width:2px
 
@@ -103,6 +110,7 @@ flowchart TB
     style PaymentService fill:#3b5fc0,stroke:#1f3a8a,color:#fff
     style NotificationService fill:#3b5fc0,stroke:#1f3a8a,color:#fff
     style InvestigationService fill:#3b5fc0,stroke:#1f3a8a,color:#fff
+    style ApiGateway fill:#2f855a,stroke:#1f5f40,color:#fff
 
     style Kafka fill:#fff4e5,stroke:#c98a1c
 
@@ -113,6 +121,7 @@ flowchart TB
 
     style PaymentProvider fill:#fff4e5,stroke:#c98a1c
     style NotificationProvider fill:#fff4e5,stroke:#c98a1c
+    style LlmProvider fill:#fff4e5,stroke:#c98a1c
 ```
 
 ## Repository philosophy
@@ -151,6 +160,7 @@ The current implementation focuses on production-oriented architectural capabili
 - Retry and Circuit Breaker patterns
 - Dead Letter Queue (DLQ) handling
 - Graceful shutdown
+- Edge rate limiting and concurrent-request protection for costly operations
 
 ### Data Management
 - Database-per-service using PostgreSQL
@@ -158,6 +168,8 @@ The current implementation focuses on production-oriented architectural capabili
 - Local transactions with eventual consistency
 
 ### Operations
+- Traefik API Gateway as the single public API entry point
+- Path-based routing to Order and Investigation APIs
 - Business and technical metrics
 - Centralized logging
 - Kubernetes deployment manifests
