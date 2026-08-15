@@ -109,6 +109,20 @@ services:
       inventory-db:
         condition: service_healthy
 
+  # INVESTIGATION DB
+  investigation-db:
+    image: postgres:15
+    container_name: investigation-db
+    environment:
+      POSTGRES_DB: investigation_db
+      POSTGRES_USER: investigation_user
+      POSTGRES_PASSWORD: change-me
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U investigation_user -d investigation_db" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   # ORDER-SERVICE
   order-service:
     build:
@@ -131,7 +145,14 @@ services:
     container_name: investigation-service
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      DB_HOST: investigation-db
+      DB_PORT: 5432
+      DB_NAME: investigation_db
+      DB_USERNAME: investigation_user
+      DB_PASSWORD: change-me
     depends_on:
+      investigation-db:
+        condition: service_healthy
       kafka:
         condition: service_started
 

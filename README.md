@@ -77,6 +77,7 @@ flowchart TB
         InventoryDb[("Inventory DB")]
         PaymentDb[("Payment DB")]
         NotificationDb[("Notification DB")]
+        InvestigationDb[("Investigation DB")]
 
         ApiGateway -->|"/api/v1/orders"| OrderService
         ApiGateway -->|"/api/v1/investigations"| InvestigationService
@@ -85,6 +86,7 @@ flowchart TB
         InventoryService --> InventoryDb
         PaymentService --> PaymentDb
         NotificationService --> NotificationDb
+        InvestigationService --> InvestigationDb
 
         OrderService --> Kafka
         Kafka --> InventoryService
@@ -118,6 +120,7 @@ flowchart TB
     style InventoryDb fill:#f5f5f5
     style PaymentDb fill:#f5f5f5
     style NotificationDb fill:#f5f5f5
+    style InvestigationDb fill:#f5f5f5
 
     style PaymentProvider fill:#fff4e5,stroke:#c98a1c
     style NotificationProvider fill:#fff4e5,stroke:#c98a1c
