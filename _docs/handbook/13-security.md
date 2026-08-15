@@ -71,6 +71,11 @@ Payment Service ───────► Payment Database
 Notification Service ──► Notification Database
           │
           └───────────► Kafka
+
+Investigation Service ─► Investigation Database
+          │
+          ├───────────► Kafka
+          └───────────► External LLM Provider
 ```
 
 Communication outside the defined paths is denied.
@@ -81,6 +86,7 @@ This prevents scenarios such as:
 Order Service ─────✕────► Payment Database
 Payment Service ───✕────► Inventory Database
 Notification Service ─✕─► Order Database
+Investigation Service ─✕─► Order Database
 ```
 
 Network segmentation provides several benefits:
@@ -105,6 +111,7 @@ Each service has a dedicated secret for its own database credentials:
 * `inventory-db-secret`
 * `payment-db-secret`
 * `notification-db-secret`
+* `investigation-db-secret`
 
 Services reference only the Secret associated with their own database.
 
@@ -115,6 +122,7 @@ Order Service ───────► order-db-secret
 Inventory Service ───► inventory-db-secret
 Payment Service ─────► payment-db-secret
 Notification Service ► notification-db-secret
+Investigation Service ► investigation-db-secret
 ```
 
 A shared Secret containing all database credentials was intentionally avoided because it would weaken service isolation and increase the impact of accidental exposure.
@@ -257,6 +265,7 @@ The current implementation establishes a secure deployment foundation, while the
 >     Internal --> Kafka
 >     Order --> Databases
 >     Internal --> Databases
+>     Investigation --> Databases
 >     Investigation --> LLM
 > ```
 

@@ -120,6 +120,10 @@ It is responsible for:
 * using a deterministic explanation when generation or validation fails
 * exposing the result through `GET /api/v1/investigations/orders/{orderId}`
 
+It owns a PostgreSQL evidence store for its timeline and does not access the
+Order Service database. Derived investigation state remains rebuildable from
+the collected evidence.
+
 The Investigation Service does not own or update order state. It remains
 outside the critical workflow. The generated explanation is a first-class API
 response only after validation; the collected lifecycle evidence remains the

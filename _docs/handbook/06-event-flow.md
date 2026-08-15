@@ -46,7 +46,9 @@ Every valid Order Service status transition also creates an
 `OrderLifecycleTransitioned` outbox record. The record is published to
 `order.lifecycle.v1` and describes the authoritative transition, its cause and
 the next orchestration decision selected by the saga. The Investigation Service
-consumes these facts to build its order-centric read model.
+consumes these facts and persists them idempotently in its PostgreSQL database
+to build its order-centric read model. Status and explanation context are
+derived from the stored evidence and remain rebuildable.
 
 For example, a payment failure can produce lifecycle evidence that the order
 moved from `INVENTORY_RESERVE_COMPLETED` to `PAYMENT_FAILED`, that the
