@@ -129,9 +129,10 @@ outside the critical workflow. The generated explanation is a first-class API
 response only after validation; the collected lifecycle evidence remains the
 source of authoritative business facts.
 
-The current endpoint returns an empty investigation report for every positive
-order ID because timeline persistence is not implemented yet. Zero, negative
-and non-numeric identifiers return `400 Bad Request`. Unknown endpoints and
+Lifecycle events are persisted in the timeline evidence store, but the current
+endpoint is not connected to that projection yet and returns an empty
+investigation report for every positive order ID. Zero, negative and
+non-numeric identifiers return `400 Bad Request`. Unknown endpoints and
 unsupported methods preserve `404 Not Found` and `405 Method Not Allowed`
 semantics, while unexpected failures return a sanitized `500 Internal Server
 Error` response.

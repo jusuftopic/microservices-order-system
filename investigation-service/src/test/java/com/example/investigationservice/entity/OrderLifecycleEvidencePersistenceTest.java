@@ -1,9 +1,12 @@
 package com.example.investigationservice.entity;
 
+import com.example.investigationservice.repository.OrderLifecycleEvidenceRepository;
+import com.example.investigationservice.service.OrderLifecycleEvidencePersistenceService;
+import org.example.messagingstarter.contracts.events.OrderLifecycleTransitionedEvent;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.context.annotation.Import;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -18,40 +21,60 @@ import static org.assertj.core.api.Assertions.assertThat;
         "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
         "spring.jpa.hibernate.ddl-auto=create-drop"
 })
+@Import(OrderLifecycleEvidencePersistenceService.class)
 class OrderLifecycleEvidencePersistenceTest {
 
     @Autowired
-    private TestEntityManager entityManager;
+    private OrderLifecycleEvidencePersistenceService persistenceService;
+
+    @Autowired
+    private OrderLifecycleEvidenceRepository repository;
 
     @Test
-    void persistsLifecycleEvidenceAndInitializesReceiptTime() {
-        OrderLifecycleEvidence evidence = OrderLifecycleEvidence.builder()
-                .messageId(UUID.randomUUID())
-                .orderId(42L)
-                .previousStatus("INVENTORY_RESERVE_COMPLETED")
-                .newStatus("PAYMENT_FAILED")
-                .reasonCode("PAYMENT_FAILED")
-                .sourceService("PAYMENT_SERVICE")
-                .sourceEventType("PAYMENT_FAILED")
-                .causationId(UUID.randomUUID())
-                .decisionCode("RELEASE_INVENTORY")
-                .decisionTargetService("INVENTORY_SERVICE")
-                .decisionCommandId(UUID.randomUUID())
-                .compensationRequired(true)
-                .compensationType("INVENTORY_RELEASE")
-                .occurredAt(Instant.parse("2026-08-15T10:15:30Z"))
-                .eventVersion(1)
-                .correlationId("correlation-42")
-                .kafkaTopic("order.lifecycle.v1")
-                .kafkaPartition(0)
-                .kafkaOffset(7L)
-                .build();
+    void mapsAndPersistsIncomingLifecycleEvidenceIdempotently() {
+        UUID messageId = UUID.randomUUID();
+        UUID causationId = UUID.randomUUID();
+        UUID commandId = UUID.randomUUID();
+        OrderLifecycleTransitionedEvent event = new OrderLifecycleTransitionedEvent(
+                42L,
+                "INVENTORY_RESERVE_COMPLETED",
+                "PAYMENT_FAILED",
+                "PAYMENT_FAILED",
+                "PAYMENT_SERVICE",
+                "PAYMENT_FAILED",
+                causationId,
+                new OrderLifecycleTransitionedEvent.OrchestrationDecision(
+                        "RELEASE_INVENTORY",
+                        "INVENTORY_SERVICE",
+                        commandId
+                ),
+                new OrderLifecycleTransitionedEvent.Compensation(
+                        true,
+                        "INVENTORY_RELEASE"
+                ),
+                Instant.parse("2026-08-15T10:15:30Z"),
+                1,
+                "correlation-42",
+                messageId
+        );
 
-        OrderLifecycleEvidence stored = entityManager.persistFlushFind(evidence);
+        assertThat(persistenceService.persist(event, "order.lifecycle.v1", 0, 7L))
+                .isTrue();
+        assertThat(persistenceService.persist(event, "order.lifecycle.v1", 0, 7L))
+                .isFalse();
 
-        assertThat(stored.getId()).isNotNull();
-        assertThat(stored.getMessageId()).isEqualTo(evidence.getMessageId());
-        assertThat(stored.getNewStatus()).isEqualTo("PAYMENT_FAILED");
-        assertThat(stored.getReceivedAt()).isNotNull();
+        assertThat(repository.findAll()).singleElement().satisfies(stored -> {
+            assertThat(stored.getMessageId()).isEqualTo(messageId);
+            assertThat(stored.getOrderId()).isEqualTo(42L);
+            assertThat(stored.getPreviousStatus()).isEqualTo("INVENTORY_RESERVE_COMPLETED");
+            assertThat(stored.getNewStatus()).isEqualTo("PAYMENT_FAILED");
+            assertThat(stored.getCausationId()).isEqualTo(causationId);
+            assertThat(stored.getDecisionCommandId()).isEqualTo(commandId);
+            assertThat(stored.isCompensationRequired()).isTrue();
+            assertThat(stored.getKafkaTopic()).isEqualTo("order.lifecycle.v1");
+            assertThat(stored.getKafkaPartition()).isZero();
+            assertThat(stored.getKafkaOffset()).isEqualTo(7L);
+            assertThat(stored.getReceivedAt()).isNotNull();
+        });
     }
 }
