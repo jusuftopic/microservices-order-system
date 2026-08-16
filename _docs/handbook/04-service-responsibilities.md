@@ -133,6 +133,8 @@ Investigation queries are coordinated by an application service that reads the
 local timeline and delegates explanation selection to a dedicated component.
 AI generation is accessed through a provider-independent port; provider SDKs
 and transport contracts remain in adapters outside the application workflow.
+The primary adapter currently returns a hardcoded response without contacting
+an external model provider.
 The explanation component validates AI output before selecting it and delegates
 to the deterministic generator when generation or validation fails.
 

@@ -1,5 +1,6 @@
 package com.example.investigationservice.controller;
 
+import com.example.investigationservice.adapter.ai.MockAiExplanationGenerator;
 import com.example.investigationservice.service.InvestigationQueryService;
 import com.example.investigationservice.service.explanation.DeterministicExplanationGenerator;
 import com.example.investigationservice.service.explanation.ExplanationValidationService;
@@ -25,7 +26,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         OrderTimelineReader.class,
         InvestigationExplanationService.class,
         ExplanationValidationService.class,
-        DeterministicExplanationGenerator.class
+        DeterministicExplanationGenerator.class,
+        MockAiExplanationGenerator.class
 })
 class InvestigationControllerTest {
 

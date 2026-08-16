@@ -17,7 +17,7 @@ import java.util.Optional;
 @Slf4j
 public class InvestigationExplanationService {
 
-    private final Optional<AiExplanationGenerator> aiExplanationGenerator;
+    private final AiExplanationGenerator aiExplanationGenerator;
     private final ExplanationValidationService validationService;
     private final DeterministicExplanationGenerator deterministicGenerator;
 
@@ -28,27 +28,22 @@ public class InvestigationExplanationService {
      * @return selected explanation and its source
      */
     public InvestigationExplanation explain(InvestigationContext context) {
-        if (aiExplanationGenerator.isPresent()) {
-            try {
-                Optional<String> candidate = aiExplanationGenerator.get().generate(context);
-                if (candidate.isPresent()
-                        && validationService.isValid(candidate.get(), context)) {
-                    log.debug("Selected AI explanation for order {}", context.orderId());
-                    return new InvestigationExplanation(
-                            candidate,
-                            InvestigationExplanation.Source.AI
-                    );
-                }
-
-                log.warn("AI explanation validation failed for order {}; using fallback",
-                        context.orderId());
-            } catch (RuntimeException exception) {
-                log.warn("AI explanation generation failed for order {}; using fallback",
-                        context.orderId(), exception);
+        try {
+            Optional<String> candidate = aiExplanationGenerator.generate(context);
+            if (candidate.isPresent()
+                    && validationService.isValid(candidate.get(), context)) {
+                log.debug("Selected AI explanation for order {}", context.orderId());
+                return new InvestigationExplanation(
+                        candidate,
+                        InvestigationExplanation.Source.AI
+                );
             }
-        } else {
-            log.debug("No AI explanation adapter is configured for order {}; using fallback",
+
+            log.warn("AI explanation validation failed for order {}; using fallback",
                     context.orderId());
+        } catch (RuntimeException exception) {
+            log.warn("AI explanation generation failed for order {}; using fallback",
+                    context.orderId(), exception);
         }
 
         Optional<String> deterministic = deterministicGenerator.generate(context);
