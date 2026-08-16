@@ -1,6 +1,10 @@
 package com.example.investigationservice.controller;
 
 import com.example.investigationservice.service.InvestigationQueryService;
+import com.example.investigationservice.service.explanation.DeterministicExplanationGenerator;
+import com.example.investigationservice.service.explanation.ExplanationValidationService;
+import com.example.investigationservice.service.explanation.InvestigationExplanationService;
+import com.example.investigationservice.service.timeline.OrderTimelineReader;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -16,7 +20,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(InvestigationController.class)
-@Import(InvestigationQueryService.class)
+@Import({
+        InvestigationQueryService.class,
+        OrderTimelineReader.class,
+        InvestigationExplanationService.class,
+        ExplanationValidationService.class,
+        DeterministicExplanationGenerator.class
+})
 class InvestigationControllerTest {
 
     @Autowired

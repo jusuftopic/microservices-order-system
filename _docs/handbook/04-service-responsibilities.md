@@ -129,6 +129,13 @@ outside the critical workflow. The generated explanation is a first-class API
 response only after validation; the collected lifecycle evidence remains the
 source of authoritative business facts.
 
+Investigation queries are coordinated by an application service that reads the
+local timeline and delegates explanation selection to a dedicated component.
+AI generation is accessed through a provider-independent port; provider SDKs
+and transport contracts remain in adapters outside the application workflow.
+The explanation component validates AI output before selecting it and delegates
+to the deterministic generator when generation or validation fails.
+
 Lifecycle events are persisted in the timeline evidence store, but the current
 endpoint is not connected to that projection yet and returns an empty
 investigation report for every positive order ID. Zero, negative and
