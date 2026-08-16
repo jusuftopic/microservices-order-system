@@ -1,12 +1,14 @@
 package com.example.investigationservice.service;
 
 import com.example.investigationservice.entity.OrderLifecycleEvidence;
+import com.example.investigationservice.metrics.InvestigationMetrics;
 import com.example.investigationservice.repository.OrderLifecycleEvidenceRepository;
+import com.example.investigationservice.validation.OrderLifecycleEventValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.messagingstarter.contracts.events.OrderLifecycleTransitionedEvent;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Maps order lifecycle events to the Investigation Service's evidence model
@@ -18,6 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class OrderLifecycleEvidencePersistenceService {
 
     private final OrderLifecycleEvidenceRepository repository;
+    private final OrderLifecycleEventValidator validator;
+    private final InvestigationMetrics metrics;
 
     /**
      * Persists a lifecycle event together with the Kafka coordinates from
@@ -31,13 +35,14 @@ public class OrderLifecycleEvidencePersistenceService {
      * @return {@code true} when new evidence was stored, or {@code false} when
      *         the message had already been persisted
      */
-    @Transactional
     public boolean persist(
             OrderLifecycleTransitionedEvent event,
             String kafkaTopic,
             int kafkaPartition,
             long kafkaOffset
     ) {
+        validator.validate(event, kafkaTopic, kafkaPartition, kafkaOffset);
+
         if (repository.existsByMessageId(event.messageId())) {
             log.debug(
                     "Lifecycle evidence already exists for messageId {}; skipping duplicate delivery",
@@ -46,7 +51,24 @@ public class OrderLifecycleEvidencePersistenceService {
             return false;
         }
 
-        repository.save(toEvidence(event, kafkaTopic, kafkaPartition, kafkaOffset));
+        try {
+            repository.saveAndFlush(
+                    toEvidence(event, kafkaTopic, kafkaPartition, kafkaOffset)
+            );
+        } catch (DataIntegrityViolationException exception) {
+            if (repository.existsByMessageId(event.messageId())) {
+                metrics.recordConcurrentInsert();
+                log.warn(
+                        "Lifecycle evidence was inserted concurrently for messageId {}; "
+                                + "skipping duplicate delivery",
+                        event.messageId()
+                );
+                return false;
+            }
+
+            throw exception;
+        }
+
         log.debug(
                 "Persisted lifecycle evidence for order {} with messageId {} from {}-{}@{}",
                 event.orderId(),

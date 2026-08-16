@@ -35,5 +35,7 @@ public class EventConstants {
     public static final String TOPIC_ORDER_DLQ = "order.dlq";
     public static final String TOPIC_INVENTORY_DLQ = "inventory.dlq";
     public static final String TOPIC_PAYMENT_DLQ = "payment.dlq";
+    public static final String TOPIC_INVESTIGATION_ORDER_LIFECYCLE_DLT =
+            "investigation.order-lifecycle.dlt";
 
 }

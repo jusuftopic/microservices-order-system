@@ -69,6 +69,7 @@ Examples include:
 * HTTP request behaviour
 * retry activity
 * messaging throughput
+* concurrent processing conflicts
 
 These measurements provide the operational context required to understand degraded system behaviour and infrastructure failures.
 

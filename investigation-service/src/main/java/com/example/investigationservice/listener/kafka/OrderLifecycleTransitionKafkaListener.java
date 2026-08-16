@@ -1,5 +1,6 @@
 package com.example.investigationservice.listener.kafka;
 
+import com.example.investigationservice.exception.InvalidLifecycleEventException;
 import com.example.investigationservice.service.OrderLifecycleEvidencePersistenceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -61,15 +62,19 @@ public class OrderLifecycleTransitionKafkaListener {
     }
 
     /**
-     * Handles an unexpected payload type without interrupting the consumer.
+     * Rejects payloads that do not match the lifecycle event contract so the
+     * configured error handler can preserve them for investigation.
      *
      * @param unknownMessage payload not mapped to a known lifecycle contract
      */
     @KafkaHandler(isDefault = true)
     public void handleUnknownObject(Object unknownMessage) {
-        log.error(
-                "[INVESTIGATION-SERVICE][KAFKA] Unmatched lifecycle event signature. Payload object type: {}",
-                unknownMessage.getClass().getName()
+        String payloadType = unknownMessage == null
+                ? "null"
+                : unknownMessage.getClass().getName();
+
+        throw new InvalidLifecycleEventException(
+                "Unmatched lifecycle event payload type: " + payloadType
         );
     }
 }

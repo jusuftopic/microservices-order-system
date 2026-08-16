@@ -1,5 +1,6 @@
 package com.example.investigationservice.listener.kafka;
 
+import com.example.investigationservice.exception.InvalidLifecycleEventException;
 import com.example.investigationservice.service.OrderLifecycleEvidencePersistenceService;
 import org.example.messagingstarter.contracts.events.OrderLifecycleTransitionedEvent;
 import org.junit.jupiter.api.Test;
@@ -7,7 +8,7 @@ import org.junit.jupiter.api.Test;
 import java.time.Instant;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -46,7 +47,10 @@ class OrderLifecycleTransitionKafkaListenerTest {
     }
 
     @Test
-    void safelyAcceptsUnknownPayload() {
-        assertDoesNotThrow(() -> listener.handleUnknownObject("unexpected-event"));
+    void rejectsUnknownPayload() {
+        assertThrows(
+                InvalidLifecycleEventException.class,
+                () -> listener.handleUnknownObject("unexpected-event")
+        );
     }
 }
