@@ -41,12 +41,7 @@ public class OrderLifecycleTransitionKafkaListener {
             @Header(KafkaHeaders.RECEIVED_PARTITION) int kafkaPartition,
             @Header(KafkaHeaders.OFFSET) long kafkaOffset
     ) {
-        boolean persisted = persistenceService.persist(
-                event,
-                kafkaTopic,
-                kafkaPartition,
-                kafkaOffset
-        );
+        boolean persisted = persistenceService.persist(event, kafkaTopic, kafkaPartition, kafkaOffset);
 
         log.info(
                 "[INVESTIGATION-SERVICE][KAFKA] Processed OrderLifecycleTransitionedEvent "

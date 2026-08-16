@@ -20,7 +20,7 @@ public class OrderTimelineReader {
      * @return evidence context, or empty when no context is available
      */
     public Optional<InvestigationContext> read(long orderId) {
-        log.debug("Reading investigation timeline for order {}", orderId);
+        log.debug("[INVESTIGATION-SERVICE][TIMELINE-READER] Reading investigation timeline for order {}", orderId);
         return Optional.of(InvestigationContext.empty(orderId));
     }
 }

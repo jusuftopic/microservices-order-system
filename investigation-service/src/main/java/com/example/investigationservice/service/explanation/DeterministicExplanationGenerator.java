@@ -20,7 +20,7 @@ public class DeterministicExplanationGenerator {
      * @return deterministic explanation, when one can be produced
      */
     public Optional<String> generate(InvestigationContext context) {
-        log.debug("Generating deterministic explanation for order {}", context.orderId());
+        log.debug("[INVESTIGATION-SERVICE][DETERMINISTIC-EXPLANATION] Generating deterministic explanation for order {}", context.orderId());
         return Optional.empty();
     }
 }

@@ -35,31 +35,25 @@ public class OrderLifecycleEvidencePersistenceService {
      * @return {@code true} when new evidence was stored, or {@code false} when
      *         the message had already been persisted
      */
-    public boolean persist(
-            OrderLifecycleTransitionedEvent event,
-            String kafkaTopic,
-            int kafkaPartition,
-            long kafkaOffset
-    ) {
+    public boolean persist(OrderLifecycleTransitionedEvent event, String kafkaTopic, int kafkaPartition, long kafkaOffset)
+    {
         validator.validate(event, kafkaTopic, kafkaPartition, kafkaOffset);
 
         if (repository.existsByMessageId(event.messageId())) {
             log.debug(
-                    "Lifecycle evidence already exists for messageId {}; skipping duplicate delivery",
+                    "[INVESTIGATION-SERVICE][PERSISTENCE] Lifecycle evidence already exists for messageId {}; skipping duplicate delivery",
                     event.messageId()
             );
             return false;
         }
 
         try {
-            repository.saveAndFlush(
-                    toEvidence(event, kafkaTopic, kafkaPartition, kafkaOffset)
-            );
+            repository.saveAndFlush(toEvidence(event, kafkaTopic, kafkaPartition, kafkaOffset));
         } catch (DataIntegrityViolationException exception) {
             if (repository.existsByMessageId(event.messageId())) {
                 metrics.recordConcurrentInsert();
                 log.warn(
-                        "Lifecycle evidence was inserted concurrently for messageId {}; "
+                        "[INVESTIGATION-SERVICE][PERSISTENCE] Lifecycle evidence was inserted concurrently for messageId {}; "
                                 + "skipping duplicate delivery",
                         event.messageId()
                 );
@@ -69,8 +63,7 @@ public class OrderLifecycleEvidencePersistenceService {
             throw exception;
         }
 
-        log.debug(
-                "Persisted lifecycle evidence for order {} with messageId {} from {}-{}@{}",
+        log.debug("[INVESTIGATION-SERVICE][PERSISTENCE] Persisted lifecycle evidence for order {} with messageId {} from {}-{}@{}",
                 event.orderId(),
                 event.messageId(),
                 kafkaTopic,

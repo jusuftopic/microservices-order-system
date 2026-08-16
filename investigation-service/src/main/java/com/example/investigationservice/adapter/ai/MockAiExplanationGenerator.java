@@ -27,7 +27,7 @@ public class MockAiExplanationGenerator implements AiExplanationGenerator {
      */
     @Override
     public Optional<String> generate(InvestigationContext context) {
-        log.debug("Generating mock AI explanation for order {}", context.orderId());
+        log.debug("[INVESTIGATION-SERVICE][MOCK-AI-EXPLANATION] Generating mock AI explanation for order {}", context.orderId());
         return Optional.of(MOCK_EXPLANATION);
     }
 }

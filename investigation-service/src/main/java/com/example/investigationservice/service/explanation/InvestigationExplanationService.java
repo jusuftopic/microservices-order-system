@@ -29,33 +29,26 @@ public class InvestigationExplanationService {
      */
     public InvestigationExplanation explain(InvestigationContext context) {
         try {
-            Optional<String> candidate = aiExplanationGenerator.generate(context);
-            if (candidate.isPresent()
-                    && validationService.isValid(candidate.get(), context)) {
-                log.debug("Selected AI explanation for order {}", context.orderId());
-                return new InvestigationExplanation(
-                        candidate,
-                        InvestigationExplanation.Source.AI
-                );
+            Optional<String> candidateExplanation = aiExplanationGenerator.generate(context);
+            if (candidateExplanation.isPresent() && validationService.isValid(candidateExplanation.get(), context)) {
+                log.debug("[INVESTIGATION-SERVICE][EXPLANATION] Selected AI explanation for order {}", context.orderId());
+                return new InvestigationExplanation(candidateExplanation, InvestigationExplanation.Source.AI);
             }
 
-            log.warn("AI explanation validation failed for order {}; using fallback",
+            log.warn("[INVESTIGATION-SERVICE][EXPLANATION] AI explanation validation failed for order {}; using fallback",
                     context.orderId());
         } catch (RuntimeException exception) {
-            log.warn("AI explanation generation failed for order {}; using fallback",
+            log.warn("[INVESTIGATION-SERVICE][EXPLANATION] AI explanation generation failed for order {}; using fallback",
                     context.orderId(), exception);
         }
 
         Optional<String> deterministic = deterministicGenerator.generate(context);
         if (deterministic.isPresent()) {
-            log.debug("Selected deterministic explanation for order {}", context.orderId());
-            return new InvestigationExplanation(
-                    deterministic,
-                    InvestigationExplanation.Source.DETERMINISTIC
-            );
+            log.debug("[INVESTIGATION-SERVICE][EXPLANATION] Selected deterministic explanation for order {}", context.orderId());
+            return new InvestigationExplanation(deterministic, InvestigationExplanation.Source.DETERMINISTIC);
         }
 
-        log.debug("No explanation is available for order {}", context.orderId());
+        log.debug("[INVESTIGATION-SERVICE][EXPLANATION] No explanation is available for order {}", context.orderId());
         return InvestigationExplanation.unavailable();
     }
 }

@@ -31,22 +31,18 @@ public class InvestigationQueryService {
             throw new IllegalArgumentException("orderId must be greater than zero");
         }
 
-        log.debug("Building investigation response for order {}", orderId);
+        log.debug("[INVESTIGATION-SERVICE][QUERY-SERVICE] Building investigation response for order {}", orderId);
 
         InvestigationContext context = timelineReader.read(orderId)
                 .orElseGet(() -> {
-                    log.warn("No investigation context returned for order {}; using empty context",
+                    log.warn("[INVESTIGATION-SERVICE][QUERY-SERVICE] No investigation context returned for order {}; using empty context",
                             orderId);
                     return InvestigationContext.empty(orderId);
                 });
         InvestigationExplanation explanation = explanationService.explain(context);
 
-        log.debug(
-                "Built investigation response for order {} with {} evidence items and explanation source {}",
-                orderId,
-                context.evidence().size(),
-                explanation.source()
-        );
+        log.debug("[INVESTIGATION-SERVICE][QUERY-SERVICE] Built investigation response for order {} with {} evidence items and explanation source {}",
+                orderId, context.evidence().size(), explanation.source());
 
         return new OrderInvestigationResponse(
                 orderId,
