@@ -136,7 +136,9 @@ and transport contracts remain in adapters outside the application workflow.
 The primary adapter currently returns a hardcoded response without contacting
 an external model provider.
 The explanation component validates AI output before selecting it and delegates
-to the deterministic generator when generation or validation fails.
+to the deterministic generator when generation or validation fails. The
+deterministic generator explains the latest timeline evidence through the
+shared lifecycle reason, decision and compensation vocabulary.
 
 Lifecycle events are persisted in the timeline evidence store, but the current
 endpoint is not connected to that projection yet and returns an empty

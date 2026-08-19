@@ -1,5 +1,8 @@
 package org.example.messagingstarter.contracts.lifecycle;
 
+import java.util.Arrays;
+import java.util.Optional;
+
 /**
  * Actions the Order Service can select after a lifecycle transition.
  */
@@ -32,5 +35,17 @@ public enum OrchestrationDecisionCode {
      */
     public ServiceName targetService() {
         return targetService;
+    }
+
+    /**
+     * Resolves a known decision without rejecting newer contract values.
+     *
+     * @param code serialized decision code
+     * @return matching decision, when known by this application version
+     */
+    public static Optional<OrchestrationDecisionCode> fromCode(String code) {
+        return Arrays.stream(values())
+                .filter(decision -> decision.code().equals(code))
+                .findFirst();
     }
 }
