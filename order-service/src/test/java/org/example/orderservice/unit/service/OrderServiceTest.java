@@ -415,18 +415,25 @@ public class OrderServiceTest {
         verify(inboxRepository)
                 .insertIfNotExists(event.messageId());
 
-        verify(workflowService)
-                .updateStatus(
-                        eq(orderId),
-                        eq(OrderStatus.INVENTORY_COMMIT_COMPLETED),
-                        any(OrderTransitionContext.class)
-                );
-        verify(workflowService)
-                .updateStatus(
-                        eq(orderId),
-                        eq(OrderStatus.COMPLETED),
-                        any(OrderTransitionContext.class)
-                );
+        ArgumentCaptor<OrderTransitionContext> inventoryCommittedContext =
+                ArgumentCaptor.forClass(OrderTransitionContext.class);
+        verify(workflowService).updateStatus(
+                eq(orderId),
+                eq(OrderStatus.INVENTORY_COMMIT_COMPLETED),
+                inventoryCommittedContext.capture()
+        );
+        ArgumentCaptor<OrderTransitionContext> workflowCompletedContext =
+                ArgumentCaptor.forClass(OrderTransitionContext.class);
+        verify(workflowService).updateStatus(
+                eq(orderId),
+                eq(OrderStatus.COMPLETED),
+                workflowCompletedContext.capture()
+        );
+
+        assertEquals("INVENTORY_SERVICE",
+                inventoryCommittedContext.getValue().sourceService());
+        assertEquals("INVENTORY_SERVICE",
+                workflowCompletedContext.getValue().sourceService());
 
         verify(outboxService).storeEvent(
                 eq(orderId),
@@ -581,18 +588,25 @@ public class OrderServiceTest {
         orderService.handleInventoryCommitFailed(event);
 
         // THEN
-        verify(workflowService)
-                .updateStatus(
-                        eq(orderId),
-                        eq(OrderStatus.INVENTORY_COMMIT_FAILED),
-                        any(OrderTransitionContext.class)
-                );
-        verify(workflowService)
-                .updateStatus(
-                        eq(orderId),
-                        eq(OrderStatus.FAILED),
-                        any(OrderTransitionContext.class)
-                );
+        ArgumentCaptor<OrderTransitionContext> inventoryCommitFailedContext =
+                ArgumentCaptor.forClass(OrderTransitionContext.class);
+        verify(workflowService).updateStatus(
+                eq(orderId),
+                eq(OrderStatus.INVENTORY_COMMIT_FAILED),
+                inventoryCommitFailedContext.capture()
+        );
+        ArgumentCaptor<OrderTransitionContext> paymentRefundContext =
+                ArgumentCaptor.forClass(OrderTransitionContext.class);
+        verify(workflowService).updateStatus(
+                eq(orderId),
+                eq(OrderStatus.FAILED),
+                paymentRefundContext.capture()
+        );
+
+        assertEquals("INVENTORY_SERVICE",
+                inventoryCommitFailedContext.getValue().sourceService());
+        assertEquals("INVENTORY_SERVICE",
+                paymentRefundContext.getValue().sourceService());
 
         verify(outboxService, times(2)).storeEvent(
                 eq(orderId),

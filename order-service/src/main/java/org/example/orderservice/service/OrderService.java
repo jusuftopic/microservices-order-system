@@ -7,6 +7,10 @@ import org.example.messagingstarter.EventConstants;
 import org.example.messagingstarter.contracts.*;
 import org.example.messagingstarter.contracts.commands.*;
 import org.example.messagingstarter.contracts.events.*;
+import org.example.messagingstarter.contracts.lifecycle.CompensationType;
+import org.example.messagingstarter.contracts.lifecycle.LifecycleReasonCode;
+import org.example.messagingstarter.contracts.lifecycle.LifecycleTrigger;
+import org.example.messagingstarter.contracts.lifecycle.OrchestrationDecisionCode;
 import org.example.orderservice.dto.request.OrderRequest;
 import org.example.orderservice.dto.response.OrderResponse;
 import org.example.orderservice.entity.Order;
@@ -106,12 +110,11 @@ public class OrderService {
                 event.orderId(),
                 OrderStatus.INVENTORY_RESERVE_COMPLETED,
                 OrderTransitionContext.causedBy(
-                                "INVENTORY_RESERVED",
-                                "INVENTORY_SERVICE",
-                                EventConstants.EVENT_INVENTORY_RESERVED,
+                                LifecycleReasonCode.INVENTORY_RESERVED,
+                                LifecycleTrigger.INVENTORY_RESERVED,
                                 event.messageId()
                         )
-                        .withDecision("PROCESS_PAYMENT", "PAYMENT_SERVICE", paymentCommandId)
+                        .withDecision(OrchestrationDecisionCode.PROCESS_PAYMENT, paymentCommandId)
         );
 
         outboxService.storeEvent(
@@ -143,9 +146,8 @@ public class OrderService {
                 event.orderId(),
                 OrderStatus.INVENTORY_RESERVE_FAILED,
                 OrderTransitionContext.causedBy(
-                        "INVENTORY_RESERVATION_FAILED",
-                        "INVENTORY_SERVICE",
-                        EventConstants.EVENT_INVENTORY_FAILED,
+                        LifecycleReasonCode.INVENTORY_RESERVATION_FAILED,
+                        LifecycleTrigger.INVENTORY_FAILED,
                         event.messageId()
                 )
         );
@@ -176,12 +178,12 @@ public class OrderService {
                 event.orderId(),
                 OrderStatus.PAYMENT_COMPLETED,
                 OrderTransitionContext.causedBy(
-                                "PAYMENT_COMPLETED",
-                                "PAYMENT_SERVICE",
-                                EventConstants.EVENT_PAYMENT_SUCCESS,
+                                LifecycleReasonCode.PAYMENT_COMPLETED,
+                                LifecycleTrigger.PAYMENT_COMPLETED,
                                 event.messageId()
                         )
-                        .withDecision("COMMIT_INVENTORY", "INVENTORY_SERVICE", commitInventoryCommandId)
+                        .withDecision(OrchestrationDecisionCode.COMMIT_INVENTORY,
+                                commitInventoryCommandId)
         );
 
         log.info("[ORDER-SERVICE] Payment completed for order {}", order.getId());
@@ -225,13 +227,13 @@ public class OrderService {
                 event.orderId(),
                 OrderStatus.PAYMENT_FAILED,
                 OrderTransitionContext.causedBy(
-                                "PAYMENT_FAILED",
-                                "PAYMENT_SERVICE",
-                                EventConstants.EVENT_PAYMENT_FAILED,
+                                LifecycleReasonCode.PAYMENT_FAILED,
+                                LifecycleTrigger.PAYMENT_FAILED,
                                 event.messageId()
                         )
-                        .withDecision("RELEASE_INVENTORY", "INVENTORY_SERVICE", releaseInventoryCommandId)
-                        .withCompensation("INVENTORY_RELEASE")
+                        .withDecision(OrchestrationDecisionCode.RELEASE_INVENTORY,
+                                releaseInventoryCommandId)
+                        .withCompensation(CompensationType.INVENTORY_RELEASE)
         );
 
         log.warn(
@@ -285,9 +287,8 @@ public class OrderService {
                 event.orderId(),
                 OrderStatus.INVENTORY_COMMIT_COMPLETED,
                 OrderTransitionContext.causedBy(
-                        "INVENTORY_COMMITTED",
-                        "INVENTORY_SERVICE",
-                        EventConstants.EVENT_INVENTORY_COMMIT_COMPLETED,
+                        LifecycleReasonCode.INVENTORY_COMMITTED,
+                        LifecycleTrigger.INVENTORY_COMMIT_COMPLETED,
                         event.messageId()
                 )
         );
@@ -297,12 +298,12 @@ public class OrderService {
                 event.orderId(),
                 OrderStatus.COMPLETED,
                 OrderTransitionContext.causedBy(
-                                "ORDER_WORKFLOW_COMPLETED",
-                                "ORDER_SERVICE",
-                                EventConstants.EVENT_INVENTORY_COMMIT_COMPLETED,
+                                LifecycleReasonCode.ORDER_WORKFLOW_COMPLETED,
+                                LifecycleTrigger.INVENTORY_COMMIT_COMPLETED,
                                 event.messageId()
                         )
-                        .withDecision("SEND_NOTIFICATION", "NOTIFICATION_SERVICE", notificationCommandId)
+                        .withDecision(OrchestrationDecisionCode.SEND_NOTIFICATION,
+                                notificationCommandId)
         );
 
         log.info(
@@ -356,12 +357,12 @@ public class OrderService {
                 event.orderId(),
                 OrderStatus.FAILED,
                 OrderTransitionContext.causedBy(
-                                "COMPENSATION_COMPLETED",
-                                "INVENTORY_SERVICE",
-                                EventConstants.EVENT_INVENTORY_RELEASE_COMPLETED,
+                                LifecycleReasonCode.COMPENSATION_COMPLETED,
+                                LifecycleTrigger.INVENTORY_RELEASE_COMPLETED,
                                 event.messageId()
                         )
-                        .withDecision("SEND_NOTIFICATION", "NOTIFICATION_SERVICE", notificationCommandId)
+                        .withDecision(OrchestrationDecisionCode.SEND_NOTIFICATION,
+                                notificationCommandId)
         );
 
         log.warn(
@@ -415,9 +416,8 @@ public class OrderService {
                 event.orderId(),
                 OrderStatus.INVENTORY_COMMIT_FAILED,
                 OrderTransitionContext.causedBy(
-                        "INVENTORY_COMMIT_FAILED",
-                        "INVENTORY_SERVICE",
-                        EventConstants.EVENT_INVENTORY_COMMIT_FAILED,
+                        LifecycleReasonCode.INVENTORY_COMMIT_FAILED,
+                        LifecycleTrigger.INVENTORY_COMMIT_FAILED,
                         event.messageId()
                 )
         );
@@ -426,13 +426,13 @@ public class OrderService {
                 event.orderId(),
                 OrderStatus.FAILED,
                 OrderTransitionContext.causedBy(
-                                "PAYMENT_REFUND_REQUIRED",
-                                "ORDER_SERVICE",
-                                EventConstants.EVENT_INVENTORY_COMMIT_FAILED,
+                                LifecycleReasonCode.PAYMENT_REFUND_REQUIRED,
+                                LifecycleTrigger.INVENTORY_COMMIT_FAILED,
                                 event.messageId()
                         )
-                        .withDecision("REFUND_PAYMENT", "PAYMENT_SERVICE", refundCommandId)
-                        .withCompensation("PAYMENT_REFUND")
+                        .withDecision(OrchestrationDecisionCode.REFUND_PAYMENT,
+                                refundCommandId)
+                        .withCompensation(CompensationType.PAYMENT_REFUND)
         );
 
         log.error(
@@ -539,12 +539,11 @@ public class OrderService {
                 order.getId(),
                 OrderStatus.TIMED_OUT,
                 OrderTransitionContext.causedBy(
-                                "ORDER_PROCESSING_TIMEOUT",
-                                "ORDER_SERVICE",
-                                "ORDER_TIMEOUT_DETECTED",
+                                LifecycleReasonCode.ORDER_PROCESSING_TIMEOUT,
+                                LifecycleTrigger.ORDER_TIMEOUT_DETECTED,
                                 null
                         )
-                        .withCompensation("STATUS_DEPENDENT_COMPENSATION")
+                        .withCompensation(CompensationType.STATUS_DEPENDENT_COMPENSATION)
         );
 
         log.error(

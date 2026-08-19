@@ -66,6 +66,9 @@ owner of downstream service details.
 Lifecycle evidence contains correlation, causation and command identifiers so
 it can be joined with capability outcome events. It intentionally excludes
 customer and payment data that is unnecessary for investigation.
+`sourceService` identifies the service that originated the event which caused
+the transition. Lifecycle reasons, service names, decisions and compensation
+types use shared contract vocabulary while remaining strings on the wire.
 
 ## Happy Path
 

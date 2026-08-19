@@ -2,6 +2,9 @@ package org.example.orderservice.unit.service.workflow;
 
 import org.example.messagingstarter.EventConstants;
 import org.example.messagingstarter.contracts.events.OrderLifecycleTransitionedEvent;
+import org.example.messagingstarter.contracts.lifecycle.LifecycleReasonCode;
+import org.example.messagingstarter.contracts.lifecycle.LifecycleTrigger;
+import org.example.messagingstarter.contracts.lifecycle.OrchestrationDecisionCode;
 import org.example.orderservice.entity.Order;
 import org.example.orderservice.enums.OrderStatus;
 import org.example.orderservice.repository.OrderRepository;
@@ -96,12 +99,11 @@ public class OrderWorkflowServiceTest {
                 orderId,
                 OrderStatus.INVENTORY_RESERVE_COMPLETED,
                 OrderTransitionContext.causedBy(
-                                "INVENTORY_RESERVED",
-                                "INVENTORY_SERVICE",
-                                EventConstants.EVENT_INVENTORY_RESERVED,
+                                LifecycleReasonCode.INVENTORY_RESERVED,
+                                LifecycleTrigger.INVENTORY_RESERVED,
                                 sourceEventId
                         )
-                        .withDecision("PROCESS_PAYMENT", "PAYMENT_SERVICE", paymentCommandId)
+                        .withDecision(OrchestrationDecisionCode.PROCESS_PAYMENT, paymentCommandId)
         );
 
         ArgumentCaptor<Object> payload = ArgumentCaptor.forClass(Object.class);
@@ -118,7 +120,11 @@ public class OrderWorkflowServiceTest {
         assertEquals("CREATED", lifecycleEvent.previousStatus());
         assertEquals("INVENTORY_RESERVE_COMPLETED", lifecycleEvent.newStatus());
         assertEquals("INVENTORY_RESERVED", lifecycleEvent.reasonCode());
+        assertEquals("INVENTORY_SERVICE", lifecycleEvent.sourceService());
         assertEquals(sourceEventId, lifecycleEvent.causationId());
+        assertEquals("PROCESS_PAYMENT", lifecycleEvent.orchestrationDecision().code());
+        assertEquals("PAYMENT_SERVICE",
+                lifecycleEvent.orchestrationDecision().targetService());
         assertEquals(paymentCommandId, lifecycleEvent.orchestrationDecision().commandId());
         assertEquals("corr-123", lifecycleEvent.correlationId());
         assertFalse(lifecycleEvent.compensation().required());

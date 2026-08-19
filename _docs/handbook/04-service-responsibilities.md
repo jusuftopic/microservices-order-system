@@ -169,6 +169,7 @@ The `messaging-starter` module provides a reusable messaging foundation shared a
 The module includes:
 
 - Shared event contracts and topic definitions
+- Shared lifecycle contract vocabulary
 - Inbox and Outbox entities and repositories
 - Event publishing infrastructure
 - Dead Letter Queue (DLQ) persistence

@@ -3,6 +3,8 @@ package org.example.orderservice.service.workflow;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.messagingstarter.contracts.events.OrderLifecycleTransitionedEvent;
+import org.example.messagingstarter.contracts.lifecycle.LifecycleReasonCode;
+import org.example.messagingstarter.contracts.lifecycle.LifecycleTrigger;
 import org.example.orderservice.entity.Order;
 import org.example.orderservice.enums.OrderStatus;
 import org.example.orderservice.repository.OrderRepository;
@@ -81,9 +83,8 @@ public class OrderWorkflowService {
                 orderId,
                 targetStatus,
                 OrderTransitionContext.causedBy(
-                        targetStatus.name(),
-                        "ORDER_SERVICE",
-                        "ORDER_STATUS_UPDATE",
+                        LifecycleReasonCode.ORDER_STATUS_UPDATED,
+                        LifecycleTrigger.ORDER_STATUS_UPDATE,
                         null
                 )
         );
