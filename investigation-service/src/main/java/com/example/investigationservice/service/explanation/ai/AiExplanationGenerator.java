@@ -1,4 +1,4 @@
-package com.example.investigationservice.port.out;
+package com.example.investigationservice.service.explanation.ai;
 
 import com.example.investigationservice.model.InvestigationContext;
 

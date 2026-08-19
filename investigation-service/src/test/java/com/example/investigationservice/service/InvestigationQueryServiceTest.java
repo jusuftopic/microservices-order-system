@@ -4,7 +4,6 @@ import com.example.investigationservice.dto.response.OrderInvestigationResponse;
 import com.example.investigationservice.model.InvestigationContext;
 import com.example.investigationservice.model.InvestigationExplanation;
 import com.example.investigationservice.service.explanation.InvestigationExplanationService;
-import com.example.investigationservice.service.timeline.OrderTimelineReader;
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
@@ -19,7 +18,7 @@ import static org.mockito.Mockito.when;
 
 class InvestigationQueryServiceTest {
 
-    private final OrderTimelineReader timelineReader = mock(OrderTimelineReader.class);
+    private final OrderTimelineReaderService timelineReader = mock(OrderTimelineReaderService.class);
     private final InvestigationExplanationService explanationService =
             mock(InvestigationExplanationService.class);
     private final InvestigationQueryService service = new InvestigationQueryService(

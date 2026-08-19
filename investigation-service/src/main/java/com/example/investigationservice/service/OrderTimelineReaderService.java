@@ -1,4 +1,4 @@
-package com.example.investigationservice.service.timeline;
+package com.example.investigationservice.service;
 
 import com.example.investigationservice.model.InvestigationContext;
 import lombok.extern.slf4j.Slf4j;
@@ -11,7 +11,7 @@ import java.util.Optional;
  */
 @Service
 @Slf4j
-public class OrderTimelineReader {
+public class OrderTimelineReaderService {
 
     /**
      * Reads the investigation context for an order.

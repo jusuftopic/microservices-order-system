@@ -1,11 +1,11 @@
 package com.example.investigationservice.controller;
 
-import com.example.investigationservice.adapter.ai.MockAiExplanationGenerator;
+import com.example.investigationservice.service.explanation.ai.MockAiExplanationGenerator;
 import com.example.investigationservice.service.InvestigationQueryService;
-import com.example.investigationservice.service.explanation.DeterministicExplanationGenerator;
+import com.example.investigationservice.service.explanation.deterministic.DeterministicExplanationGenerator;
 import com.example.investigationservice.service.explanation.ExplanationValidationService;
 import com.example.investigationservice.service.explanation.InvestigationExplanationService;
-import com.example.investigationservice.service.timeline.OrderTimelineReader;
+import com.example.investigationservice.service.OrderTimelineReaderService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -23,7 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(InvestigationController.class)
 @Import({
         InvestigationQueryService.class,
-        OrderTimelineReader.class,
+        OrderTimelineReaderService.class,
         InvestigationExplanationService.class,
         ExplanationValidationService.class,
         DeterministicExplanationGenerator.class,

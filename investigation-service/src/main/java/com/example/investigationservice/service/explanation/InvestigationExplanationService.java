@@ -2,7 +2,8 @@ package com.example.investigationservice.service.explanation;
 
 import com.example.investigationservice.model.InvestigationContext;
 import com.example.investigationservice.model.InvestigationExplanation;
-import com.example.investigationservice.port.out.AiExplanationGenerator;
+import com.example.investigationservice.service.explanation.ai.AiExplanationGenerator;
+import com.example.investigationservice.service.explanation.deterministic.DeterministicExplanationGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

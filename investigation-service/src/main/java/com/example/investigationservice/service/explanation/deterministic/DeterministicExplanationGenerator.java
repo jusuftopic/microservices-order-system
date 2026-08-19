@@ -1,4 +1,4 @@
-package com.example.investigationservice.service.explanation;
+package com.example.investigationservice.service.explanation.deterministic;
 
 import com.example.investigationservice.model.InvestigationContext;
 import lombok.extern.slf4j.Slf4j;

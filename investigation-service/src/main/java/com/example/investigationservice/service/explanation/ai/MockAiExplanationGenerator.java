@@ -1,7 +1,6 @@
-package com.example.investigationservice.adapter.ai;
+package com.example.investigationservice.service.explanation.ai;
 
 import com.example.investigationservice.model.InvestigationContext;
-import com.example.investigationservice.port.out.AiExplanationGenerator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;

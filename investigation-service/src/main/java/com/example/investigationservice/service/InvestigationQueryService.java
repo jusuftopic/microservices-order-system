@@ -4,7 +4,6 @@ import com.example.investigationservice.dto.response.OrderInvestigationResponse;
 import com.example.investigationservice.model.InvestigationContext;
 import com.example.investigationservice.model.InvestigationExplanation;
 import com.example.investigationservice.service.explanation.InvestigationExplanationService;
-import com.example.investigationservice.service.timeline.OrderTimelineReader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -17,7 +16,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class InvestigationQueryService {
 
-    private final OrderTimelineReader timelineReader;
+    private final OrderTimelineReaderService timelineReader;
     private final InvestigationExplanationService explanationService;
 
     /**
