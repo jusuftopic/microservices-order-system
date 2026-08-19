@@ -57,8 +57,6 @@ public class OrderTimelineMapper {
         OrderTimelineEntry.OrchestrationDecision decision = entry.orchestrationDecision();
 
         return new InvestigationEvidence(
-                entry.messageId(),
-                entry.causationId(),
                 entry.sourceService(),
                 entry.sourceEventType(),
                 entry.previousStatus(),

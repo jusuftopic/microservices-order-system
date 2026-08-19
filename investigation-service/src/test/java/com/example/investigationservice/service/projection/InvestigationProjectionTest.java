@@ -49,6 +49,10 @@ class InvestigationProjectionTest {
 
         assertEquals("PAYMENT_COMPLETED", response.currentStatus());
         assertEquals("Payment completed successfully.", response.explanation());
+        assertEquals(timeline.entries().get(0).messageId(),
+                response.timeline().get(0).messageId());
+        assertEquals(timeline.entries().get(0).causationId(),
+                response.timeline().get(0).causationId());
         assertEquals("correlation-42", response.timeline().get(0).correlationId());
         assertEquals(timeline.entries().get(0).orchestrationDecision().commandId(),
                 response.timeline().get(0).orchestrationDecision().commandId());
