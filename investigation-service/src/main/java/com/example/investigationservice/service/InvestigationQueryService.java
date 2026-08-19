@@ -3,7 +3,9 @@ package com.example.investigationservice.service;
 import com.example.investigationservice.dto.response.OrderInvestigationResponse;
 import com.example.investigationservice.model.InvestigationContext;
 import com.example.investigationservice.model.InvestigationExplanation;
+import com.example.investigationservice.model.OrderTimeline;
 import com.example.investigationservice.service.explanation.InvestigationExplanationService;
+import com.example.investigationservice.service.projection.OrderTimelineMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -17,6 +19,7 @@ import org.springframework.stereotype.Service;
 public class InvestigationQueryService {
 
     private final OrderTimelineReaderService timelineReader;
+    private final OrderTimelineMapper timelineMapper;
     private final InvestigationExplanationService explanationService;
 
     /**
@@ -32,23 +35,13 @@ public class InvestigationQueryService {
 
         log.debug("[INVESTIGATION-SERVICE][QUERY-SERVICE] Building investigation response for order {}", orderId);
 
-        InvestigationContext context = timelineReader.read(orderId)
-                .orElseGet(() -> {
-                    log.warn("[INVESTIGATION-SERVICE][QUERY-SERVICE] No investigation context returned for order {}; using empty context",
-                            orderId);
-                    return InvestigationContext.empty(orderId);
-                });
+        OrderTimeline timeline = timelineReader.read(orderId);
+        InvestigationContext context = timelineMapper.toInvestigationContext(timeline);
         InvestigationExplanation explanation = explanationService.explain(context);
 
         log.debug("[INVESTIGATION-SERVICE][QUERY-SERVICE] Built investigation response for order {} with {} evidence items and explanation source {}",
                 orderId, context.evidence().size(), explanation.source());
 
-        return new OrderInvestigationResponse(
-                orderId,
-                context.hasEvidence(),
-                context.currentStatus(),
-                explanation.text().orElse(null),
-                java.util.List.of()
-        );
+        return timelineMapper.toResponse(timeline, explanation);
     }
 }

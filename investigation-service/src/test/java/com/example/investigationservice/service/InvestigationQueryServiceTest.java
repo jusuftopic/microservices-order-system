@@ -3,10 +3,10 @@ package com.example.investigationservice.service;
 import com.example.investigationservice.dto.response.OrderInvestigationResponse;
 import com.example.investigationservice.model.InvestigationContext;
 import com.example.investigationservice.model.InvestigationExplanation;
+import com.example.investigationservice.model.OrderTimeline;
 import com.example.investigationservice.service.explanation.InvestigationExplanationService;
+import com.example.investigationservice.service.projection.OrderTimelineMapper;
 import org.junit.jupiter.api.Test;
-
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -23,13 +23,15 @@ class InvestigationQueryServiceTest {
             mock(InvestigationExplanationService.class);
     private final InvestigationQueryService service = new InvestigationQueryService(
             timelineReader,
+            new OrderTimelineMapper(),
             explanationService
     );
 
     @Test
     void returnsEmptyInvestigationReport() {
+        OrderTimeline timeline = OrderTimeline.empty(42L);
         InvestigationContext context = InvestigationContext.empty(42L);
-        when(timelineReader.read(42L)).thenReturn(Optional.of(context));
+        when(timelineReader.read(42L)).thenReturn(timeline);
         when(explanationService.explain(context))
                 .thenReturn(InvestigationExplanation.unavailable());
 
@@ -52,18 +54,4 @@ class InvestigationQueryServiceTest {
         assertEquals("orderId must be greater than zero", exception.getMessage());
     }
 
-    @Test
-    void usesEmptyContextWhenTimelineContextIsUnavailable() {
-        InvestigationContext emptyContext = InvestigationContext.empty(42L);
-        when(timelineReader.read(42L)).thenReturn(Optional.empty());
-        when(explanationService.explain(emptyContext))
-                .thenReturn(InvestigationExplanation.unavailable());
-
-        OrderInvestigationResponse response = service.getOrderInvestigation(42L);
-
-        assertFalse(response.dataAvailable());
-        assertNull(response.currentStatus());
-        assertNull(response.explanation());
-        assertTrue(response.timeline().isEmpty());
-    }
 }

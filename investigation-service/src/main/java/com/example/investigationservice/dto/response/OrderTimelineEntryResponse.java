@@ -9,7 +9,7 @@ import java.util.UUID;
  * @param messageId             identifier of the lifecycle event
  * @param causationId           identifier of the event or command that caused the transition
  * @param correlationId         identifier shared by the distributed order flow
- * @param sourceService         service that originated the transition
+ * @param sourceService         service that originated the triggering event
  * @param sourceEventType       event type that caused the transition
  * @param previousStatus        authoritative status before the transition
  * @param newStatus             authoritative status after the transition

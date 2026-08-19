@@ -140,13 +140,14 @@ to the deterministic generator when generation or validation fails. The
 deterministic generator explains the latest timeline evidence through the
 shared lifecycle reason, decision and compensation vocabulary.
 
-Lifecycle events are persisted in the timeline evidence store, but the current
-endpoint is not connected to that projection yet and returns an empty
-investigation report for every positive order ID. Zero, negative and
-non-numeric identifiers return `400 Bad Request`. Unknown endpoints and
-unsupported methods preserve `404 Not Found` and `405 Method Not Allowed`
-semantics, while unexpected failures return a sanitized `500 Internal Server
-Error` response.
+Lifecycle events are persisted in the timeline evidence store and read in a
+stable chronological order. The query flow creates a restricted explanation
+context and a complete API timeline from that internal representation. A valid
+order ID without collected evidence returns an empty investigation report.
+Zero, negative and non-numeric identifiers return `400 Bad Request`. Unknown
+endpoints and unsupported methods preserve `404 Not Found` and
+`405 Method Not Allowed` semantics, while unexpected failures return a
+sanitized `500 Internal Server Error` response.
 
 ## Shared Technical Capabilities
 

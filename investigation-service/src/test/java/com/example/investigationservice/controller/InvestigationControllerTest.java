@@ -1,19 +1,16 @@
 package com.example.investigationservice.controller;
 
-import com.example.investigationservice.service.explanation.ai.MockAiExplanationGenerator;
+import com.example.investigationservice.dto.response.OrderInvestigationResponse;
 import com.example.investigationservice.service.InvestigationQueryService;
-import com.example.investigationservice.service.explanation.deterministic.DeterministicExplanationGenerator;
-import com.example.investigationservice.service.explanation.ExplanationValidationService;
-import com.example.investigationservice.service.explanation.InvestigationExplanationService;
-import com.example.investigationservice.service.OrderTimelineReaderService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -21,21 +18,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(InvestigationController.class)
-@Import({
-        InvestigationQueryService.class,
-        OrderTimelineReaderService.class,
-        InvestigationExplanationService.class,
-        ExplanationValidationService.class,
-        DeterministicExplanationGenerator.class,
-        MockAiExplanationGenerator.class
-})
 class InvestigationControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
+    @MockBean
+    private InvestigationQueryService investigationQueryService;
+
     @Test
     void returnsEmptyInvestigationForValidOrderId() throws Exception {
+        when(investigationQueryService.getOrderInvestigation(42L))
+                .thenReturn(OrderInvestigationResponse.empty(42L));
+
         mockMvc.perform(get("/api/v1/investigations/orders/{orderId}", 42))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith("application/json"))
