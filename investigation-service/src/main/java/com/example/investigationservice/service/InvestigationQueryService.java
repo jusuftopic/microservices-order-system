@@ -5,7 +5,7 @@ import com.example.investigationservice.model.InvestigationContext;
 import com.example.investigationservice.model.InvestigationExplanation;
 import com.example.investigationservice.model.OrderTimeline;
 import com.example.investigationservice.service.explanation.InvestigationExplanationService;
-import com.example.investigationservice.service.projection.OrderTimelineMapper;
+import com.example.investigationservice.mapper.OrderTimelineMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

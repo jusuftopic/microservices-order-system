@@ -1,6 +1,7 @@
 package com.example.investigationservice.service.projection;
 
 import com.example.investigationservice.dto.response.OrderInvestigationResponse;
+import com.example.investigationservice.mapper.OrderTimelineMapper;
 import com.example.investigationservice.model.InvestigationContext;
 import com.example.investigationservice.model.InvestigationExplanation;
 import com.example.investigationservice.model.OrderTimeline;

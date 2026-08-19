@@ -1,4 +1,4 @@
-package com.example.investigationservice.service.projection;
+package com.example.investigationservice.mapper;
 
 import com.example.investigationservice.dto.response.OrderInvestigationResponse;
 import com.example.investigationservice.dto.response.OrderTimelineEntryResponse;
