@@ -31,7 +31,6 @@ public class OrderCompensationService {
 
     private final OrderOutboxService outboxService;
 
-
     /**
      * Executes compensation actions for the given order.
      *

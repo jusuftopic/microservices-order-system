@@ -59,7 +59,6 @@ services:
       order-db:
         condition: service_healthy
 
-
   # PAYMENT DB
   payment-db:
     image: postgres:15
@@ -73,7 +72,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-
 
   # PAYMENT DB EXPORTER
   payment-db-exporter:
@@ -192,7 +190,6 @@ services:
     container_name: notification-service
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-
 
   # PROMETHEUS
   prometheus:
