@@ -79,11 +79,13 @@ F --> G1["Order Service Job"]
 F --> G2["Inventory Service Job"]
 F --> G3["Payment Service Job"]
 F --> G4["Notification Service Job"]
+F --> G5["Investigation Service Job"]
 
 G1 --> H["Validated Docker Images"]
 G2 --> H
 G3 --> H
 G4 --> H
+G5 --> H
 ```
 **Automated Quality Gates**
 ```mermaid

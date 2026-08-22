@@ -16,9 +16,10 @@ contracts through application logic. The selected approach must also preserve
 the ability to change the provider or model without redesigning the
 Investigation Service.
 
-The repository currently uses a Spring Boot version that is not compatible
-with the preferred Spring AI release. Adopting Spring AI therefore includes a
-platform upgrade whose impact must be evaluated across the complete system.
+At the time of this decision, the repository used a Spring Boot version that
+was not compatible with the preferred Spring AI release. Adopting Spring AI
+therefore required a platform upgrade whose impact had to be evaluated across
+the complete system.
 
 ## Decision
 
@@ -71,8 +72,7 @@ abstractions already available in Spring AI.
   require compatibility and quality evaluation.
 - The system adds Spring AI as a framework dependency in addition to the
   third-party model provider.
-- The Spring Boot platform must be upgraded to a version compatible with the
-  selected Spring AI release.
+- The Spring Boot platform is aligned with the selected Spring AI release.
 - The platform upgrade can affect all services and requires broader regression
   testing than the Investigation Service alone.
 - Spring AI does not replace application-owned reliability, validation and
@@ -80,9 +80,9 @@ abstractions already available in Spring AI.
 
 ## Future Considerations
 
-The Spring Boot and Spring AI upgrade will be introduced incrementally. Each
-step will be verified through the existing test suites and relevant service
-integration checks before the LLM integration is enabled.
+Spring AI will be introduced separately from the completed Spring Boot
+upgrade. The LLM integration will be verified through the existing test suites
+and relevant service integration checks before it is enabled.
 
 If the upgrade proves disproportionately complex, introduces unacceptable
 system degradation or cannot preserve existing behaviour, the implementation
