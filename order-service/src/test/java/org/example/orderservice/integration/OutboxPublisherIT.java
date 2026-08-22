@@ -10,7 +10,7 @@ import org.example.orderservice.service.outbox.OutboxEventScheduler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.testcontainers.shaded.org.awaitility.Awaitility;
+import org.awaitility.Awaitility;
 
 import java.time.Duration;
 import java.util.List;

@@ -48,18 +48,23 @@ jobs:
             order:
               - 'order-service/**'
               - 'messaging-starter/**'
+              - 'pom.xml'
             inventory:
               - 'inventory-service/**'
               - 'messaging-starter/**'
+              - 'pom.xml'
             payment:
               - 'payment-service/**'
               - 'messaging-starter/**'
+              - 'pom.xml'
             notification:
               - 'notification-service/**'
               - 'messaging-starter/**'
+              - 'pom.xml'
             investigation:
               - 'investigation-service/**'
               - 'messaging-starter/**'
+              - 'pom.xml'
 
       - name: Build matrix
         id: set-matrix

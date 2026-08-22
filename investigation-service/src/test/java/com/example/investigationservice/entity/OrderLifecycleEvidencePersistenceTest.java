@@ -9,7 +9,7 @@ import org.example.messagingstarter.contracts.events.OrderLifecycleTransitionedE
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 
 import java.time.Instant;
@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 })
 class OrderLifecycleEvidencePersistenceTest {
 
-    @MockBean
+    @MockitoBean
     private InvestigationMetrics metrics;
 
     @Autowired
