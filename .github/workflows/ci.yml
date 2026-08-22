@@ -73,7 +73,7 @@ jobs:
               (if $payment=="true" then {service:"payment-service"} else empty end),
               (if $inventory=="true" then {service:"inventory-service"} else empty end),
               (if $notification=="true" then {service:"notification-service"} else empty end)
-              (if investigation=="true" then {service:"investigation-service"} else empty end)
+              (if $investigation=="true" then {service:"investigation-service"} else empty end)
             ]}')
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
           echo "Computed matrix: $matrix"
