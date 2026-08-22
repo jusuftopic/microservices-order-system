@@ -10,12 +10,14 @@ The system is designed as an event-driven microservice architecture. Each servic
 
 | Component | Responsibility                                                          |
 |---|-------------------------------------------------------------------------|
+| API Gateway | Provides the public API entry point, path-based routing and edge rate limiting. |
 | Order Service | Manages the order lifecycle and coordinates the overall order workflow. |
 | Inventory Service | Reserves, confirms, or releases inventory based on order progress.      |
 | Payment Service | Reliably processes payment requests and reports payment outcomes.       |
 | Notification Service | Sends customer-facing notifications based on order events.              |
+| Investigation Service | Provides validated LLM-supported order status with deterministic fallback. |
 | Kafka | Enables asynchronous communication between services.                    |
-| Service Databases | Each service owns its data and persists its local state independently.  |
+| Service Databases | Each service owns its PostgreSQL data and persists its local state independently. |
 
 ## High-Level Business Flow
 
@@ -33,6 +35,7 @@ flowchart TB
     subgraph System["Ordering System"]
         direction TB
 
+        ApiGateway["🛡️ API Gateway"]
         OrderService["📦 Order Service"]
 
         Kafka[("📨 Kafka")]
@@ -40,30 +43,39 @@ flowchart TB
         InventoryService["📦 Inventory Service"]
         PaymentService["💳 Payment Service"]
         NotificationService["🔔 Notification Service"]
+        InvestigationService["🔎 Investigation Service"]
 
         OrderDb[("Order DB")]
         InventoryDb[("Inventory DB")]
         PaymentDb[("Payment DB")]
         NotificationDb[("Notification DB")]
+        InvestigationDb[("Investigation DB")]
+
+        ApiGateway -->|"/api/v1/orders"| OrderService
+        ApiGateway -->|"/api/v1/investigations"| InvestigationService
 
         OrderService --> OrderDb
         InventoryService --> InventoryDb
         PaymentService --> PaymentDb
         NotificationService --> NotificationDb
+        InvestigationService --> InvestigationDb
 
         OrderService --> Kafka
         Kafka --> InventoryService
         Kafka --> PaymentService
         Kafka --> NotificationService
+        Kafka --> InvestigationService
     end
 
     PaymentProvider["External Payment Provider"]
     NotificationProvider["External Notification Provider"]
+    LlmProvider["External LLM Provider"]
 
-    Client --> OrderService
+    Client --> ApiGateway
 
     PaymentService --> PaymentProvider
     NotificationService --> NotificationProvider
+    InvestigationService --> LlmProvider
 
     style System fill:#eef4ff,stroke:#3b5fc0,stroke-width:2px
 
@@ -71,6 +83,8 @@ flowchart TB
     style InventoryService fill:#3b5fc0,stroke:#1f3a8a,color:#fff
     style PaymentService fill:#3b5fc0,stroke:#1f3a8a,color:#fff
     style NotificationService fill:#3b5fc0,stroke:#1f3a8a,color:#fff
+    style InvestigationService fill:#3b5fc0,stroke:#1f3a8a,color:#fff
+    style ApiGateway fill:#2f855a,stroke:#1f5f40,color:#fff
 
     style Kafka fill:#fff4e5,stroke:#c98a1c
 
@@ -78,10 +92,25 @@ flowchart TB
     style InventoryDb fill:#f5f5f5
     style PaymentDb fill:#f5f5f5
     style NotificationDb fill:#f5f5f5
+    style InvestigationDb fill:#f5f5f5
 
     style PaymentProvider fill:#fff4e5,stroke:#c98a1c
     style NotificationProvider fill:#fff4e5,stroke:#c98a1c
+    style LlmProvider fill:#fff4e5,stroke:#c98a1c
 ```
+
+## External API Boundary
+
+The API Gateway is the only public entry point for application APIs. It routes
+stable paths to the Order and Investigation services while those services stay
+internal. This hides service topology from clients and provides one place for
+traffic controls.
+
+The Investigation path is protected more strictly because it will invoke a
+third-party LLM. Rate and concurrency limits reduce abuse, uncontrolled cost
+and pressure on both the service and its external dependency. These edge
+controls complement, rather than replace, validation and cost safeguards in
+the Investigation Service.
 
 ## Architectural Style
 

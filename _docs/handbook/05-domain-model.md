@@ -212,6 +212,14 @@ Its current responsibilities include:
 
 Notification delivery is intentionally separated from the core order workflow. A notification failure must not invalidate an otherwise successfully completed order.
 
+## Investigation Read Model
+
+The Investigation Service owns an order-centric read model rather than a
+business aggregate. It persists immutable lifecycle evidence in its PostgreSQL
+database and derives the latest authoritative status, compensation state and
+explanation context from that evidence. These derived values describe the
+collected facts but do not transfer order ownership from the Order Service.
+
 ## Cross-Domain References
 
 Services do not share persistent entities.
@@ -235,6 +243,7 @@ For example:
 * the Payment Service stores an `orderId`, but it does not store or load the Order entity
 * the Inventory Service processes product identifiers and quantities, but it does not access order tables
 * the Order Service stores product identifiers, but it does not own inventory quantities
+* the Investigation Service stores order identifiers and lifecycle evidence, but it does not access the Order entity or Order Service database
 
 ## Domain Communication
 

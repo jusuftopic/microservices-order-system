@@ -93,4 +93,15 @@ public class KafkaTopicConfig {
                 .replicas(props.replicas())
                 .build();
     }
+
+    /**
+     * Creates the topic containing authoritative Order Service lifecycle facts.
+     */
+    @Bean
+    public NewTopic orderLifecycleV1Topic(KafkaTopicProperties props) {
+        return TopicBuilder.name(EventConstants.TOPIC_ORDER_LIFECYCLE_V1)
+                .partitions(props.partitions())
+                .replicas(props.replicas())
+                .build();
+    }
 }

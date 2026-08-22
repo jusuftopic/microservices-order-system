@@ -22,6 +22,7 @@ on:
       - "inventory-service/**"
       - "payment-service/**"
       - "notification-service/**"
+      - "investigation-service/**"
       - "pom.xml"
 
 jobs:
@@ -33,6 +34,7 @@ jobs:
       inventory: ${{ steps.filter.outputs.inventory }}
       payment: ${{ steps.filter.outputs.payment }}
       notification: ${{ steps.filter.outputs.notification }}
+      investigation: ${{ steps.filter.outputs.investigation }}
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - name: Checkout code
@@ -55,6 +57,9 @@ jobs:
             notification:
               - 'notification-service/**'
               - 'messaging-starter/**'
+            investigation:
+              - 'investigation-service/**'
+              - 'messaging-starter/**'
 
       - name: Build matrix
         id: set-matrix
@@ -64,11 +69,13 @@ jobs:
             --arg payment "${{ steps.filter.outputs.payment }}" \
             --arg inventory "${{ steps.filter.outputs.inventory }}" \
             --arg notification "${{ steps.filter.outputs.notification }}" \
+            --arg investigation "${{ steps.filter.outputs.investigation }}" \
             '{include: [
               (if $order=="true" then {service:"order-service"} else empty end),
               (if $payment=="true" then {service:"payment-service"} else empty end),
               (if $inventory=="true" then {service:"inventory-service"} else empty end),
-              (if $notification=="true" then {service:"notification-service"} else empty end)
+              (if $notification=="true" then {service:"notification-service"} else empty end),
+              (if $investigation=="true" then {service:"investigation-service"} else empty end)
             ]}')
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
           echo "Computed matrix: $matrix"

@@ -37,6 +37,9 @@ public class TopicResolver {
             case EVENT_NOTIFICATION_REQUESTED ->
                 TOPIC_NOTIFICATION_REQUEST_V1;
 
+            case EVENT_ORDER_LIFECYCLE_TRANSITIONED ->
+                    TOPIC_ORDER_LIFECYCLE_V1;
+
             default -> throw new IllegalArgumentException(
                     "Unknown event type: " + eventType
             );

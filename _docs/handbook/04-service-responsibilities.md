@@ -22,6 +22,7 @@ The Order Service is the authority for the overall order lifecycle. Other servic
 | Inventory Service    | Manages stock reservation and finalization | Inventory items, available quantity, reserved quantity                                         | Order status, payment state                               |
 | Payment Service      | Handles payment processing                 | Payment records, payment status, provider interaction result                                   | Order completion decision, inventory state                |
 | Notification Service | Sends customer notifications               | Notification delivery logic                                                                    | Business workflow decisions, order status                 |
+| Investigation Service | Provides validated LLM-supported order status | Its local timeline projection, generated explanations and deterministic fallback              | Authoritative order state, workflow decisions             |
 
 ## Order Service
 
@@ -102,7 +103,67 @@ The Notification Service does not make business decisions. Failed notification d
 
 This makes notification delivery a supporting capability rather than a dependency that controls the core business flow.
 
+## Investigation Service
+
+The Investigation Service is an LLM-supported order status provider. It
+consumes authoritative lifecycle facts, builds a local timeline projection and
+uses that evidence to generate a human-readable explanation of the distributed
+workflow.
+
+It is responsible for:
+
+* consuming order lifecycle evidence without blocking order processing
+* maintaining its own order timeline projection
+* deriving the latest known authoritative status from collected evidence
+* generating an LLM-supported order status grounded in collected evidence
+* validating the generated response against the evidence and response contract
+* using a deterministic explanation when generation or validation fails
+* exposing the result through `GET /api/v1/investigations/orders/{orderId}`
+
+It owns a PostgreSQL evidence store for its timeline and does not access the
+Order Service database. Derived investigation state remains rebuildable from
+the collected evidence.
+
+The Investigation Service does not own or update order state. It remains
+outside the critical workflow. The generated explanation is a first-class API
+response only after validation; the collected lifecycle evidence remains the
+source of authoritative business facts.
+
+Investigation queries are coordinated by an application service that reads the
+local timeline and delegates explanation selection to a dedicated component.
+AI generation is accessed through a provider-independent port; provider SDKs
+and transport contracts remain in adapters outside the application workflow.
+The primary adapter currently returns a hardcoded response without contacting
+an external model provider.
+The explanation component validates AI output before selecting it and delegates
+to the deterministic generator when generation or validation fails. The
+deterministic generator explains the latest timeline evidence through the
+shared lifecycle reason, decision and compensation vocabulary.
+
+Lifecycle events are persisted in the timeline evidence store and read in a
+stable chronological order. The query flow creates a restricted explanation
+context and a complete API timeline from that internal representation. A valid
+order ID without collected evidence returns an empty investigation report.
+Zero, negative and non-numeric identifiers return `400 Bad Request`. Unknown
+endpoints and unsupported methods preserve `404 Not Found` and
+`405 Method Not Allowed` semantics, while unexpected failures return a
+sanitized `500 Internal Server Error` response.
+
 ## Shared Technical Capabilities
+
+### API Gateway
+
+The API Gateway is the external boundary for application APIs. It provides:
+
+- one stable public entry point
+- path-based routing to Order and Investigation services
+- rate limiting for both APIs
+- stricter traffic and concurrency limits for the LLM-supported investigation path
+- isolation of internal service endpoints from direct external access
+
+The gateway does not contain workflow or domain logic. Request validation,
+authorization decisions and validation of LLM-supported responses remain with
+the service that owns the capability.
 
 ### `messaging-starter`
 
@@ -111,6 +172,7 @@ The `messaging-starter` module provides a reusable messaging foundation shared a
 The module includes:
 
 - Shared event contracts and topic definitions
+- Shared lifecycle contract vocabulary
 - Inbox and Outbox entities and repositories
 - Event publishing infrastructure
 - Dead Letter Queue (DLQ) persistence
@@ -141,6 +203,13 @@ flowchart TB
 
     subgraph System["Ordering System"]
         direction TB
+
+        ApiGateway["🛡️ API Gateway
+
+Provides:
+• Public API boundary
+• Path-based routing
+• Rate limiting"]
 
         subgraph BusinessServices["Business Services"]
             direction LR
@@ -176,6 +245,14 @@ Owns:
 • Notification delivery
 • Sender integrations
 • Delivery metrics"]
+
+            InvestigationService["🔎 Investigation Service
+
+Owns:
+• Timeline projection
+• Evidence queries
+• LLM-supported order status
+• Validation and deterministic fallback"]
         end
 
         MessagingStarter["📨 messaging-starter
@@ -191,10 +268,15 @@ Shared technical capability:
         InventoryService -. "uses" .-> MessagingStarter
         PaymentService -. "uses" .-> MessagingStarter
         NotificationService -. "uses" .-> MessagingStarter
+        InvestigationService -. "uses" .-> MessagingStarter
     end
 
-    Customer -->|"Places orders"| OrderService
-    OrderService -->|"Order status"| Customer
+    LlmProvider["External LLM Provider"]
+
+    Customer --> ApiGateway
+    ApiGateway -->|"Places orders"| OrderService
+    ApiGateway -->|"Investigates order"| InvestigationService
+    InvestigationService -->|"Grounded prompt"| LlmProvider
 
     InventoryService -->|"Reports inventory outcomes"| OrderService
     PaymentService -->|"Reports payment outcomes"| OrderService
@@ -206,9 +288,11 @@ Shared technical capability:
     style InventoryService fill:#3b5fc0,stroke:#1f3a8a,color:#ffffff
     style PaymentService fill:#3b5fc0,stroke:#1f3a8a,color:#ffffff
     style NotificationService fill:#3b5fc0,stroke:#1f3a8a,color:#ffffff
+    style InvestigationService fill:#3b5fc0,stroke:#1f3a8a,color:#ffffff
+    style ApiGateway fill:#2f855a,stroke:#1f5f40,color:#ffffff
 
     style MessagingStarter fill:#fff4e5,stroke:#c98a1c,color:#222222
 
     style Customer fill:#f5f5f5,stroke:#888888
+    style LlmProvider fill:#fff4e5,stroke:#c98a1c,color:#222222
 ```
-

@@ -1,0 +1,46 @@
+http:
+  routers:
+    order-api:
+      entryPoints:
+        - web
+      rule: Path(`/api/v1/orders`) || PathPrefix(`/api/v1/orders/`)
+      service: order-service
+      middlewares:
+        - order-rate-limit
+
+    investigation-api:
+      entryPoints:
+        - web
+      rule: Path(`/api/v1/investigations`) || PathPrefix(`/api/v1/investigations/`)
+      service: investigation-service
+      middlewares:
+        - investigation-rate-limit
+        - investigation-in-flight-limit
+
+  middlewares:
+    order-rate-limit:
+      rateLimit:
+        average: 20
+        period: 1s
+        burst: 40
+
+    investigation-rate-limit:
+      rateLimit:
+        average: 5
+        period: 1m
+        burst: 2
+
+    investigation-in-flight-limit:
+      inFlightReq:
+        amount: 2
+
+  services:
+    order-service:
+      loadBalancer:
+        servers:
+          - url: http://order-service:8080
+
+    investigation-service:
+      loadBalancer:
+        servers:
+          - url: http://investigation-service:8085

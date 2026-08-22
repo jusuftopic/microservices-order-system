@@ -17,7 +17,7 @@ RUN chown appuser:appgroup app.jar
 # disable root privileges!
 USER 1000
 
-EXPOSE 8083
-EXPOSE 8183
+EXPOSE 8085
+EXPOSE 8185
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

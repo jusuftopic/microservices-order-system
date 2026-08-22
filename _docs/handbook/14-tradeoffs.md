@@ -14,6 +14,17 @@ Kafka reduces direct runtime coupling between services and allows business proce
 
 However, asynchronous communication makes workflows harder to understand and test. Message duplication, delayed delivery, ordering, schema evolution, and partial failures must be handled explicitly.
 
+## Investigation Evidence Persistence
+
+The Investigation Service uses PostgreSQL for its append-oriented timeline
+evidence. This reuses existing operational knowledge and provides transactions,
+uniqueness constraints and efficient order-centric queries without introducing
+another database technology.
+
+The trade-off is controlled schema evolution as new evidence types are added.
+PostgreSQL flexibility does not remove the need for event-version handling,
+deterministic projection logic and database migrations.
+
 ## Inbox and Outbox Patterns
 
 Inbox and Outbox patterns improve messaging reliability by coordinating database state with message production and consumption.

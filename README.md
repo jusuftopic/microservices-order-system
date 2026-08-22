@@ -52,6 +52,8 @@ This repository demonstrates practical implementation of:
 
 ✓ Evolutionary architecture
 
+✓ API Gateway with path-based routing and rate limiting
+
 ## Architecture Overview
 
 ```mermaid
@@ -61,6 +63,7 @@ flowchart TB
     subgraph System["Ordering System"]
         direction TB
 
+        ApiGateway["🛡️ API Gateway"]
         OrderService["📦 Order Service"]
 
         Kafka[("📨 Kafka")]
@@ -68,30 +71,39 @@ flowchart TB
         InventoryService["📦 Inventory Service"]
         PaymentService["💳 Payment Service"]
         NotificationService["🔔 Notification Service"]
+        InvestigationService["🔎 Investigation Service"]
 
         OrderDb[("Order DB")]
         InventoryDb[("Inventory DB")]
         PaymentDb[("Payment DB")]
         NotificationDb[("Notification DB")]
+        InvestigationDb[("Investigation DB")]
+
+        ApiGateway -->|"/api/v1/orders"| OrderService
+        ApiGateway -->|"/api/v1/investigations"| InvestigationService
 
         OrderService --> OrderDb
         InventoryService --> InventoryDb
         PaymentService --> PaymentDb
         NotificationService --> NotificationDb
+        InvestigationService --> InvestigationDb
 
         OrderService --> Kafka
         Kafka --> InventoryService
         Kafka --> PaymentService
         Kafka --> NotificationService
+        Kafka --> InvestigationService
     end
 
     PaymentProvider["External Payment Provider"]
     NotificationProvider["External Notification Provider"]
+    LlmProvider["External LLM Provider"]
 
-    Client --> OrderService
+    Client --> ApiGateway
 
     PaymentService --> PaymentProvider
     NotificationService --> NotificationProvider
+    InvestigationService --> LlmProvider
 
     style System fill:#eef4ff,stroke:#3b5fc0,stroke-width:2px
 
@@ -99,6 +111,8 @@ flowchart TB
     style InventoryService fill:#3b5fc0,stroke:#1f3a8a,color:#fff
     style PaymentService fill:#3b5fc0,stroke:#1f3a8a,color:#fff
     style NotificationService fill:#3b5fc0,stroke:#1f3a8a,color:#fff
+    style InvestigationService fill:#3b5fc0,stroke:#1f3a8a,color:#fff
+    style ApiGateway fill:#2f855a,stroke:#1f5f40,color:#fff
 
     style Kafka fill:#fff4e5,stroke:#c98a1c
 
@@ -106,9 +120,11 @@ flowchart TB
     style InventoryDb fill:#f5f5f5
     style PaymentDb fill:#f5f5f5
     style NotificationDb fill:#f5f5f5
+    style InvestigationDb fill:#f5f5f5
 
     style PaymentProvider fill:#fff4e5,stroke:#c98a1c
     style NotificationProvider fill:#fff4e5,stroke:#c98a1c
+    style LlmProvider fill:#fff4e5,stroke:#c98a1c
 ```
 
 ## Repository philosophy
@@ -136,6 +152,7 @@ The current implementation focuses on production-oriented architectural capabili
 - Inventory Service – inventory reservation and commit
 - Payment Service – resilient payment processing
 - Notification Service – customer notification delivery
+- Investigation Service – validated LLM-supported order status with deterministic fallback
 
 ### Distributed Communication
 - Apache Kafka for asynchronous messaging
@@ -146,6 +163,7 @@ The current implementation focuses on production-oriented architectural capabili
 - Retry and Circuit Breaker patterns
 - Dead Letter Queue (DLQ) handling
 - Graceful shutdown
+- Edge rate limiting and concurrent-request protection for costly operations
 
 ### Data Management
 - Database-per-service using PostgreSQL
@@ -153,6 +171,8 @@ The current implementation focuses on production-oriented architectural capabili
 - Local transactions with eventual consistency
 
 ### Operations
+- Traefik API Gateway as the single public API entry point
+- Path-based routing to Order and Investigation APIs
 - Business and technical metrics
 - Centralized logging
 - Kubernetes deployment manifests

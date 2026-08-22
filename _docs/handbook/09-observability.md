@@ -69,6 +69,8 @@ Examples include:
 * HTTP request behaviour
 * retry activity
 * messaging throughput
+* concurrent processing conflicts
+* external AI response availability and validation outcomes
 
 These measurements provide the operational context required to understand degraded system behaviour and infrastructure failures.
 
