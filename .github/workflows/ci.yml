@@ -32,6 +32,7 @@ jobs:
       inventory: ${{ steps.filter.outputs.inventory }}
       payment: ${{ steps.filter.outputs.payment }}
       notification: ${{ steps.filter.outputs.notification }}
+      investigation: ${{ steps.filter.outputs.investigation }}
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - name: Checkout code
