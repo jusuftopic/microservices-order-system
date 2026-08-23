@@ -74,10 +74,9 @@ public class KafkaConfig {
             ConcurrentKafkaListenerContainerFactoryConfigurer configurer,
             ConsumerFactory<Object, Object> consumerFactory
     ) {
-        return KafkaConsumerReliabilitySupport.listenerFactory(
+        return KafkaConsumerReliabilitySupport.deadLetterListenerFactory(
                 configurer,
-                consumerFactory,
-                KafkaConsumerReliabilitySupport.terminalDeadLetterErrorHandler()
+                consumerFactory
         );
     }
 }

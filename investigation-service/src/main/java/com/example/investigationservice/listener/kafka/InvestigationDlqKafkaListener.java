@@ -1,6 +1,5 @@
 package com.example.investigationservice.listener.kafka;
 
-import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.example.messagingstarter.EventConstants;
 import org.example.messagingstarter.kafka.KafkaConsumerReliabilitySupport;
@@ -11,7 +10,6 @@ import org.springframework.stereotype.Service;
  * Observes terminal lifecycle records rejected by Investigation Service.
  */
 @Service
-@Slf4j
 public class InvestigationDlqKafkaListener {
 
     /**
@@ -24,13 +22,7 @@ public class InvestigationDlqKafkaListener {
             groupId = "${spring.kafka.consumer.group-id}-dlq",
             containerFactory = KafkaConsumerReliabilitySupport.DEAD_LETTER_LISTENER_FACTORY
     )
-    public void handleDeadLetter(ConsumerRecord<String, Object> record) {
-        log.warn(
-                "[INVESTIGATION-SERVICE][KAFKA-DLQ] Observed terminal record {}-{}@{} valueType {}",
-                record.topic(),
-                record.partition(),
-                record.offset(),
-                record.value() == null ? "null" : record.value().getClass().getName()
-        );
+    public void handleDeadLetter(ConsumerRecord<String, byte[]> record) {
+        KafkaConsumerReliabilitySupport.logTerminalDeadLetter("INVESTIGATION-SERVICE", record);
     }
 }

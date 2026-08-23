@@ -1,19 +1,31 @@
 package org.example.messagingstarter.kafka;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.ByteArrayDeserializer;
+import org.apache.kafka.common.serialization.StringDeserializer;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.boot.autoconfigure.kafka.ConcurrentKafkaListenerContainerFactoryConfigurer;
 import org.springframework.kafka.KafkaException;
+import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
+import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.KafkaOperations;
 import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.kafka.support.SendResult;
+import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer;
+import org.springframework.kafka.support.serializer.JsonDeserializer;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class KafkaConsumerReliabilitySupportTest {
@@ -33,6 +45,53 @@ class KafkaConsumerReliabilitySupportTest {
         );
 
         assertThat(recovered).isTrue();
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void deadLetterListenerFactoryReplacesJsonDeserializationWithRawBytes() {
+        ConcurrentKafkaListenerContainerFactoryConfigurer configurer =
+                mock(ConcurrentKafkaListenerContainerFactoryConfigurer.class);
+        ConsumerFactory<Object, Object> sourceConsumerFactory = mock(ConsumerFactory.class);
+        Map<String, Object> sourceProperties = new HashMap<>();
+        sourceProperties.put(
+                ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
+                ErrorHandlingDeserializer.class
+        );
+        sourceProperties.put(
+                ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
+                ErrorHandlingDeserializer.class
+        );
+        sourceProperties.put(
+                ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS,
+                JsonDeserializer.class
+        );
+        when(sourceConsumerFactory.getConfigurationProperties()).thenReturn(sourceProperties);
+
+        KafkaConsumerReliabilitySupport.deadLetterListenerFactory(
+                configurer,
+                sourceConsumerFactory
+        );
+
+        ArgumentCaptor<ConsumerFactory<Object, Object>> consumerFactoryCaptor =
+                ArgumentCaptor.forClass(ConsumerFactory.class);
+        verify(configurer).configure(
+                any(ConcurrentKafkaListenerContainerFactory.class),
+                consumerFactoryCaptor.capture()
+        );
+
+        Map<String, Object> deadLetterProperties =
+                consumerFactoryCaptor.getValue().getConfigurationProperties();
+        assertThat(deadLetterProperties)
+                .containsEntry(
+                        ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
+                        StringDeserializer.class
+                )
+                .containsEntry(
+                        ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
+                        ByteArrayDeserializer.class
+                )
+                .doesNotContainKey(ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS);
     }
 
     @Test

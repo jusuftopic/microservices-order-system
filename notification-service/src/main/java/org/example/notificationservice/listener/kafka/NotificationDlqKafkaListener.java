@@ -1,6 +1,5 @@
 package org.example.notificationservice.listener.kafka;
 
-import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.example.messagingstarter.EventConstants;
 import org.example.messagingstarter.kafka.KafkaConsumerReliabilitySupport;
@@ -12,7 +11,6 @@ import org.springframework.stereotype.Service;
  * Observes terminal records rejected by Notification Service consumers.
  */
 @Service
-@Slf4j
 public class NotificationDlqKafkaListener {
 
     /**
@@ -25,13 +23,7 @@ public class NotificationDlqKafkaListener {
             groupId = Constants.KAFKA_NOTIFICATION_DLQ_GROUP_ID,
             containerFactory = KafkaConsumerReliabilitySupport.DEAD_LETTER_LISTENER_FACTORY
     )
-    public void handleDeadLetter(ConsumerRecord<String, Object> record) {
-        log.warn(
-                "[NOTIFICATION-SERVICE][KAFKA-DLQ] Observed terminal record {}-{}@{} valueType {}",
-                record.topic(),
-                record.partition(),
-                record.offset(),
-                record.value() == null ? "null" : record.value().getClass().getName()
-        );
+    public void handleDeadLetter(ConsumerRecord<String, byte[]> record) {
+        KafkaConsumerReliabilitySupport.logTerminalDeadLetter("NOTIFICATION-SERVICE", record);
     }
 }

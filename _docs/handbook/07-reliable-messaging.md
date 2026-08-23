@@ -145,7 +145,9 @@ The configured `ErrorHandlingDeserializer` ensures that deserialization failures
 
 Dead-letter records are not automatically published again. This avoids an
 endless failure cycle; replay is a controlled action performed after the
-underlying cause has been corrected.
+underlying cause has been corrected. Their observation does not depend on
+successful domain deserialization, so malformed and incompatible messages
+remain diagnosable.
 
 ## DLQ Table vs. DLQ Topic
 
