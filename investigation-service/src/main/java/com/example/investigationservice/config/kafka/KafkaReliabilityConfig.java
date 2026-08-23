@@ -1,6 +1,7 @@
 package com.example.investigationservice.config.kafka;
 
 import com.example.investigationservice.exception.InvalidLifecycleEventException;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.example.messagingstarter.EventConstants;
 import org.example.messagingstarter.kafka.KafkaConsumerReliabilitySupport;
@@ -52,10 +53,12 @@ public class KafkaReliabilityConfig {
      */
     @Bean
     public DefaultErrorHandler investigationKafkaErrorHandler(
-            KafkaTemplate<String, Object> kafkaTemplate
+            KafkaTemplate<String, Object> kafkaTemplate,
+            MeterRegistry meterRegistry
     ) {
         return KafkaConsumerReliabilitySupport.deadLetterErrorHandler(
                 kafkaTemplate,
+                meterRegistry,
                 EventConstants.TOPIC_INVESTIGATION_ORDER_LIFECYCLE_DLT,
                 RETRY_INTERVAL_MILLIS,
                 RETRY_ATTEMPTS,

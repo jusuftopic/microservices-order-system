@@ -69,6 +69,7 @@ Examples include:
 * HTTP request behaviour
 * retry activity
 * messaging throughput
+* successful dead-letter publications
 * concurrent processing conflicts
 * external AI response availability and validation outcomes
 

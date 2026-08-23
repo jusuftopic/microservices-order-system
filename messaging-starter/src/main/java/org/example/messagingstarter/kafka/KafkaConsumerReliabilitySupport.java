@@ -1,5 +1,6 @@
 package org.example.messagingstarter.kafka;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.TopicPartition;
 import org.springframework.boot.autoconfigure.kafka.ConcurrentKafkaListenerContainerFactoryConfigurer;
@@ -52,6 +53,7 @@ public final class KafkaConsumerReliabilitySupport {
      * the service-owned dead-letter topic.
      *
      * @param kafkaOperations Kafka publisher used by the recoverer
+     * @param meterRegistry registry receiving dead-letter publication metrics
      * @param deadLetterTopic service-owned terminal topic
      * @param retryIntervalMillis delay between processing attempts
      * @param retryAttempts number of retries after the initial attempt
@@ -61,6 +63,7 @@ public final class KafkaConsumerReliabilitySupport {
     @SafeVarargs
     public static DefaultErrorHandler deadLetterErrorHandler(
             KafkaOperations<?, ?> kafkaOperations,
+            MeterRegistry meterRegistry,
             String deadLetterTopic,
             long retryIntervalMillis,
             long retryAttempts,
@@ -73,9 +76,25 @@ public final class KafkaConsumerReliabilitySupport {
                         record.partition()
                 )
         );
+        recoverer.setFailIfSendResultIsError(true);
+
+        KafkaDeadLetterMetrics metrics = new KafkaDeadLetterMetrics(meterRegistry);
 
         DefaultErrorHandler errorHandler = new DefaultErrorHandler(
-                recoverer,
+                (record, exception) -> {
+                    recoverer.accept(record, exception);
+                    try {
+                        metrics.recordPublished(record.topic(), exception);
+                    } catch (RuntimeException metricsException) {
+                        log.error(
+                                "[MESSAGING-STARTER][KAFKA-DLQ] Failed to record successful dead-letter publication from {}-{}@{}",
+                                record.topic(),
+                                record.partition(),
+                                record.offset(),
+                                metricsException
+                        );
+                    }
+                },
                 new FixedBackOff(retryIntervalMillis, retryAttempts)
         );
         errorHandler.addNotRetryableExceptions(notRetryableExceptions);

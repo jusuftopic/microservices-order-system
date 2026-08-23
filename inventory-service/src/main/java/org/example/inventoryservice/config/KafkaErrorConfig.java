@@ -1,5 +1,6 @@
 package org.example.inventoryservice.config;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import org.example.messagingstarter.EventConstants;
 import org.example.messagingstarter.kafka.KafkaConsumerReliabilitySupport;
 import org.springframework.boot.autoconfigure.kafka.ConcurrentKafkaListenerContainerFactoryConfigurer;
@@ -34,9 +35,12 @@ public class KafkaErrorConfig {
 
     @Bean
     DefaultErrorHandler inventoryKafkaErrorHandler(
-            KafkaTemplate<String, Object> template) {
+            KafkaTemplate<String, Object> template,
+            MeterRegistry meterRegistry
+    ) {
         return KafkaConsumerReliabilitySupport.deadLetterErrorHandler(
                 template,
+                meterRegistry,
                 EventConstants.TOPIC_INVENTORY_DLQ,
                 RETRY_INTERVAL_MILLIS,
                 RETRY_ATTEMPTS,

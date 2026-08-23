@@ -54,6 +54,12 @@
             <artifactId>spring-kafka</artifactId>
         </dependency>
 
+        <!-- METRICS -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-core</artifactId>
+        </dependency>
+
         <!-- TEST STARTER -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

@@ -1,5 +1,6 @@
 package org.example.notificationservice.config;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.example.messagingstarter.EventConstants;
 import org.example.messagingstarter.kafka.KafkaConsumerReliabilitySupport;
@@ -41,10 +42,12 @@ public class KafkaConfig {
 
     @Bean
     DefaultErrorHandler notificationKafkaErrorHandler(
-            KafkaTemplate<String, Object> kafkaTemplate
+            KafkaTemplate<String, Object> kafkaTemplate,
+            MeterRegistry meterRegistry
     ) {
         return KafkaConsumerReliabilitySupport.deadLetterErrorHandler(
                 kafkaTemplate,
+                meterRegistry,
                 EventConstants.TOPIC_NOTIFICATION_DLQ,
                 RETRY_INTERVAL_MILLIS,
                 RETRY_ATTEMPTS,

@@ -1,6 +1,7 @@
 package org.example.paymentservice.config;
 
 
+import io.micrometer.core.instrument.MeterRegistry;
 import org.example.messagingstarter.EventConstants;
 import org.example.messagingstarter.kafka.KafkaConsumerReliabilitySupport;
 import org.springframework.boot.autoconfigure.kafka.ConcurrentKafkaListenerContainerFactoryConfigurer;
@@ -35,9 +36,12 @@ public class KafkaErrorConfig {
 
     @Bean
     DefaultErrorHandler paymentKafkaErrorHandler(
-            KafkaTemplate<Object, Object> template) {
+            KafkaTemplate<Object, Object> template,
+            MeterRegistry meterRegistry
+    ) {
         return KafkaConsumerReliabilitySupport.deadLetterErrorHandler(
                 template,
+                meterRegistry,
                 EventConstants.TOPIC_PAYMENT_DLQ,
                 RETRY_INTERVAL_MILLIS,
                 RETRY_ATTEMPTS,
