@@ -5,6 +5,7 @@ import com.example.investigationservice.service.OrderLifecycleEvidencePersistenc
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.messagingstarter.EventConstants;
+import org.example.messagingstarter.kafka.KafkaConsumerReliabilitySupport;
 import org.example.messagingstarter.contracts.events.OrderLifecycleTransitionedEvent;
 import org.springframework.kafka.annotation.KafkaHandler;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -20,7 +21,8 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 @KafkaListener(
         topics = EventConstants.TOPIC_ORDER_LIFECYCLE_V1,
-        groupId = "${spring.kafka.consumer.group-id}"
+        groupId = "${spring.kafka.consumer.group-id}",
+        containerFactory = KafkaConsumerReliabilitySupport.BUSINESS_LISTENER_FACTORY
 )
 public class OrderLifecycleTransitionKafkaListener {
 

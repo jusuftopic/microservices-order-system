@@ -1,14 +1,18 @@
 package org.example.orderservice.config.kafka;
 
-import org.apache.kafka.common.TopicPartition;
 import org.example.messagingstarter.EventConstants;
+import org.example.messagingstarter.kafka.KafkaConsumerReliabilitySupport;
+import org.springframework.boot.autoconfigure.kafka.ConcurrentKafkaListenerContainerFactoryConfigurer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
+import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
 import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.kafka.support.serializer.DeserializationException;
-import org.springframework.util.backoff.FixedBackOff;
+
+import static org.example.messagingstarter.kafka.KafkaConsumerReliabilitySupport.BUSINESS_LISTENER_FACTORY;
+import static org.example.messagingstarter.kafka.KafkaConsumerReliabilitySupport.DEAD_LETTER_LISTENER_FACTORY;
 
 /**
  * Kafka consumer reliability configuration for order-service.
@@ -25,30 +29,44 @@ import org.springframework.util.backoff.FixedBackOff;
 @Configuration
 public class KafkaErrorConfig {
 
+    private static final long RETRY_INTERVAL_MILLIS = 2_000L;
+    private static final long RETRY_ATTEMPTS = 3L;
+
     @Bean
-    DefaultErrorHandler errorHandler(
-            KafkaTemplate<String,Object> template) {
-
-        DeadLetterPublishingRecoverer recoverer =
-                new DeadLetterPublishingRecoverer(
-                        template,
-                        (record, ex) -> new TopicPartition(
-                                EventConstants.TOPIC_ORDER_DLQ,
-                                record.partition()
-                        )
-                );
-
-        FixedBackOff backoff =
-                new FixedBackOff(2000L, 3);
-
-        DefaultErrorHandler handler =
-                new DefaultErrorHandler(recoverer, backoff);
-
-        handler.addNotRetryableExceptions(
+    DefaultErrorHandler orderKafkaErrorHandler(
+            KafkaTemplate<String, Object> template) {
+        return KafkaConsumerReliabilitySupport.deadLetterErrorHandler(
+                template,
+                EventConstants.TOPIC_ORDER_DLQ,
+                RETRY_INTERVAL_MILLIS,
+                RETRY_ATTEMPTS,
                 DeserializationException.class,
                 IllegalArgumentException.class
         );
+    }
 
-        return handler;
+    @Bean(name = BUSINESS_LISTENER_FACTORY)
+    ConcurrentKafkaListenerContainerFactory<Object, Object> businessListenerFactory(
+            ConcurrentKafkaListenerContainerFactoryConfigurer configurer,
+            ConsumerFactory<Object, Object> consumerFactory,
+            DefaultErrorHandler orderKafkaErrorHandler
+    ) {
+        return KafkaConsumerReliabilitySupport.listenerFactory(
+                configurer,
+                consumerFactory,
+                orderKafkaErrorHandler
+        );
+    }
+
+    @Bean(name = DEAD_LETTER_LISTENER_FACTORY)
+    ConcurrentKafkaListenerContainerFactory<Object, Object> deadLetterListenerFactory(
+            ConcurrentKafkaListenerContainerFactoryConfigurer configurer,
+            ConsumerFactory<Object, Object> consumerFactory
+    ) {
+        return KafkaConsumerReliabilitySupport.listenerFactory(
+                configurer,
+                consumerFactory,
+                KafkaConsumerReliabilitySupport.terminalDeadLetterErrorHandler()
+        );
     }
 }

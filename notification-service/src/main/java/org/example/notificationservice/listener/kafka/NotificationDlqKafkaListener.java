@@ -1,19 +1,19 @@
-package org.example.paymentservice.listener.kafka;
+package org.example.notificationservice.listener.kafka;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.example.messagingstarter.EventConstants;
 import org.example.messagingstarter.kafka.KafkaConsumerReliabilitySupport;
-import org.example.paymentservice.utils.Constants;
+import org.example.notificationservice.utils.Constants;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 /**
- * Observes terminal records rejected by Payment Service consumers.
+ * Observes terminal records rejected by Notification Service consumers.
  */
 @Service
 @Slf4j
-public class PaymentDlqKafkaListener {
+public class NotificationDlqKafkaListener {
 
     /**
      * Records dead-letter metadata without automatically replaying the record.
@@ -21,13 +21,13 @@ public class PaymentDlqKafkaListener {
      * @param record dead-letter record retained by Kafka
      */
     @KafkaListener(
-            topics = EventConstants.TOPIC_PAYMENT_DLQ,
-            groupId = Constants.KAFKA_PAYMENT_DLQ_GROUP_ID,
+            topics = EventConstants.TOPIC_NOTIFICATION_DLQ,
+            groupId = Constants.KAFKA_NOTIFICATION_DLQ_GROUP_ID,
             containerFactory = KafkaConsumerReliabilitySupport.DEAD_LETTER_LISTENER_FACTORY
     )
-    public void handlePaymentRequestedDLT(ConsumerRecord<String, Object> record) {
+    public void handleDeadLetter(ConsumerRecord<String, Object> record) {
         log.warn(
-                "[PAYMENT-SERVICE][KAFKA-DLQ] Observed terminal record {}-{}@{} valueType {}",
+                "[NOTIFICATION-SERVICE][KAFKA-DLQ] Observed terminal record {}-{}@{} valueType {}",
                 record.topic(),
                 record.partition(),
                 record.offset(),

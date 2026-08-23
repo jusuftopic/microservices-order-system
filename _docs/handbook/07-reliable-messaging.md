@@ -126,14 +126,11 @@ The Kafka dead-letter topic protects the consumer side of the messaging flow.
 
 It is used when a message already exists in Kafka but a consumer cannot process it successfully.
 
-For the Order, Inventory, and Payment services, the Kafka listener error handling provides:
+Every service that consumes Kafka records applies the same reliability policy:
 
-* centralized consumer retry handling
-* fixed retry intervals
-* routing of exhausted messages to a dedicated dead-letter topic
-* preservation of the original Kafka partition where appropriate
-
-A failed message is retried three times with a two-second delay between attempts.
+* temporary processing failures are retried
+* records that remain unprocessable are isolated in a service-owned dead-letter topic
+* dead-letter records are retained for investigation and controlled replay
 
 If processing still fails, the message is published to the service's configured dead-letter topic. This prevents a poison message from blocking further consumption from the partition. Dead-letter topics are defined per service rather than per individual topic, which provides a balanced trade-off between operational reliability and simplicity, while also reducing infrastructure complexity and cost for a smaller, side-project-scale system.
 
@@ -145,6 +142,10 @@ Some failures are treated as non-retryable, including:
 These failures are routed to the dead-letter topic without repeatedly executing business processing that cannot succeed.
 
 The configured `ErrorHandlingDeserializer` ensures that deserialization failures can be captured by the listener error-handling infrastructure rather than terminating consumption without controlled recovery.
+
+Dead-letter records are not automatically published again. This avoids an
+endless failure cycle; replay is a controlled action performed after the
+underlying cause has been corrected.
 
 ## DLQ Table vs. DLQ Topic
 
@@ -176,12 +177,15 @@ It provides shared support for:
 * shared event contracts
 * topic definitions
 * message identifiers
+* construction of business and terminal dead-letter listener policies
 
 Business services remain responsible for deciding:
 
 * which event should be produced
 * when an event should be produced
 * how an incoming message affects local business state
+* which dead-letter topic receives failed business records
+* which failures are retryable
 
 The shared library provides reliability mechanisms but does not own business decisions.
 
@@ -196,6 +200,7 @@ The complete messaging path contains several defensive layers:
 5. Inbox deduplication prevents repeated business processing.
 6. Consumer failures are retried.
 7. Permanently unprocessable Kafka records are routed to the DLQ topic.
+8. The DLQ observer terminates error handling without republishing the record.
 
 These layers allow the system to tolerate failures at different stages without losing the message or silently corrupting business state.
 
@@ -295,17 +300,22 @@ autonumber
 ```mermaid
 flowchart LR
     Kafka["Kafka Topic"]
-    Consumer["Consumer"]
+    Consumer["Business Consumer"]
     Retry["Retry Handling"]
     DLT["Kafka DLQ Topic"]
+    Observer["Terminal DLQ Observer"]
+    Operations["Investigation and Controlled Replay"]
 
     Kafka --> Consumer
     Consumer -->|Processing failure| Retry
     Retry -->|Retry succeeds| Consumer
     Retry -->|Retries exhausted| DLT
+    DLT --> Observer
+    Observer --> Operations
 
     style Kafka fill:#fff4e5,stroke:#c98a1c
     style Consumer fill:#3b5fc0,stroke:#1f3a8a,color:#ffffff
     style Retry fill:#fff4e5,stroke:#c98a1c
     style DLT fill:#ffe6e6,stroke:#c0392b
+    style Observer fill:#e8f4ff,stroke:#3973ac
 ```

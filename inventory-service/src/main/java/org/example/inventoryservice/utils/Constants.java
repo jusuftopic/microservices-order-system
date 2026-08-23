@@ -6,5 +6,6 @@ package org.example.inventoryservice.utils;
 public class Constants {
 
     public static final String KAFKA_INVENTORY_GROUP_ID = "inventory-group";
+    public static final String KAFKA_INVENTORY_DLQ_GROUP_ID = "inventory-dlq-group";
 
 }

@@ -6,4 +6,5 @@ package org.example.orderservice.utils;
 public class Constants {
 
     public static final String KAFKA_ORDER_GROUP_ID = "order-service-group";
+    public static final String KAFKA_ORDER_DLQ_GROUP_ID = "order-service-dlq-group";
 }

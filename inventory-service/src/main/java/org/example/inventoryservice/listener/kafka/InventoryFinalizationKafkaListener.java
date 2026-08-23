@@ -4,6 +4,7 @@ package org.example.inventoryservice.listener.kafka;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.messagingstarter.EventConstants;
+import org.example.messagingstarter.kafka.KafkaConsumerReliabilitySupport;
 import org.example.messagingstarter.contracts.commands.CommitInventoryCommand;
 import org.example.messagingstarter.contracts.commands.ReleaseInventoryCommand;
 import org.example.inventoryservice.service.InventoryService;
@@ -25,7 +26,8 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @KafkaListener(
         topics = EventConstants.TOPIC_ORDER_INVENTORY_FINALIZATION_REQUEST_V1,
-        groupId = Constants.KAFKA_INVENTORY_GROUP_ID
+        groupId = Constants.KAFKA_INVENTORY_GROUP_ID,
+        containerFactory = KafkaConsumerReliabilitySupport.BUSINESS_LISTENER_FACTORY
 )
 public class InventoryFinalizationKafkaListener {
 

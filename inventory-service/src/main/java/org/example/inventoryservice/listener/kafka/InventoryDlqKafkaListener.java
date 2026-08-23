@@ -1,49 +1,37 @@
 package org.example.inventoryservice.listener.kafka;
 
-
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.example.messagingstarter.EventConstants;
+import org.example.messagingstarter.kafka.KafkaConsumerReliabilitySupport;
 import org.example.inventoryservice.utils.Constants;
-import org.springframework.kafka.annotation.KafkaHandler;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
+/**
+ * Observes terminal records rejected by Inventory Service consumers.
+ */
 @Service
-@RequiredArgsConstructor
 @Slf4j
-@KafkaListener(
-        topics = EventConstants.TOPIC_INVENTORY_DLQ,
-        groupId = Constants.KAFKA_INVENTORY_GROUP_ID
-)
 public class InventoryDlqKafkaListener {
 
     /**
-     * Handles messages from Dead Letter Topic.
+     * Observes a terminal inventory dead-letter record without replaying it.
      *
-     * @param message raw message payload
+     * @param record dead-letter record retained by Kafka
      */
-    @KafkaHandler
-    public void handleDltMessage(String message) {
-
+    @KafkaListener(
+            topics = EventConstants.TOPIC_INVENTORY_DLQ,
+            groupId = Constants.KAFKA_INVENTORY_DLQ_GROUP_ID,
+            containerFactory = KafkaConsumerReliabilitySupport.DEAD_LETTER_LISTENER_FACTORY
+    )
+    public void handleDltMessage(ConsumerRecord<String, Object> record) {
         log.warn(
-                "[INVENTORY-SERVICE][KAFKA-DLT] Received message in DLT: {}",
-                message
+                "[INVENTORY-SERVICE][KAFKA-DLQ] Observed terminal record {}-{}@{} valueType {}",
+                record.topic(),
+                record.partition(),
+                record.offset(),
+                record.value() == null ? "null" : record.value().getClass().getName()
         );
     }
-
-    /**
-     * Catch-all fallback method.
-     *
-     * @param unknownMessage unknown message
-     */
-    @KafkaHandler(isDefault = true)
-    public void handleUnknownObject(Object unknownMessage) {
-
-        log.error(
-                "[INVENTORY-SERVICE][KAFKA-DLT] Unknown message type received in DLT: {}",
-                unknownMessage.getClass().getName()
-        );
-    }
-
 }
