@@ -65,6 +65,12 @@
             <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
 
+        <!-- PROVIDER-INDEPENDENT AI FOUNDATION -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-client-chat</artifactId>
+        </dependency>
+
         <!-- INTERNAL DEPENDENCIES -->
         <dependency>
             <groupId>org.example</groupId>

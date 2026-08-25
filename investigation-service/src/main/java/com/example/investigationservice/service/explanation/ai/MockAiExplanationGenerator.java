@@ -2,7 +2,7 @@ package com.example.investigationservice.service.explanation.ai;
 
 import com.example.investigationservice.model.InvestigationContext;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Primary;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -11,7 +11,11 @@ import java.util.Optional;
  * Primary AI explanation adapter used while no external model provider is configured.
  */
 @Service
-@Primary
+@ConditionalOnProperty(
+        name = "app.ai.provider",
+        havingValue = "mock",
+        matchIfMissing = true
+)
 @Slf4j
 public class MockAiExplanationGenerator implements AiExplanationGenerator {
 
