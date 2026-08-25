@@ -26,12 +26,10 @@ public class InvestigationMetrics {
             "investigation.explanations.unavailable.total";
 
     private final Counter lifecycleConcurrentInserts;
-    private final Counter aiResponsesMissing;
-    private final Counter aiResponsesInvalid;
     private final Counter explanationRequests;
-    private final Counter aiExplanations;
     private final Counter deterministicExplanations;
     private final Counter unavailableExplanations;
+    private final MeterRegistry registry;
 
     /**
      * Registers metrics that describe lifecycle evidence processing.
@@ -39,20 +37,12 @@ public class InvestigationMetrics {
      * @param registry application meter registry
      */
     public InvestigationMetrics(MeterRegistry registry) {
+        this.registry = registry;
         lifecycleConcurrentInserts = Counter.builder(CONCURRENT_INSERTS_METRIC)
                 .description("Concurrent lifecycle evidence inserts detected by message ID")
                 .register(registry);
-        aiResponsesMissing = Counter.builder(AI_RESPONSES_MISSING_METRIC)
-                .description("AI explanation requests completed without a response")
-                .register(registry);
-        aiResponsesInvalid = Counter.builder(AI_RESPONSES_INVALID_METRIC)
-                .description("AI explanation responses rejected by validation")
-                .register(registry);
         explanationRequests = Counter.builder(EXPLANATION_REQUESTS_METRIC)
                 .description("Explanation requests processed")
-                .register(registry);
-        aiExplanations = Counter.builder(AI_EXPLANATIONS_METRIC)
-                .description("Validated AI explanations selected")
                 .register(registry);
         deterministicExplanations = Counter.builder(DETERMINISTIC_EXPLANATIONS_METRIC)
                 .description("Deterministic explanations selected as fallback")
@@ -72,16 +62,22 @@ public class InvestigationMetrics {
 
     /**
      * Records an AI generation attempt that completed without a response.
+     *
+     * @param promptVersion prompt contract used for the attempt
      */
-    public void recordMissingAiResponse() {
-        aiResponsesMissing.increment();
+    public void recordMissingAiResponse(String promptVersion) {
+        incrementAiMetric(AI_RESPONSES_MISSING_METRIC,
+                "AI explanation requests completed without a response", promptVersion);
     }
 
     /**
      * Records an AI response that failed explanation validation.
+     *
+     * @param promptVersion prompt contract that produced the response
      */
-    public void recordInvalidAiResponse() {
-        aiResponsesInvalid.increment();
+    public void recordInvalidAiResponse(String promptVersion) {
+        incrementAiMetric(AI_RESPONSES_INVALID_METRIC,
+                "AI explanation responses rejected by validation", promptVersion);
     }
 
     /**
@@ -93,9 +89,12 @@ public class InvestigationMetrics {
 
     /**
      * Records a validated AI explanation selected for the response.
+     *
+     * @param promptVersion prompt contract that produced the explanation
      */
-    public void recordAiExplanation() {
-        aiExplanations.increment();
+    public void recordAiExplanation(String promptVersion) {
+        incrementAiMetric(AI_EXPLANATIONS_METRIC,
+                "Validated AI explanations selected", promptVersion);
     }
 
     /**
@@ -110,5 +109,17 @@ public class InvestigationMetrics {
      */
     public void recordUnavailableExplanation() {
         unavailableExplanations.increment();
+    }
+
+    private void incrementAiMetric(
+            String metricName,
+            String description,
+            String promptVersion
+    ) {
+        Counter.builder(metricName)
+                .description(description)
+                .tag("prompt_version", promptVersion)
+                .register(registry)
+                .increment();
     }
 }

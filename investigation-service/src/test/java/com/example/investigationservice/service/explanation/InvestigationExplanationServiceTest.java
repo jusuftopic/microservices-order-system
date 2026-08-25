@@ -1,6 +1,7 @@
 package com.example.investigationservice.service.explanation;
 
 import com.example.investigationservice.metrics.InvestigationMetrics;
+import com.example.investigationservice.model.AiExplanationResponse;
 import com.example.investigationservice.model.InvestigationContext;
 import com.example.investigationservice.model.InvestigationEvidence;
 import com.example.investigationservice.model.InvestigationExplanation;
@@ -18,6 +19,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class InvestigationExplanationServiceTest {
+
+    private static final String PROMPT_VERSION = "order-investigation-v1";
 
     private static final String MISSING_RESPONSES_METRIC =
             "investigation.ai.responses.missing.total";
@@ -43,9 +46,9 @@ class InvestigationExplanationServiceTest {
 
         assertThat(explanation.source())
                 .isEqualTo(InvestigationExplanation.Source.DETERMINISTIC);
-        assertThat(fixture.registry().get(MISSING_RESPONSES_METRIC).counter().count())
+        assertThat(promptCounter(fixture.registry(), MISSING_RESPONSES_METRIC))
                 .isEqualTo(1.0);
-        assertThat(fixture.registry().get(INVALID_RESPONSES_METRIC).counter().count())
+        assertThat(promptCounter(fixture.registry(), INVALID_RESPONSES_METRIC))
                 .isZero();
         assertFinalOutcomes(fixture.registry(), 0.0, 1.0, 0.0);
     }
@@ -53,7 +56,7 @@ class InvestigationExplanationServiceTest {
     @Test
     void recordsInvalidResponseWithoutRecordingMissingResponse() {
         TestFixture fixture = fixture(
-                Optional.of("   "),
+                Optional.of(response("   ")),
                 Optional.of("Deterministic explanation")
         );
 
@@ -61,9 +64,9 @@ class InvestigationExplanationServiceTest {
 
         assertThat(explanation.source())
                 .isEqualTo(InvestigationExplanation.Source.DETERMINISTIC);
-        assertThat(fixture.registry().get(MISSING_RESPONSES_METRIC).counter().count())
+        assertThat(promptCounter(fixture.registry(), MISSING_RESPONSES_METRIC))
                 .isZero();
-        assertThat(fixture.registry().get(INVALID_RESPONSES_METRIC).counter().count())
+        assertThat(promptCounter(fixture.registry(), INVALID_RESPONSES_METRIC))
                 .isEqualTo(1.0);
         assertFinalOutcomes(fixture.registry(), 0.0, 1.0, 0.0);
     }
@@ -71,16 +74,16 @@ class InvestigationExplanationServiceTest {
     @Test
     void recordsValidatedAiResponseAsFinalOutcome() {
         TestFixture fixture = fixture(
-                Optional.of("AI explanation"),
+                Optional.of(response("AI explanation")),
                 Optional.of("Deterministic explanation")
         );
 
         InvestigationExplanation explanation = fixture.service().explain(context());
 
         assertThat(explanation.source()).isEqualTo(InvestigationExplanation.Source.AI);
-        assertThat(fixture.registry().get(MISSING_RESPONSES_METRIC).counter().count())
+        assertThat(promptCounter(fixture.registry(), MISSING_RESPONSES_METRIC))
                 .isZero();
-        assertThat(fixture.registry().get(INVALID_RESPONSES_METRIC).counter().count())
+        assertThat(promptCounter(fixture.registry(), INVALID_RESPONSES_METRIC))
                 .isZero();
         assertFinalOutcomes(fixture.registry(), 1.0, 0.0, 0.0);
     }
@@ -97,7 +100,7 @@ class InvestigationExplanationServiceTest {
     }
 
     private TestFixture fixture(
-            Optional<String> aiResponse,
+            Optional<AiExplanationResponse> aiResponse,
             Optional<String> deterministicResponse
     ) {
         AiExplanationGenerator aiGenerator = mock(AiExplanationGenerator.class);
@@ -107,6 +110,7 @@ class InvestigationExplanationServiceTest {
         InvestigationContext context = context();
 
         when(aiGenerator.generate(context)).thenReturn(aiResponse);
+        when(aiGenerator.promptVersion()).thenReturn(PROMPT_VERSION);
         when(deterministicGenerator.generate(context))
                 .thenReturn(deterministicResponse);
 
@@ -119,6 +123,16 @@ class InvestigationExplanationServiceTest {
         return new TestFixture(service, registry);
     }
 
+    private AiExplanationResponse response(String explanation) {
+        return new AiExplanationResponse(
+                explanation,
+                "PAYMENT_FAILED",
+                "PAYMENT_FAILED",
+                "RELEASE_INVENTORY",
+                "INVENTORY_RELEASE"
+        );
+    }
+
     private void assertFinalOutcomes(
             SimpleMeterRegistry registry,
             double ai,
@@ -126,11 +140,18 @@ class InvestigationExplanationServiceTest {
             double unavailable
     ) {
         assertThat(registry.get(REQUESTS_METRIC).counter().count()).isEqualTo(1.0);
-        assertThat(registry.get(AI_EXPLANATIONS_METRIC).counter().count()).isEqualTo(ai);
+        assertThat(promptCounter(registry, AI_EXPLANATIONS_METRIC)).isEqualTo(ai);
         assertThat(registry.get(DETERMINISTIC_EXPLANATIONS_METRIC).counter().count())
                 .isEqualTo(deterministic);
         assertThat(registry.get(UNAVAILABLE_EXPLANATIONS_METRIC).counter().count())
                 .isEqualTo(unavailable);
+    }
+
+    private double promptCounter(SimpleMeterRegistry registry, String metricName) {
+        var counter = registry.find(metricName)
+                .tag("prompt_version", PROMPT_VERSION)
+                .counter();
+        return counter == null ? 0.0 : counter.count();
     }
 
     private InvestigationContext context() {

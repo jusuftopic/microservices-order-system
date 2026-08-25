@@ -1,5 +1,6 @@
 package com.example.investigationservice.service.explanation.ai;
 
+import com.example.investigationservice.model.AiExplanationResponse;
 import com.example.investigationservice.model.InvestigationContext;
 
 import java.util.Optional;
@@ -10,10 +11,17 @@ import java.util.Optional;
 public interface AiExplanationGenerator {
 
     /**
+     * Identifies the prompt contract used by this generator.
+     *
+     * @return stable, controlled prompt version
+     */
+    String promptVersion();
+
+    /**
      * Generates an explanation grounded in the supplied investigation context.
      *
      * @param context authoritative evidence available for the order
-     * @return generated explanation, when the provider produces one
+     * @return structured explanation candidate, when the provider produces one
      */
-    Optional<String> generate(InvestigationContext context);
+    Optional<AiExplanationResponse> generate(InvestigationContext context);
 }

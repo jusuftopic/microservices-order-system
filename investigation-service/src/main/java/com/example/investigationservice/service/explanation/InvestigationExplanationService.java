@@ -1,6 +1,7 @@
 package com.example.investigationservice.service.explanation;
 
 import com.example.investigationservice.metrics.InvestigationMetrics;
+import com.example.investigationservice.model.AiExplanationResponse;
 import com.example.investigationservice.model.InvestigationContext;
 import com.example.investigationservice.model.InvestigationExplanation;
 import com.example.investigationservice.service.explanation.ai.AiExplanationGenerator;
@@ -32,22 +33,26 @@ public class InvestigationExplanationService {
      */
     public InvestigationExplanation explain(InvestigationContext context) {
         metrics.recordExplanationRequest();
+        String promptVersion = aiExplanationGenerator.promptVersion();
 
         try {
-            Optional<String> candidateExplanation = aiExplanationGenerator.generate(context);
-            if (candidateExplanation.isEmpty()) {
-                metrics.recordMissingAiResponse();
+            Optional<AiExplanationResponse> candidate = aiExplanationGenerator.generate(context);
+            if (candidate.isEmpty()) {
+                metrics.recordMissingAiResponse(promptVersion);
                 log.warn(
                         "[INVESTIGATION-SERVICE][EXPLANATION] AI generator returned no response "
                                 + "for order {}; using fallback",
                         context.orderId()
                 );
-            } else if (validationService.isValid(candidateExplanation.get(), context)) {
-                metrics.recordAiExplanation();
+            } else if (validationService.isValid(candidate.get(), context)) {
+                metrics.recordAiExplanation(promptVersion);
                 log.debug("[INVESTIGATION-SERVICE][EXPLANATION] Selected AI explanation for order {}", context.orderId());
-                return new InvestigationExplanation(candidateExplanation, InvestigationExplanation.Source.AI);
+                return new InvestigationExplanation(
+                        Optional.of(candidate.get().explanation()),
+                        InvestigationExplanation.Source.AI
+                );
             } else {
-                metrics.recordInvalidAiResponse();
+                metrics.recordInvalidAiResponse(promptVersion);
                 log.warn(
                         "[INVESTIGATION-SERVICE][EXPLANATION] AI explanation validation failed "
                                 + "for order {}; using fallback",
