@@ -148,6 +148,7 @@ services:
       DB_NAME: investigation_db
       DB_USERNAME: investigation_user
       DB_PASSWORD: change-me
+      INVESTIGATION_MOCK_DATA_ENABLED: ${INVESTIGATION_MOCK_DATA_ENABLED:-false}
     depends_on:
       investigation-db:
         condition: service_healthy
