@@ -36,6 +36,12 @@ public class InvestigationExplanationService {
         String promptVersion = aiExplanationGenerator.promptVersion();
 
         try {
+            //TODO (EVALUATION) input AI validation
+            // - context must not be null
+            // - evidence size in the limit range
+            // - only relevant fields are included
+            // - current status is valid one
+            // - input token limit not exceeded
             Optional<AiExplanationResponse> candidate = aiExplanationGenerator.generate(context);
             if (candidate.isEmpty()) {
                 metrics.recordMissingAiResponse(promptVersion);

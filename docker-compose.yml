@@ -172,7 +172,7 @@ services:
   inventory-service:
     build:
       context: .
-      dockerfile: inventory-service/Dockerfile.dev
+      dockerfile: inventory-service/Dockerfile
     container_name: inventory-service
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092

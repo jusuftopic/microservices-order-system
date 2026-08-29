@@ -22,6 +22,10 @@ public class ExplanationValidationService {
             AiExplanationResponse candidate,
             InvestigationContext context
     ) {
+        //TODO (EVALUATION) output AI validation
+        // explanation/token size not exceed set limit
+        // current status matches context current status
+        // reason code, decision code and compensation type match last evidence
         return candidate != null
                 && candidate.explanation() != null
                 && !candidate.explanation().isBlank()
