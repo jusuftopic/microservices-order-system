@@ -74,10 +74,18 @@ public class InvestigationMetrics {
      * Records an AI response that failed explanation validation.
      *
      * @param promptVersion prompt contract that produced the response
+     * @param validationReason bounded reason the response was rejected
      */
-    public void recordInvalidAiResponse(String promptVersion) {
-        incrementAiMetric(AI_RESPONSES_INVALID_METRIC,
-                "AI explanation responses rejected by validation", promptVersion);
+    public void recordInvalidAiResponse(
+            String promptVersion,
+            String validationReason
+    ) {
+        Counter.builder(AI_RESPONSES_INVALID_METRIC)
+                .description("AI explanation responses rejected by validation")
+                .tag("prompt_version", promptVersion)
+                .tag("validation_reason", validationReason)
+                .register(registry)
+                .increment();
     }
 
     /**

@@ -31,8 +31,8 @@ public class InvestigationPromptFactory {
             An orchestration decision describes an intended action and is not proof that the action completed.
             If evidence does not confirm an outcome, state that it is not yet confirmed.
             Return the structured response contract only.
-            Echo currentStatus, reasonCode, decisionCode, and compensationType exactly as supplied when represented.
-            Use null when an optional code is not represented in the explanation.
+            Always return currentStatus and the latest reasonCode exactly as supplied.
+            Return the latest decisionCode and compensationType exactly as supplied, including null values.
             Keep explanation at or below %d characters.
             """.formatted(MAX_EXPLANATION_CHARACTERS);
 

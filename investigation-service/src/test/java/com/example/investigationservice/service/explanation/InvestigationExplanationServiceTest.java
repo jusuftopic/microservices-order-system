@@ -68,6 +68,11 @@ class InvestigationExplanationServiceTest {
                 .isZero();
         assertThat(promptCounter(fixture.registry(), INVALID_RESPONSES_METRIC))
                 .isEqualTo(1.0);
+        assertThat(fixture.registry().find(INVALID_RESPONSES_METRIC)
+                .tag("prompt_version", PROMPT_VERSION)
+                .tag("validation_reason", "MISSING_EXPLANATION")
+                .counter())
+                .isNotNull();
         assertFinalOutcomes(fixture.registry(), 0.0, 1.0, 0.0);
     }
 

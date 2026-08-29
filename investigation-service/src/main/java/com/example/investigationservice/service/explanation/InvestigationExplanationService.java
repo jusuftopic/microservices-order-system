@@ -2,6 +2,7 @@ package com.example.investigationservice.service.explanation;
 
 import com.example.investigationservice.metrics.InvestigationMetrics;
 import com.example.investigationservice.model.AiExplanationResponse;
+import com.example.investigationservice.model.ExplanationValidationResult;
 import com.example.investigationservice.model.InvestigationContext;
 import com.example.investigationservice.model.InvestigationExplanation;
 import com.example.investigationservice.service.explanation.ai.AiExplanationGenerator;
@@ -44,19 +45,25 @@ public class InvestigationExplanationService {
                                 + "for order {}; using fallback",
                         context.orderId()
                 );
-            } else if (validationService.isValid(candidate.get(), context)) {
-                metrics.recordAiExplanation(promptVersion);
-                log.debug("[INVESTIGATION-SERVICE][EXPLANATION] Selected AI explanation for order {}", context.orderId());
-                return new InvestigationExplanation(
-                        Optional.of(candidate.get().explanation()),
-                        InvestigationExplanation.Source.AI
-                );
             } else {
-                metrics.recordInvalidAiResponse(promptVersion);
-                log.warn(
-                        "[INVESTIGATION-SERVICE][EXPLANATION] AI explanation validation failed "
-                                + "for order {}; using fallback",
-                        context.orderId()
+                ExplanationValidationResult validation =
+                        validationService.validate(candidate.get(), context);
+                if (validation.valid()) {
+                    metrics.recordAiExplanation(promptVersion);
+                    log.debug(
+                            "[INVESTIGATION-SERVICE][EXPLANATION] "
+                                    + "Selected AI explanation for order {}",
+                            context.orderId()
+                    );
+                    return new InvestigationExplanation(
+                            Optional.of(candidate.get().explanation()),
+                            InvestigationExplanation.Source.AI
+                    );
+                }
+
+                metrics.recordInvalidAiResponse(
+                        promptVersion,
+                        validation.failureReason().name()
                 );
             }
         } catch (RuntimeException exception) {
