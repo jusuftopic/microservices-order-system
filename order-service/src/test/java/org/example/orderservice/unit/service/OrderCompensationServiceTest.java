@@ -5,7 +5,7 @@ import org.example.messagingstarter.contracts.commands.ReleaseInventoryCommand;
 import org.example.messagingstarter.contracts.commands.RefundPaymentCommand;
 import org.example.orderservice.entity.Order;
 import org.example.orderservice.entity.OrderItem;
-import org.example.orderservice.enums.OrderStatus;
+import org.example.messagingstarter.contracts.lifecycle.OrderStatus;
 import org.example.orderservice.service.OrderCompensationService;
 import org.example.orderservice.service.outbox.OrderOutboxService;
 import org.junit.jupiter.api.BeforeEach;

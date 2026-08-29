@@ -14,7 +14,7 @@ import org.example.messagingstarter.contracts.lifecycle.OrchestrationDecisionCod
 import org.example.orderservice.dto.request.OrderRequest;
 import org.example.orderservice.dto.response.OrderResponse;
 import org.example.orderservice.entity.Order;
-import org.example.orderservice.enums.OrderStatus;
+import org.example.messagingstarter.contracts.lifecycle.OrderStatus;
 import org.example.orderservice.mapper.OrderMapper;
 import org.example.orderservice.metrics.OrderMetrics;
 import org.example.messagingstarter.inbox.repository.InboxRepository;

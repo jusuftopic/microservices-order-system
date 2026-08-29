@@ -6,7 +6,7 @@ import org.example.orderservice.dto.response.OrderItemResponse;
 import org.example.orderservice.dto.response.OrderResponse;
 import org.example.orderservice.entity.Order;
 import org.example.orderservice.entity.OrderItem;
-import org.example.orderservice.enums.OrderStatus;
+import org.example.messagingstarter.contracts.lifecycle.OrderStatus;
 
 import java.util.List;
 

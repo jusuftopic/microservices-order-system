@@ -6,6 +6,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.messagingstarter.contracts.lifecycle.OrderStatus;
 import org.springframework.stereotype.Component;
 
 import java.util.Objects;
@@ -20,6 +21,7 @@ public class InvestigationPromptFactory {
 
     public static final String PROMPT_VERSION = "order-investigation-v1";
     public static final int MAX_EVIDENCE_ITEMS = 50;
+    public static final int MAX_PROMPT_CHARACTERS = 20_000;
     public static final int MAX_EXPLANATION_CHARACTERS = 800;
 
     private static final String SYSTEM_INSTRUCTIONS = """
@@ -44,12 +46,10 @@ public class InvestigationPromptFactory {
      * @throws IllegalArgumentException when the evidence boundary is exceeded
      */
     public AiPrompt create(InvestigationContext context) {
-        Objects.requireNonNull(context, "context must not be null");
-        if (context.evidence().size() > MAX_EVIDENCE_ITEMS) {
-            throw new IllegalArgumentException(
-                    "Investigation context exceeds the maximum evidence item count"
-            );
-        }
+        validateContext(context);
+
+        String serializedContext = serialize(context);
+        validatePromptSize(serializedContext);
 
         log.debug(
                 "[INVESTIGATION-SERVICE][AI-PROMPT] Building prompt {} for order {} with {} evidence items",
@@ -61,15 +61,52 @@ public class InvestigationPromptFactory {
         return new AiPrompt(
                 PROMPT_VERSION,
                 SYSTEM_INSTRUCTIONS,
-                serialize(context)
+                serializedContext
         );
+    }
+
+    private void validateContext(InvestigationContext context) {
+        Objects.requireNonNull(context, "context must not be null");
+        if (context.orderId() <= 0) {
+            throw new IllegalArgumentException("context orderId must be greater than zero");
+        }
+        if (!context.hasEvidence()) {
+            throw new IllegalArgumentException("context must contain lifecycle evidence");
+        }
+        if (context.evidence().size() > MAX_EVIDENCE_ITEMS) {
+            throw new IllegalArgumentException(
+                    "Investigation context exceeds the maximum evidence item count"
+            );
+        }
+        if (OrderStatus.fromCode(context.currentStatus()).isEmpty()) {
+            throw new IllegalArgumentException("context contains an unsupported current status");
+        }
+
+        String latestStatus = context.evidence().getLast().newStatus();
+        if (!Objects.equals(context.currentStatus(), latestStatus)) {
+            throw new IllegalArgumentException(
+                    "context current status does not match the latest authoritative evidence"
+            );
+        }
+    }
+
+    private void validatePromptSize(String serializedContext) {
+        int promptCharacters = SYSTEM_INSTRUCTIONS.length() + serializedContext.length();
+        if (promptCharacters > MAX_PROMPT_CHARACTERS) {
+            throw new IllegalArgumentException(
+                    "Investigation prompt exceeds the maximum character count"
+            );
+        }
     }
 
     private String serialize(InvestigationContext context) {
         try {
             return objectMapper.writeValueAsString(context);
         } catch (JsonProcessingException exception) {
-            throw new IllegalStateException("Unable to serialize investigation context", exception);
+            throw new IllegalStateException(
+                    "Unable to construct investigation prompt from context",
+                    exception
+            );
         }
     }
 }

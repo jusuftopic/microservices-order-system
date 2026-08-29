@@ -2,7 +2,7 @@ package org.example.orderservice.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.example.orderservice.enums.OrderStatus;
+import org.example.messagingstarter.contracts.lifecycle.OrderStatus;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
