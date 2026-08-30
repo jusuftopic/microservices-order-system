@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static com.example.investigationservice.service.explanation.ai.MockAiExplanationGenerator.MODEL;
+import static com.example.investigationservice.service.explanation.ai.MockAiExplanationGenerator.PROVIDER;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -116,6 +118,8 @@ class InvestigationExplanationServiceTest {
 
         when(aiGenerator.generate(context)).thenReturn(aiResponse);
         when(aiGenerator.promptVersion()).thenReturn(PROMPT_VERSION);
+        when(aiGenerator.provider()).thenReturn(PROVIDER);
+        when(aiGenerator.model()).thenReturn(MODEL);
         when(deterministicGenerator.generate(context))
                 .thenReturn(deterministicResponse);
 
@@ -144,7 +148,7 @@ class InvestigationExplanationServiceTest {
             double deterministic,
             double unavailable
     ) {
-        assertThat(registry.get(REQUESTS_METRIC).counter().count()).isEqualTo(1.0);
+        assertThat(providerCounter(registry, REQUESTS_METRIC)).isEqualTo(1.0);
         assertThat(promptCounter(registry, AI_EXPLANATIONS_METRIC)).isEqualTo(ai);
         assertThat(registry.get(DETERMINISTIC_EXPLANATIONS_METRIC).counter().count())
                 .isEqualTo(deterministic);
@@ -155,6 +159,16 @@ class InvestigationExplanationServiceTest {
     private double promptCounter(SimpleMeterRegistry registry, String metricName) {
         var counter = registry.find(metricName)
                 .tag("prompt_version", PROMPT_VERSION)
+                .tag("provider", PROVIDER)
+                .tag("model", MODEL)
+                .counter();
+        return counter == null ? 0.0 : counter.count();
+    }
+
+    private double providerCounter(SimpleMeterRegistry registry, String metricName) {
+        var counter = registry.find(metricName)
+                .tag("provider", PROVIDER)
+                .tag("model", MODEL)
                 .counter();
         return counter == null ? 0.0 : counter.count();
     }

@@ -33,27 +33,33 @@ public class InvestigationExplanationService {
      * @return selected explanation and its source
      */
     public InvestigationExplanation explain(InvestigationContext context) {
-        metrics.recordExplanationRequest();
         String promptVersion = aiExplanationGenerator.promptVersion();
+        String provider = aiExplanationGenerator.provider();
+        String model = aiExplanationGenerator.model();
+        metrics.recordExplanationRequest(provider, model);
 
         try {
             Optional<AiExplanationResponse> candidate = aiExplanationGenerator.generate(context);
             if (candidate.isEmpty()) {
-                metrics.recordMissingAiResponse(promptVersion);
+                metrics.recordMissingAiResponse(promptVersion, provider, model);
                 log.warn(
                         "[INVESTIGATION-SERVICE][EXPLANATION] AI generator returned no response "
-                                + "for order {}; using fallback",
-                        context.orderId()
+                                + "for order {} using provider {} and model {}; using fallback",
+                        context.orderId(),
+                        provider,
+                        model
                 );
             } else {
                 ExplanationValidationResult validation =
                         validationService.validate(candidate.get(), context);
                 if (validation.valid()) {
-                    metrics.recordAiExplanation(promptVersion);
+                    metrics.recordAiExplanation(promptVersion, provider, model);
                     log.debug(
                             "[INVESTIGATION-SERVICE][EXPLANATION] "
-                                    + "Selected AI explanation for order {}",
-                            context.orderId()
+                                    + "Selected AI explanation for order {} using provider {} and model {}",
+                            context.orderId(),
+                            provider,
+                            model
                     );
                     return new InvestigationExplanation(
                             Optional.of(candidate.get().explanation()),
@@ -63,12 +69,20 @@ public class InvestigationExplanationService {
 
                 metrics.recordInvalidAiResponse(
                         promptVersion,
-                        validation.failureReason().name()
+                        validation.failureReason().name(),
+                        provider,
+                        model
                 );
             }
         } catch (RuntimeException exception) {
-            log.warn("[INVESTIGATION-SERVICE][EXPLANATION] AI explanation generation failed for order {}; using fallback",
-                    context.orderId(), exception);
+            log.warn(
+                    "[INVESTIGATION-SERVICE][EXPLANATION] AI explanation generation failed "
+                            + "for order {} using provider {} and model {}; using fallback",
+                    context.orderId(),
+                    provider,
+                    model,
+                    exception
+            );
         }
 
         Optional<String> deterministic = deterministicGenerator.generate(context);

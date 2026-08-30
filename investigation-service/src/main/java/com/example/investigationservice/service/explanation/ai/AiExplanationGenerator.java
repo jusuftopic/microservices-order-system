@@ -11,6 +11,20 @@ import java.util.Optional;
 public interface AiExplanationGenerator {
 
     /**
+     * Identifies the configured model provider for operational measurements.
+     *
+     * @return stable, low-cardinality provider identifier
+     */
+    String provider();
+
+    /**
+     * Identifies the configured model for operational measurements.
+     *
+     * @return stable, low-cardinality model identifier
+     */
+    String model();
+
+    /**
      * Identifies the prompt contract used by this generator.
      *
      * @return stable, controlled prompt version

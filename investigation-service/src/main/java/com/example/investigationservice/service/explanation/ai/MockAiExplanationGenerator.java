@@ -14,12 +14,28 @@ import java.util.Optional;
  */
 @Service
 @ConditionalOnProperty(
-        name = "app.ai.provider",
+        name = "app.ai.generator",
         havingValue = "mock",
         matchIfMissing = true
 )
 @Slf4j
 public class MockAiExplanationGenerator implements AiExplanationGenerator {
+
+    /** Provider identifier shared by mock execution and its tests. */
+    public static final String PROVIDER = "mock";
+
+    /** Versioned mock model identifier shared by execution and its tests. */
+    public static final String MODEL = "mock-v1";
+
+    @Override
+    public String provider() {
+        return PROVIDER;
+    }
+
+    @Override
+    public String model() {
+        return MODEL;
+    }
 
     @Override
     public String promptVersion() {
