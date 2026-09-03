@@ -148,6 +148,8 @@ ArchUnit tests protect:
 * domain isolation
 * shared-module boundaries
 * package and naming conventions
+* AI framework isolation behind the Investigation Service adapter
+* explanation orchestration, prompt construction, and timeline mapping boundaries
 
 The goal is not to test every implementation detail. The goal is to protect the business rules, infrastructure guarantees, and architectural boundaries that are most important to system correctness.
 
