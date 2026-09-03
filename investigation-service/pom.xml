@@ -65,10 +65,10 @@
             <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
 
-        <!-- PROVIDER-INDEPENDENT AI FOUNDATION -->
+        <!-- AI-MODEL DEPENDENCY -->
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-client-chat</artifactId>
+            <artifactId>spring-ai-starter-model-google-genai</artifactId>
         </dependency>
 
         <!-- INTERNAL DEPENDENCIES -->

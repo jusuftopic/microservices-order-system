@@ -33,6 +33,7 @@ public class InvestigationPromptFactory {
             Return the structured response contract only.
             Always return currentStatus and the latest reasonCode exactly as supplied.
             Return the latest decisionCode and compensationType exactly as supplied, including null values.
+            Explanation does not need to contain technical details. It provides human-understandable status of the order.
             Keep explanation at or below %d characters.
             """.formatted(MAX_EXPLANATION_CHARACTERS);
 

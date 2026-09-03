@@ -15,8 +15,7 @@ import java.util.Optional;
 @Service
 @ConditionalOnProperty(
         name = "app.ai.generator",
-        havingValue = "mock",
-        matchIfMissing = true
+        havingValue = "mock"
 )
 @Slf4j
 public class MockAiExplanationGenerator implements AiExplanationGenerator {
