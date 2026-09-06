@@ -84,7 +84,7 @@ public class InvestigationExplanationService {
                     provider,
                     model
             );
-        } catch (RuntimeException exception) {
+        } catch (Exception exception) {
             log.warn(
                     "[INVESTIGATION-SERVICE][EXPLANATION] AI explanation generation failed "
                             + "for order {} using provider {} and model {}; using fallback",

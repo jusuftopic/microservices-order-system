@@ -18,6 +18,10 @@ public class InvestigationMetrics {
             "investigation.ai.responses.invalid.total";
     static final String AI_REQUEST_TIMEOUTS_METRIC =
             "investigation.ai.requests.timeout.total";
+    static final String AI_REQUEST_FAILURES_METRIC =
+            "investigation.ai.requests.failures.total";
+    static final String AI_REQUEST_RETRIES_METRIC =
+            "investigation.ai.requests.retries.total";
     static final String EXPLANATION_REQUESTS_METRIC =
             "investigation.explanations.requests.total";
     static final String AI_EXPLANATIONS_METRIC =
@@ -116,6 +120,51 @@ public class InvestigationMetrics {
         incrementAiMetric(
                 AI_REQUEST_TIMEOUTS_METRIC,
                 "AI explanation requests that exceeded their timeout",
+                promptVersion,
+                provider,
+                model
+        );
+    }
+
+    /**
+     * Records a failed model attempt using a bounded failure classification.
+     *
+     * @param promptVersion prompt contract used for the attempt
+     * @param failureType transient, non-transient or unclassified failure
+     * @param provider configured AI provider
+     * @param model configured AI model
+     */
+    public void recordAiRequestFailure(
+            String promptVersion,
+            String failureType,
+            String provider,
+            String model
+    ) {
+        Counter.builder(AI_REQUEST_FAILURES_METRIC)
+                .description("Failed AI explanation request attempts")
+                .tag("prompt_version", promptVersion)
+                .tag("failure_type", failureType)
+                .tag("provider", provider)
+                .tag("model", model)
+                .register(registry)
+                .increment();
+    }
+
+    /**
+     * Records an additional model attempt after a transient failure.
+     *
+     * @param promptVersion prompt contract used for the request
+     * @param provider configured AI provider
+     * @param model configured AI model
+     */
+    public void recordAiRequestRetry(
+            String promptVersion,
+            String provider,
+            String model
+    ) {
+        incrementAiMetric(
+                AI_REQUEST_RETRIES_METRIC,
+                "AI explanation request retry attempts",
                 promptVersion,
                 provider,
                 model

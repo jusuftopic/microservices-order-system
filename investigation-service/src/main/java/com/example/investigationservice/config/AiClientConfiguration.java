@@ -19,18 +19,20 @@ import java.time.Duration;
 public class AiClientConfiguration {
 
     /**
-     * Creates a model client with one bounded network attempt.
+     * Creates a model client with a bounded network attempt. Retry orchestration
+     * remains outside the provider client so that it can classify failures and
+     * respect the complete call budget.
      *
      * @param apiKey provider API key
-     * @param timeout maximum duration of the complete model request
+     * @param attemptTimeout maximum duration of one provider request
      * @return configured model client
      */
     @Bean
     public Client googleGenAiClient(
             @Value("${spring.ai.google.genai.api-key}") String apiKey,
-            @Value("${app.ai.timeout}") Duration timeout
+            @Value("${app.ai.retry.attempt-timeout}") Duration attemptTimeout
     ) {
-        int timeoutMilliseconds = Math.toIntExact(timeout.toMillis());
+        int timeoutMilliseconds = Math.toIntExact(attemptTimeout.toMillis());
         HttpRetryOptions retryOptions = HttpRetryOptions.builder()
                 .attempts(1)
                 .build();

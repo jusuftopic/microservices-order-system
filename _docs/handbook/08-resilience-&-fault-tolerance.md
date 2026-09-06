@@ -39,6 +39,12 @@ This strategy improves the overall success rate for temporary problems such as:
 
 Retries are intentionally limited to prevent excessive load on already degraded systems.
 
+The synchronous AI explanation call follows the same principle within a fixed
+request budget. Only transient provider and network failures are retried, with
+backoff and jitter between attempts. Permanent configuration or request errors
+are not retried and are exposed through logs and metrics. If the model remains
+unavailable, the Investigation Service returns its deterministic explanation.
+
 ### Circuit Breaker
 
 Repeatedly calling an unavailable external provider wastes resources and increases recovery time.
