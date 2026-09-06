@@ -5,7 +5,6 @@ import com.example.investigationservice.model.AiPrompt;
 import com.example.investigationservice.model.InvestigationContext;
 import com.example.investigationservice.service.explanation.ai.prompt.InvestigationPromptFactory;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
@@ -24,7 +23,7 @@ import java.util.Optional;
 @Slf4j
 public class ModelAiExplanationGenerator implements AiExplanationGenerator {
 
-    private final ChatClient chatClient;
+    private final ChatClientWrapper chatClientWrapper;
     private final InvestigationPromptFactory promptFactory;
     private final String provider;
     private final String model;
@@ -32,18 +31,18 @@ public class ModelAiExplanationGenerator implements AiExplanationGenerator {
     /**
      * Creates the model-backed explanation generator.
      *
-     * @param chatClientBuilder configured language-model client builder
+     * @param chatClientWrapper model communication boundary
      * @param promptFactory application-owned prompt factory
      * @param provider configured provider identifier
      * @param model configured model identifier
      */
     public ModelAiExplanationGenerator(
-            ChatClient.Builder chatClientBuilder,
+            ChatClientWrapper chatClientWrapper,
             InvestigationPromptFactory promptFactory,
             @Value("${app.ai.provider}") String provider,
             @Value("${app.ai.model}") String model
     ) {
-        this.chatClient = chatClientBuilder.build();
+        this.chatClientWrapper = chatClientWrapper;
         this.promptFactory = promptFactory;
         this.provider = provider;
         this.model = model;
@@ -82,12 +81,6 @@ public class ModelAiExplanationGenerator implements AiExplanationGenerator {
                 model
         );
 
-        AiExplanationResponse response = chatClient.prompt()
-                .system(prompt.systemInstructions())
-                .user(prompt.userPrompt())
-                .call()
-                .entity(AiExplanationResponse.class);
-
-        return Optional.ofNullable(response);
+        return chatClientWrapper.generate(prompt);
     }
 }

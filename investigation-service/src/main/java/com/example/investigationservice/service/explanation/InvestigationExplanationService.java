@@ -6,6 +6,7 @@ import com.example.investigationservice.model.ExplanationValidationResult;
 import com.example.investigationservice.model.InvestigationContext;
 import com.example.investigationservice.model.InvestigationExplanation;
 import com.example.investigationservice.service.explanation.ai.AiExplanationGenerator;
+import com.example.investigationservice.service.explanation.ai.ModelCallTimeoutException;
 import com.example.investigationservice.service.explanation.deterministic.DeterministicExplanationGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -74,6 +75,15 @@ public class InvestigationExplanationService {
                         model
                 );
             }
+        } catch (ModelCallTimeoutException exception) {
+            metrics.recordAiRequestTimeout(promptVersion, provider, model);
+            log.warn(
+                    "[INVESTIGATION-SERVICE][EXPLANATION] AI explanation request timed out "
+                            + "for order {} using provider {} and model {}; using fallback",
+                    context.orderId(),
+                    provider,
+                    model
+            );
         } catch (RuntimeException exception) {
             log.warn(
                     "[INVESTIGATION-SERVICE][EXPLANATION] AI explanation generation failed "

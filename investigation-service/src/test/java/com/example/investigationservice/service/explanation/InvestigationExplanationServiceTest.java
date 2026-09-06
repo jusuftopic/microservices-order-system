@@ -6,10 +6,12 @@ import com.example.investigationservice.model.InvestigationContext;
 import com.example.investigationservice.model.InvestigationEvidence;
 import com.example.investigationservice.model.InvestigationExplanation;
 import com.example.investigationservice.service.explanation.ai.AiExplanationGenerator;
+import com.example.investigationservice.service.explanation.ai.ModelCallTimeoutException;
 import com.example.investigationservice.service.explanation.deterministic.DeterministicExplanationGenerator;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 
+import java.net.SocketTimeoutException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -28,6 +30,8 @@ class InvestigationExplanationServiceTest {
             "investigation.ai.responses.missing.total";
     private static final String INVALID_RESPONSES_METRIC =
             "investigation.ai.responses.invalid.total";
+    private static final String TIMEOUTS_METRIC =
+            "investigation.ai.requests.timeout.total";
     private static final String REQUESTS_METRIC =
             "investigation.explanations.requests.total";
     private static final String AI_EXPLANATIONS_METRIC =
@@ -104,6 +108,39 @@ class InvestigationExplanationServiceTest {
         assertThat(explanation.source())
                 .isEqualTo(InvestigationExplanation.Source.NONE);
         assertFinalOutcomes(fixture.registry(), 0.0, 0.0, 1.0);
+    }
+
+    @Test
+    void recordsTimeoutAndReturnsDeterministicFallback() {
+        AiExplanationGenerator aiGenerator = mock(AiExplanationGenerator.class);
+        DeterministicExplanationGenerator deterministicGenerator =
+                mock(DeterministicExplanationGenerator.class);
+        SimpleMeterRegistry registry = new SimpleMeterRegistry();
+        InvestigationContext context = context();
+
+        when(aiGenerator.generate(context))
+                .thenThrow(new ModelCallTimeoutException(
+                        new SocketTimeoutException("timeout")
+                ));
+        when(aiGenerator.promptVersion()).thenReturn(PROMPT_VERSION);
+        when(aiGenerator.provider()).thenReturn(PROVIDER);
+        when(aiGenerator.model()).thenReturn(MODEL);
+        when(deterministicGenerator.generate(context))
+                .thenReturn(Optional.of("Deterministic explanation"));
+
+        InvestigationExplanationService service = new InvestigationExplanationService(
+                aiGenerator,
+                new ExplanationValidationService(),
+                deterministicGenerator,
+                new InvestigationMetrics(registry)
+        );
+
+        InvestigationExplanation explanation = service.explain(context);
+
+        assertThat(explanation.source())
+                .isEqualTo(InvestigationExplanation.Source.DETERMINISTIC);
+        assertThat(promptCounter(registry, TIMEOUTS_METRIC)).isEqualTo(1.0);
+        assertFinalOutcomes(registry, 0.0, 1.0, 0.0);
     }
 
     private TestFixture fixture(

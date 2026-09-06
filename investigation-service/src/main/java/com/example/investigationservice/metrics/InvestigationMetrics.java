@@ -16,6 +16,8 @@ public class InvestigationMetrics {
             "investigation.ai.responses.missing.total";
     static final String AI_RESPONSES_INVALID_METRIC =
             "investigation.ai.responses.invalid.total";
+    static final String AI_REQUEST_TIMEOUTS_METRIC =
+            "investigation.ai.requests.timeout.total";
     static final String EXPLANATION_REQUESTS_METRIC =
             "investigation.explanations.requests.total";
     static final String AI_EXPLANATIONS_METRIC =
@@ -97,6 +99,27 @@ public class InvestigationMetrics {
                 .tag("model", model)
                 .register(registry)
                 .increment();
+    }
+
+    /**
+     * Records a model request that exceeded its configured time budget.
+     *
+     * @param promptVersion prompt contract used for the request
+     * @param provider configured AI provider
+     * @param model configured AI model
+     */
+    public void recordAiRequestTimeout(
+            String promptVersion,
+            String provider,
+            String model
+    ) {
+        incrementAiMetric(
+                AI_REQUEST_TIMEOUTS_METRIC,
+                "AI explanation requests that exceeded their timeout",
+                promptVersion,
+                provider,
+                model
+        );
     }
 
     /**
