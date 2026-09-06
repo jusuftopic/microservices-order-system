@@ -1,4 +1,4 @@
-package com.example.investigationservice.service.explanation.ai;
+package com.example.investigationservice.exception;
 
 /**
  * Signals that the external model did not complete within its request budget.

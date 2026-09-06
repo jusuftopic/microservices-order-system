@@ -6,7 +6,7 @@ import com.example.investigationservice.model.ExplanationValidationResult;
 import com.example.investigationservice.model.InvestigationContext;
 import com.example.investigationservice.model.InvestigationExplanation;
 import com.example.investigationservice.service.explanation.ai.AiExplanationGenerator;
-import com.example.investigationservice.service.explanation.ai.ModelCallTimeoutException;
+import com.example.investigationservice.exception.ModelCallTimeoutException;
 import com.example.investigationservice.service.explanation.deterministic.DeterministicExplanationGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

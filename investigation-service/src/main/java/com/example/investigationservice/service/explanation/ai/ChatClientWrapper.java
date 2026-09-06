@@ -1,5 +1,6 @@
 package com.example.investigationservice.service.explanation.ai;
 
+import com.example.investigationservice.exception.ModelCallTimeoutException;
 import com.example.investigationservice.metrics.InvestigationMetrics;
 import com.example.investigationservice.model.AiExplanationResponse;
 import com.example.investigationservice.model.AiPrompt;
@@ -140,6 +141,7 @@ public class ChatClientWrapper {
         IntervalFunction intervalFunction = jitter == 0.0
                 ? IntervalFunction.of(initialBackoff)
                 : IntervalFunction.ofRandomized(initialBackoff, jitter);
+
         RetryConfig retryConfig = RetryConfig.custom()
                 .maxAttempts(maxAttempts)
                 .intervalFunction(intervalFunction)
@@ -191,11 +193,8 @@ public class ChatClientWrapper {
         }
     }
 
-    private void recordFailure(
-            AiPrompt prompt,
-            int attempt,
-            RuntimeException exception
-    ) {
+    private void recordFailure(AiPrompt prompt, int attempt, RuntimeException exception)
+    {
         FailureType failureType = classify(exception);
         metrics.recordAiRequestFailure(
                 prompt.version(), failureType.metricValue, provider, model

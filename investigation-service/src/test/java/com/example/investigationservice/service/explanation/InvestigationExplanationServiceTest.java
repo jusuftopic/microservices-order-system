@@ -6,7 +6,7 @@ import com.example.investigationservice.model.InvestigationContext;
 import com.example.investigationservice.model.InvestigationEvidence;
 import com.example.investigationservice.model.InvestigationExplanation;
 import com.example.investigationservice.service.explanation.ai.AiExplanationGenerator;
-import com.example.investigationservice.service.explanation.ai.ModelCallTimeoutException;
+import com.example.investigationservice.exception.ModelCallTimeoutException;
 import com.example.investigationservice.service.explanation.deterministic.DeterministicExplanationGenerator;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
