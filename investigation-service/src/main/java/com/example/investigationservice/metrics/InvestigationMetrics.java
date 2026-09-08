@@ -1,6 +1,7 @@
 package com.example.investigationservice.metrics;
 
 import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.stereotype.Component;
 
@@ -36,7 +37,14 @@ public class InvestigationMetrics {
     private final Counter lifecycleConcurrentInserts;
     private final Counter deterministicExplanations;
     private final Counter unavailableExplanations;
-    private final MeterRegistry registry;
+    private final Meter.MeterProvider<Counter> missingAiResponses;
+    private final Meter.MeterProvider<Counter> invalidAiResponses;
+    private final Meter.MeterProvider<Counter> aiRequestTimeouts;
+    private final Meter.MeterProvider<Counter> aiRequestFailures;
+    private final Meter.MeterProvider<Counter> aiRequestRetries;
+    private final Meter.MeterProvider<Counter> aiCircuitTransitions;
+    private final Meter.MeterProvider<Counter> explanationRequests;
+    private final Meter.MeterProvider<Counter> aiExplanations;
 
     /**
      * Registers metrics that describe lifecycle evidence processing.
@@ -44,7 +52,6 @@ public class InvestigationMetrics {
      * @param registry application meter registry
      */
     public InvestigationMetrics(MeterRegistry registry) {
-        this.registry = registry;
         lifecycleConcurrentInserts = Counter.builder(CONCURRENT_INSERTS_METRIC)
                 .description("Concurrent lifecycle evidence inserts detected by message ID")
                 .register(registry);
@@ -54,6 +61,30 @@ public class InvestigationMetrics {
         unavailableExplanations = Counter.builder(UNAVAILABLE_EXPLANATIONS_METRIC)
                 .description("Explanation requests completed without an available explanation")
                 .register(registry);
+        missingAiResponses = Counter.builder(AI_RESPONSES_MISSING_METRIC)
+                .description("AI explanation requests completed without a response")
+                .withRegistry(registry);
+        invalidAiResponses = Counter.builder(AI_RESPONSES_INVALID_METRIC)
+                .description("AI explanation responses rejected by validation")
+                .withRegistry(registry);
+        aiRequestTimeouts = Counter.builder(AI_REQUEST_TIMEOUTS_METRIC)
+                .description("AI explanation requests that exceeded their timeout")
+                .withRegistry(registry);
+        aiRequestFailures = Counter.builder(AI_REQUEST_FAILURES_METRIC)
+                .description("Failed AI explanation request attempts")
+                .withRegistry(registry);
+        aiRequestRetries = Counter.builder(AI_REQUEST_RETRIES_METRIC)
+                .description("AI explanation request retry attempts")
+                .withRegistry(registry);
+        aiCircuitTransitions = Counter.builder(AI_CIRCUIT_TRANSITIONS_METRIC)
+                .description("AI circuit breaker state transitions")
+                .withRegistry(registry);
+        explanationRequests = Counter.builder(EXPLANATION_REQUESTS_METRIC)
+                .description("Explanation requests processed")
+                .withRegistry(registry);
+        aiExplanations = Counter.builder(AI_EXPLANATIONS_METRIC)
+                .description("Validated AI explanations selected")
+                .withRegistry(registry);
     }
 
     /**
@@ -76,11 +107,11 @@ public class InvestigationMetrics {
             String provider,
             String model
     ) {
-        incrementAiMetric(AI_RESPONSES_MISSING_METRIC,
-                "AI explanation requests completed without a response",
-                promptVersion,
-                provider,
-                model);
+        missingAiResponses.withTags(
+                "prompt_version", promptVersion,
+                "provider", provider,
+                "model", model
+        ).increment();
     }
 
     /**
@@ -97,14 +128,12 @@ public class InvestigationMetrics {
             String provider,
             String model
     ) {
-        Counter.builder(AI_RESPONSES_INVALID_METRIC)
-                .description("AI explanation responses rejected by validation")
-                .tag("prompt_version", promptVersion)
-                .tag("validation_reason", validationReason)
-                .tag("provider", provider)
-                .tag("model", model)
-                .register(registry)
-                .increment();
+        invalidAiResponses.withTags(
+                "prompt_version", promptVersion,
+                "validation_reason", validationReason,
+                "provider", provider,
+                "model", model
+        ).increment();
     }
 
     /**
@@ -119,13 +148,11 @@ public class InvestigationMetrics {
             String provider,
             String model
     ) {
-        incrementAiMetric(
-                AI_REQUEST_TIMEOUTS_METRIC,
-                "AI explanation requests that exceeded their timeout",
-                promptVersion,
-                provider,
-                model
-        );
+        aiRequestTimeouts.withTags(
+                "prompt_version", promptVersion,
+                "provider", provider,
+                "model", model
+        ).increment();
     }
 
     /**
@@ -142,14 +169,12 @@ public class InvestigationMetrics {
             String provider,
             String model
     ) {
-        Counter.builder(AI_REQUEST_FAILURES_METRIC)
-                .description("Failed AI explanation request attempts")
-                .tag("prompt_version", promptVersion)
-                .tag("failure_type", failureType)
-                .tag("provider", provider)
-                .tag("model", model)
-                .register(registry)
-                .increment();
+        aiRequestFailures.withTags(
+                "prompt_version", promptVersion,
+                "failure_type", failureType,
+                "provider", provider,
+                "model", model
+        ).increment();
     }
 
     /**
@@ -164,13 +189,11 @@ public class InvestigationMetrics {
             String provider,
             String model
     ) {
-        incrementAiMetric(
-                AI_REQUEST_RETRIES_METRIC,
-                "AI explanation request retry attempts",
-                promptVersion,
-                provider,
-                model
-        );
+        aiRequestRetries.withTags(
+                "prompt_version", promptVersion,
+                "provider", provider,
+                "model", model
+        ).increment();
     }
 
     /**
@@ -187,14 +210,12 @@ public class InvestigationMetrics {
             String provider,
             String model
     ) {
-        Counter.builder(AI_CIRCUIT_TRANSITIONS_METRIC)
-                .description("AI circuit breaker state transitions")
-                .tag("from_state", fromState)
-                .tag("to_state", toState)
-                .tag("provider", provider)
-                .tag("model", model)
-                .register(registry)
-                .increment();
+        aiCircuitTransitions.withTags(
+                "from_state", fromState,
+                "to_state", toState,
+                "provider", provider,
+                "model", model
+        ).increment();
     }
 
     /**
@@ -204,12 +225,10 @@ public class InvestigationMetrics {
      * @param model configured AI model
      */
     public void recordExplanationRequest(String provider, String model) {
-        incrementProviderMetric(
-                EXPLANATION_REQUESTS_METRIC,
-                "Explanation requests processed",
-                provider,
-                model
-        );
+        explanationRequests.withTags(
+                "provider", provider,
+                "model", model
+        ).increment();
     }
 
     /**
@@ -224,11 +243,11 @@ public class InvestigationMetrics {
             String provider,
             String model
     ) {
-        incrementAiMetric(AI_EXPLANATIONS_METRIC,
-                "Validated AI explanations selected",
-                promptVersion,
-                provider,
-                model);
+        aiExplanations.withTags(
+                "prompt_version", promptVersion,
+                "provider", provider,
+                "model", model
+        ).increment();
     }
 
     /**
@@ -245,33 +264,4 @@ public class InvestigationMetrics {
         unavailableExplanations.increment();
     }
 
-    private void incrementAiMetric(
-            String metricName,
-            String description,
-            String promptVersion,
-            String provider,
-            String model
-    ) {
-        Counter.builder(metricName)
-                .description(description)
-                .tag("prompt_version", promptVersion)
-                .tag("provider", provider)
-                .tag("model", model)
-                .register(registry)
-                .increment();
-    }
-
-    private void incrementProviderMetric(
-            String metricName,
-            String description,
-            String provider,
-            String model
-    ) {
-        Counter.builder(metricName)
-                .description(description)
-                .tag("provider", provider)
-                .tag("model", model)
-                .register(registry)
-                .increment();
-    }
 }
