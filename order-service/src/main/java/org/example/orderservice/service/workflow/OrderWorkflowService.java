@@ -6,7 +6,7 @@ import org.example.messagingstarter.contracts.events.OrderLifecycleTransitionedE
 import org.example.messagingstarter.contracts.lifecycle.LifecycleReasonCode;
 import org.example.messagingstarter.contracts.lifecycle.LifecycleTrigger;
 import org.example.orderservice.entity.Order;
-import org.example.orderservice.enums.OrderStatus;
+import org.example.messagingstarter.contracts.lifecycle.OrderStatus;
 import org.example.orderservice.repository.OrderRepository;
 import org.example.orderservice.service.outbox.OrderOutboxService;
 import org.springframework.stereotype.Service;

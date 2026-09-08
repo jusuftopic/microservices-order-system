@@ -1,8 +1,12 @@
 package com.example.investigationservice.service.explanation;
 
 import com.example.investigationservice.metrics.InvestigationMetrics;
+import com.example.investigationservice.model.AiExplanationResponse;
+import com.example.investigationservice.model.ExplanationValidationResult;
 import com.example.investigationservice.model.InvestigationContext;
 import com.example.investigationservice.model.InvestigationExplanation;
+import com.example.investigationservice.exception.ModelCallTimeoutException;
+import com.example.investigationservice.exception.ModelCircuitOpenException;
 import com.example.investigationservice.service.explanation.ai.AiExplanationGenerator;
 import com.example.investigationservice.service.explanation.deterministic.DeterministicExplanationGenerator;
 import lombok.RequiredArgsConstructor;
@@ -31,32 +35,73 @@ public class InvestigationExplanationService {
      * @return selected explanation and its source
      */
     public InvestigationExplanation explain(InvestigationContext context) {
-        metrics.recordExplanationRequest();
+        String promptVersion = aiExplanationGenerator.promptVersion();
+        String provider = aiExplanationGenerator.provider();
+        String model = aiExplanationGenerator.model();
+        metrics.recordExplanationRequest(provider, model);
 
         try {
-            Optional<String> candidateExplanation = aiExplanationGenerator.generate(context);
-            if (candidateExplanation.isEmpty()) {
-                metrics.recordMissingAiResponse();
+            Optional<AiExplanationResponse> candidate = aiExplanationGenerator.generate(context);
+            if (candidate.isEmpty()) {
+                metrics.recordMissingAiResponse(promptVersion, provider, model);
                 log.warn(
                         "[INVESTIGATION-SERVICE][EXPLANATION] AI generator returned no response "
-                                + "for order {}; using fallback",
-                        context.orderId()
+                                + "for order {} using provider {} and model {}; using fallback",
+                        context.orderId(),
+                        provider,
+                        model
                 );
-            } else if (validationService.isValid(candidateExplanation.get(), context)) {
-                metrics.recordAiExplanation();
-                log.debug("[INVESTIGATION-SERVICE][EXPLANATION] Selected AI explanation for order {}", context.orderId());
-                return new InvestigationExplanation(candidateExplanation, InvestigationExplanation.Source.AI);
             } else {
-                metrics.recordInvalidAiResponse();
-                log.warn(
-                        "[INVESTIGATION-SERVICE][EXPLANATION] AI explanation validation failed "
-                                + "for order {}; using fallback",
-                        context.orderId()
+                ExplanationValidationResult validation =
+                        validationService.validate(candidate.get(), context);
+                if (validation.valid()) {
+                    metrics.recordAiExplanation(promptVersion, provider, model);
+                    log.debug(
+                            "[INVESTIGATION-SERVICE][EXPLANATION] "
+                                    + "Selected AI explanation for order {} using provider {} and model {}",
+                            context.orderId(),
+                            provider,
+                            model
+                    );
+                    return new InvestigationExplanation(
+                            Optional.of(candidate.get().explanation()),
+                            InvestigationExplanation.Source.AI
+                    );
+                }
+
+                metrics.recordInvalidAiResponse(
+                        promptVersion,
+                        validation.failureReason().name(),
+                        provider,
+                        model
                 );
             }
-        } catch (RuntimeException exception) {
-            log.warn("[INVESTIGATION-SERVICE][EXPLANATION] AI explanation generation failed for order {}; using fallback",
-                    context.orderId(), exception);
+        } catch (ModelCircuitOpenException exception) {
+            log.debug(
+                    "[INVESTIGATION-SERVICE][EXPLANATION] AI provider circuit is open "
+                            + "for provider {} and model {}; using fallback for order {}",
+                    provider,
+                    model,
+                    context.orderId()
+            );
+        } catch (ModelCallTimeoutException exception) {
+            metrics.recordAiRequestTimeout(promptVersion, provider, model);
+            log.warn(
+                    "[INVESTIGATION-SERVICE][EXPLANATION] AI explanation request timed out "
+                            + "for order {} using provider {} and model {}; using fallback",
+                    context.orderId(),
+                    provider,
+                    model
+            );
+        } catch (Exception exception) {
+            log.warn(
+                    "[INVESTIGATION-SERVICE][EXPLANATION] AI explanation generation failed "
+                            + "for order {} using provider {} and model {}; using fallback",
+                    context.orderId(),
+                    provider,
+                    model,
+                    exception
+            );
         }
 
         Optional<String> deterministic = deterministicGenerator.generate(context);

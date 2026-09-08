@@ -3,7 +3,7 @@ package org.example.orderservice.integration;
 import org.example.messagingstarter.EventConstants;
 import org.example.messagingstarter.contracts.events.InventoryReservedEvent;
 import org.example.orderservice.entity.Order;
-import org.example.orderservice.enums.OrderStatus;
+import org.example.messagingstarter.contracts.lifecycle.OrderStatus;
 import org.example.messagingstarter.inbox.repository.InboxRepository;
 import org.example.orderservice.repository.OrderRepository;
 import org.example.messagingstarter.outbox.repository.OutboxRepository;

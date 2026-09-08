@@ -132,9 +132,16 @@ source of authoritative business facts.
 Investigation queries are coordinated by an application service that reads the
 local timeline and delegates explanation selection to a dedicated component.
 AI generation is accessed through a provider-independent port; provider SDKs
-and transport contracts remain in adapters outside the application workflow.
-The primary adapter currently returns a hardcoded response without contacting
-an external model provider.
+and Spring AI types remain in adapters outside the application workflow. The
+mock adapter is the configured default and does not contact an external model
+provider.
+
+The versioned `order-investigation-v1` prompt sends only the restricted
+investigation context and treats all supplied evidence as data. The structured
+AI candidate contains explanation text and the status, reason, decision and
+compensation codes represented by that text. These codes are not authoritative;
+they make the generated explanation deterministically verifiable against the
+timeline before it is exposed.
 The explanation component validates AI output before selecting it and delegates
 to the deterministic generator when generation or validation fails. The
 deterministic generator explains the latest timeline evidence through the

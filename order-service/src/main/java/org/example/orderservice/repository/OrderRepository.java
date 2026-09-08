@@ -17,9 +17,9 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             FROM Order o
             LEFT JOIN FETCH o.items
             WHERE o.status NOT IN (
-                org.example.orderservice.enums.OrderStatus.COMPLETED,
-                org.example.orderservice.enums.OrderStatus.FAILED,
-                org.example.orderservice.enums.OrderStatus.TIMED_OUT
+                org.example.messagingstarter.contracts.lifecycle.OrderStatus.COMPLETED,
+                org.example.messagingstarter.contracts.lifecycle.OrderStatus.FAILED,
+                org.example.messagingstarter.contracts.lifecycle.OrderStatus.TIMED_OUT
             )
             AND COALESCE(o.updatedAt, o.createdAt) < :threshold
             """)

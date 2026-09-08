@@ -122,6 +122,11 @@ This allows teams to identify abnormal business behavior without inspecting indi
 
 The dashboard therefore serves as the primary operational entry point for monitoring the health of the distributed workflow.
 
+A dedicated Investigation Service dashboard complements this system view. It
+shows whether explanations are served by AI or deterministic fallback, why AI
+responses are rejected, and when retries, timeouts or circuit-breaker changes
+indicate degradation of the external model dependency.
+
 ## From Detection to Diagnosis
 
 Observability supports a structured investigation process.

@@ -42,5 +42,11 @@ http:
 
     investigation-service:
       loadBalancer:
+        serversTransport: investigation-api-timeout
         servers:
           - url: http://investigation-service:8085
+
+  serversTransports:
+    investigation-api-timeout:
+      forwardingTimeouts:
+        responseHeaderTimeout: 8s

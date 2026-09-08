@@ -16,6 +16,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.hasSize;
+import static com.example.investigationservice.service.explanation.ai.MockAiExplanationGenerator.MODEL;
+import static com.example.investigationservice.service.explanation.ai.MockAiExplanationGenerator.PROVIDER;
+import static com.example.investigationservice.service.explanation.ai.prompt.InvestigationPromptFactory.PROMPT_VERSION;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -53,6 +56,10 @@ class OrderInvestigationDeterministicE2ETest {
     @Test
     void retrievesOrderedTimelineAndDeterministicExplanation() throws Exception {
         when(aiExplanationGenerator.generate(any())).thenReturn(Optional.empty());
+        when(aiExplanationGenerator.provider()).thenReturn(PROVIDER);
+        when(aiExplanationGenerator.model()).thenReturn(MODEL);
+        when(aiExplanationGenerator.promptVersion())
+                .thenReturn(PROMPT_VERSION);
 
         repository.save(evidence(
                 UUID.fromString("8f711b2d-5350-4d3e-8233-a0e9930139ce"),

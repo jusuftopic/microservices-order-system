@@ -1,0 +1,375 @@
+{
+  "datasetVersion": "order-investigation-evaluation-v1",
+  "description": "Synthetic lifecycle timelines used to evaluate grounded order explanations.",
+  "cases": [
+    {
+      "id": "inventory-reserved-payment-requested",
+      "category": "in-progress",
+      "description": "Inventory is reserved and payment processing has been requested but not confirmed.",
+      "context": {
+        "orderId": 1001,
+        "currentStatus": "INVENTORY_RESERVE_COMPLETED",
+        "evidence": [
+          {
+            "sourceService": "INVENTORY_SERVICE",
+            "sourceEventType": "EVENT_INVENTORY_RESERVED",
+            "previousStatus": "CREATED",
+            "newStatus": "INVENTORY_RESERVE_COMPLETED",
+            "reasonCode": "INVENTORY_RESERVED",
+            "decisionCode": "PROCESS_PAYMENT",
+            "decisionTargetService": "PAYMENT_SERVICE",
+            "compensationRequired": false,
+            "compensationType": null,
+            "occurredAt": "2026-08-20T10:00:00Z",
+            "eventVersion": 1
+          }
+        ]
+      },
+      "expected": {
+        "currentStatus": "INVENTORY_RESERVE_COMPLETED",
+        "reasonCode": "INVENTORY_RESERVED",
+        "decisionCode": "PROCESS_PAYMENT",
+        "compensationType": null,
+        "requiredFacts": [
+          "Inventory was reserved.",
+          "Payment processing was requested."
+        ],
+        "forbiddenClaims": [
+          "Payment completed.",
+          "The order completed."
+        ]
+      }
+    },
+    {
+      "id": "inventory-reservation-failed",
+      "category": "failure",
+      "description": "Inventory reservation failed and no downstream action is represented.",
+      "context": {
+        "orderId": 1002,
+        "currentStatus": "INVENTORY_RESERVE_FAILED",
+        "evidence": [
+          {
+            "sourceService": "INVENTORY_SERVICE",
+            "sourceEventType": "EVENT_INVENTORY_FAILED",
+            "previousStatus": "CREATED",
+            "newStatus": "INVENTORY_RESERVE_FAILED",
+            "reasonCode": "INVENTORY_RESERVATION_FAILED",
+            "decisionCode": null,
+            "decisionTargetService": null,
+            "compensationRequired": false,
+            "compensationType": null,
+            "occurredAt": "2026-08-20T10:01:00Z",
+            "eventVersion": 1
+          }
+        ]
+      },
+      "expected": {
+        "currentStatus": "INVENTORY_RESERVE_FAILED",
+        "reasonCode": "INVENTORY_RESERVATION_FAILED",
+        "decisionCode": null,
+        "compensationType": null,
+        "requiredFacts": [
+          "Inventory could not be reserved."
+        ],
+        "forbiddenClaims": [
+          "Payment was attempted.",
+          "Inventory was released."
+        ]
+      }
+    },
+    {
+      "id": "payment-completed-inventory-commit-requested",
+      "category": "in-progress",
+      "description": "Payment succeeded and inventory commit is requested but not confirmed.",
+      "context": {
+        "orderId": 1003,
+        "currentStatus": "PAYMENT_COMPLETED",
+        "evidence": [
+          {
+            "sourceService": "INVENTORY_SERVICE",
+            "sourceEventType": "EVENT_INVENTORY_RESERVED",
+            "previousStatus": "CREATED",
+            "newStatus": "INVENTORY_RESERVE_COMPLETED",
+            "reasonCode": "INVENTORY_RESERVED",
+            "decisionCode": "PROCESS_PAYMENT",
+            "decisionTargetService": "PAYMENT_SERVICE",
+            "compensationRequired": false,
+            "compensationType": null,
+            "occurredAt": "2026-08-20T10:02:00Z",
+            "eventVersion": 1
+          },
+          {
+            "sourceService": "PAYMENT_SERVICE",
+            "sourceEventType": "EVENT_PAYMENT_SUCCESS",
+            "previousStatus": "INVENTORY_RESERVE_COMPLETED",
+            "newStatus": "PAYMENT_COMPLETED",
+            "reasonCode": "PAYMENT_COMPLETED",
+            "decisionCode": "COMMIT_INVENTORY",
+            "decisionTargetService": "INVENTORY_SERVICE",
+            "compensationRequired": false,
+            "compensationType": null,
+            "occurredAt": "2026-08-20T10:03:00Z",
+            "eventVersion": 1
+          }
+        ]
+      },
+      "expected": {
+        "currentStatus": "PAYMENT_COMPLETED",
+        "reasonCode": "PAYMENT_COMPLETED",
+        "decisionCode": "COMMIT_INVENTORY",
+        "compensationType": null,
+        "requiredFacts": [
+          "Payment completed.",
+          "Inventory commit was requested."
+        ],
+        "forbiddenClaims": [
+          "Inventory commit completed.",
+          "The order completed."
+        ]
+      }
+    },
+    {
+      "id": "payment-failed-inventory-release-requested",
+      "category": "compensation",
+      "description": "Payment failed and inventory release is required but not confirmed.",
+      "context": {
+        "orderId": 1004,
+        "currentStatus": "PAYMENT_FAILED",
+        "evidence": [
+          {
+            "sourceService": "INVENTORY_SERVICE",
+            "sourceEventType": "EVENT_INVENTORY_RESERVED",
+            "previousStatus": "CREATED",
+            "newStatus": "INVENTORY_RESERVE_COMPLETED",
+            "reasonCode": "INVENTORY_RESERVED",
+            "decisionCode": "PROCESS_PAYMENT",
+            "decisionTargetService": "PAYMENT_SERVICE",
+            "compensationRequired": false,
+            "compensationType": null,
+            "occurredAt": "2026-08-20T10:04:00Z",
+            "eventVersion": 1
+          },
+          {
+            "sourceService": "PAYMENT_SERVICE",
+            "sourceEventType": "EVENT_PAYMENT_FAILED",
+            "previousStatus": "INVENTORY_RESERVE_COMPLETED",
+            "newStatus": "PAYMENT_FAILED",
+            "reasonCode": "PAYMENT_FAILED",
+            "decisionCode": "RELEASE_INVENTORY",
+            "decisionTargetService": "INVENTORY_SERVICE",
+            "compensationRequired": true,
+            "compensationType": "INVENTORY_RELEASE",
+            "occurredAt": "2026-08-20T10:05:00Z",
+            "eventVersion": 1
+          }
+        ]
+      },
+      "expected": {
+        "currentStatus": "PAYMENT_FAILED",
+        "reasonCode": "PAYMENT_FAILED",
+        "decisionCode": "RELEASE_INVENTORY",
+        "compensationType": "INVENTORY_RELEASE",
+        "requiredFacts": [
+          "Payment failed.",
+          "Inventory release was requested or is required."
+        ],
+        "forbiddenClaims": [
+          "Inventory release completed.",
+          "Payment will be refunded."
+        ]
+      }
+    },
+    {
+      "id": "successful-order-notification-requested",
+      "category": "success",
+      "description": "The order workflow completed and notification is requested but delivery is not confirmed.",
+      "context": {
+        "orderId": 1005,
+        "currentStatus": "COMPLETED",
+        "evidence": [
+          {
+            "sourceService": "INVENTORY_SERVICE",
+            "sourceEventType": "EVENT_INVENTORY_COMMIT_COMPLETED",
+            "previousStatus": "PAYMENT_COMPLETED",
+            "newStatus": "INVENTORY_COMMIT_COMPLETED",
+            "reasonCode": "INVENTORY_COMMITTED",
+            "decisionCode": null,
+            "decisionTargetService": null,
+            "compensationRequired": false,
+            "compensationType": null,
+            "occurredAt": "2026-08-20T10:06:00Z",
+            "eventVersion": 1
+          },
+          {
+            "sourceService": "INVENTORY_SERVICE",
+            "sourceEventType": "EVENT_INVENTORY_COMMIT_COMPLETED",
+            "previousStatus": "INVENTORY_COMMIT_COMPLETED",
+            "newStatus": "COMPLETED",
+            "reasonCode": "ORDER_WORKFLOW_COMPLETED",
+            "decisionCode": "SEND_NOTIFICATION",
+            "decisionTargetService": "NOTIFICATION_SERVICE",
+            "compensationRequired": false,
+            "compensationType": null,
+            "occurredAt": "2026-08-20T10:06:01Z",
+            "eventVersion": 1
+          }
+        ]
+      },
+      "expected": {
+        "currentStatus": "COMPLETED",
+        "reasonCode": "ORDER_WORKFLOW_COMPLETED",
+        "decisionCode": "SEND_NOTIFICATION",
+        "compensationType": null,
+        "requiredFacts": [
+          "Inventory commit completed.",
+          "The order completed.",
+          "Notification was requested."
+        ],
+        "forbiddenClaims": [
+          "The notification was delivered."
+        ]
+      }
+    },
+    {
+      "id": "inventory-release-compensation-completed",
+      "category": "compensation",
+      "description": "Inventory release completed after payment failure and the order reached FAILED.",
+      "context": {
+        "orderId": 1006,
+        "currentStatus": "FAILED",
+        "evidence": [
+          {
+            "sourceService": "PAYMENT_SERVICE",
+            "sourceEventType": "EVENT_PAYMENT_FAILED",
+            "previousStatus": "INVENTORY_RESERVE_COMPLETED",
+            "newStatus": "PAYMENT_FAILED",
+            "reasonCode": "PAYMENT_FAILED",
+            "decisionCode": "RELEASE_INVENTORY",
+            "decisionTargetService": "INVENTORY_SERVICE",
+            "compensationRequired": true,
+            "compensationType": "INVENTORY_RELEASE",
+            "occurredAt": "2026-08-20T10:07:00Z",
+            "eventVersion": 1
+          },
+          {
+            "sourceService": "INVENTORY_SERVICE",
+            "sourceEventType": "EVENT_INVENTORY_RELEASE_COMPLETED",
+            "previousStatus": "PAYMENT_FAILED",
+            "newStatus": "FAILED",
+            "reasonCode": "COMPENSATION_COMPLETED",
+            "decisionCode": "SEND_NOTIFICATION",
+            "decisionTargetService": "NOTIFICATION_SERVICE",
+            "compensationRequired": false,
+            "compensationType": null,
+            "occurredAt": "2026-08-20T10:08:00Z",
+            "eventVersion": 1
+          }
+        ]
+      },
+      "expected": {
+        "currentStatus": "FAILED",
+        "reasonCode": "COMPENSATION_COMPLETED",
+        "decisionCode": "SEND_NOTIFICATION",
+        "compensationType": null,
+        "requiredFacts": [
+          "Payment failed.",
+          "Inventory release completed.",
+          "The order failed."
+        ],
+        "forbiddenClaims": [
+          "The order completed successfully.",
+          "The notification was delivered."
+        ]
+      }
+    },
+    {
+      "id": "inventory-commit-failed-refund-requested",
+      "category": "compensation",
+      "description": "Inventory commit failed after payment and a refund is required but not confirmed.",
+      "context": {
+        "orderId": 1007,
+        "currentStatus": "FAILED",
+        "evidence": [
+          {
+            "sourceService": "INVENTORY_SERVICE",
+            "sourceEventType": "EVENT_INVENTORY_COMMIT_FAILED",
+            "previousStatus": "PAYMENT_COMPLETED",
+            "newStatus": "INVENTORY_COMMIT_FAILED",
+            "reasonCode": "INVENTORY_COMMIT_FAILED",
+            "decisionCode": null,
+            "decisionTargetService": null,
+            "compensationRequired": false,
+            "compensationType": null,
+            "occurredAt": "2026-08-20T10:09:00Z",
+            "eventVersion": 1
+          },
+          {
+            "sourceService": "INVENTORY_SERVICE",
+            "sourceEventType": "EVENT_INVENTORY_COMMIT_FAILED",
+            "previousStatus": "INVENTORY_COMMIT_FAILED",
+            "newStatus": "FAILED",
+            "reasonCode": "PAYMENT_REFUND_REQUIRED",
+            "decisionCode": "REFUND_PAYMENT",
+            "decisionTargetService": "PAYMENT_SERVICE",
+            "compensationRequired": true,
+            "compensationType": "PAYMENT_REFUND",
+            "occurredAt": "2026-08-20T10:09:01Z",
+            "eventVersion": 1
+          }
+        ]
+      },
+      "expected": {
+        "currentStatus": "FAILED",
+        "reasonCode": "PAYMENT_REFUND_REQUIRED",
+        "decisionCode": "REFUND_PAYMENT",
+        "compensationType": "PAYMENT_REFUND",
+        "requiredFacts": [
+          "Inventory commit failed.",
+          "A payment refund was requested or is required."
+        ],
+        "forbiddenClaims": [
+          "The refund completed.",
+          "The order completed successfully."
+        ]
+      }
+    },
+    {
+      "id": "order-processing-timed-out",
+      "category": "timeout",
+      "description": "The order timed out and requires compensation based on its last state.",
+      "context": {
+        "orderId": 1008,
+        "currentStatus": "TIMED_OUT",
+        "evidence": [
+          {
+            "sourceService": "ORDER_SERVICE",
+            "sourceEventType": "ORDER_TIMEOUT_DETECTED",
+            "previousStatus": "PAYMENT_COMPLETED",
+            "newStatus": "TIMED_OUT",
+            "reasonCode": "ORDER_PROCESSING_TIMEOUT",
+            "decisionCode": null,
+            "decisionTargetService": null,
+            "compensationRequired": true,
+            "compensationType": "STATUS_DEPENDENT_COMPENSATION",
+            "occurredAt": "2026-08-20T10:10:00Z",
+            "eventVersion": 1
+          }
+        ]
+      },
+      "expected": {
+        "currentStatus": "TIMED_OUT",
+        "reasonCode": "ORDER_PROCESSING_TIMEOUT",
+        "decisionCode": null,
+        "compensationType": "STATUS_DEPENDENT_COMPENSATION",
+        "requiredFacts": [
+          "Order processing timed out.",
+          "Compensation depends on the last known state."
+        ],
+        "forbiddenClaims": [
+          "Compensation completed.",
+          "The order completed successfully."
+        ]
+      }
+    }
+  ]
+}
