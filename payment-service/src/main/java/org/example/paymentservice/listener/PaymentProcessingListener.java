@@ -1,11 +1,13 @@
 package org.example.paymentservice.listener;
 
 import lombok.RequiredArgsConstructor;
+import org.example.paymentservice.dto.PaymentRequest;
 import org.example.paymentservice.dto.PaymentResultDTO;
 import org.example.paymentservice.event.PaymentProcessingEvent;
 import org.example.paymentservice.service.PaymentService;
 import org.example.paymentservice.service.provider.PaymentProviderWrapper;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -16,6 +18,9 @@ public class PaymentProcessingListener {
 
     private final PaymentProviderWrapper paymentProvider;
     private final PaymentService paymentService;
+
+    @Value("${app.payment.currency}")
+    private String currency;
 
     /**
      * This method is executed ONLY after the payment transaction commits successfully.
@@ -28,10 +33,14 @@ public class PaymentProcessingListener {
     public void handle(PaymentProcessingEvent event) {
 
         // Contact external payment provider
-        PaymentResultDTO result = paymentProvider.pay(
+        PaymentResultDTO result = paymentProvider.pay(new PaymentRequest(
+                event.paymentId(),
                 event.orderId(),
-                event.correlationId()
-        );
+                event.amount(),
+                currency,
+                event.correlationId(),
+                event.commandId().toString()
+        ));
 
         paymentService.finalizePayment(event.paymentId(), result);
     }

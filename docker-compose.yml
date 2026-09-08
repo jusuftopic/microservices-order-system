@@ -163,6 +163,10 @@ services:
     container_name: payment-service
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-mock}
+      PAYMENT_CURRENCY: ${PAYMENT_CURRENCY:-eur}
+      STRIPE_API_KEY: ${STRIPE_API_KEY:-}
+      STRIPE_TEST_PAYMENT_METHOD: ${STRIPE_TEST_PAYMENT_METHOD:-pm_card_visa}
     depends_on:
       payment-db:
         condition: service_healthy

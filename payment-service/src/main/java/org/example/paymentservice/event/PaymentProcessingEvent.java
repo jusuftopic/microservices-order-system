@@ -1,5 +1,8 @@
 package org.example.paymentservice.event;
 
+import java.math.BigDecimal;
+import java.util.UUID;
+
 /**
  * Internal event representing that a payment is ready to be processed
  * by an external payment provider.
@@ -8,6 +11,8 @@ package org.example.paymentservice.event;
 public record PaymentProcessingEvent(
         Long paymentId,
         Long orderId,
-        String correlationId
+        BigDecimal amount,
+        String correlationId,
+        UUID commandId
 ){
 }

@@ -10,6 +10,7 @@ import org.example.messagingstarter.outbox.service.OutboxDlqService;
 import org.example.paymentservice.dto.PaymentResultDTO;
 import org.example.paymentservice.entity.Payment;
 import org.example.paymentservice.enums.PaymentStatus;
+import org.example.paymentservice.enums.PaymentProviderStatus;
 import org.example.paymentservice.event.PaymentProcessingEvent;
 import org.example.paymentservice.metrics.PaymentMetrics;
 import org.example.paymentservice.repository.PaymentRepository;
@@ -148,8 +149,9 @@ public class PaymentServiceTest {
                 .build();
 
         PaymentResultDTO result = new PaymentResultDTO(
-                true,
+                PaymentProviderStatus.SUCCEEDED,
                 "tx-123",
+                null,
                 null,
                 "test"
         );
@@ -193,9 +195,10 @@ public class PaymentServiceTest {
                 .build();
 
         PaymentResultDTO result = new PaymentResultDTO(
-                false,
+                PaymentProviderStatus.FAILED,
                 null,
                 "card_declined",
+                null,
                 "test"
         );
 
@@ -232,8 +235,9 @@ public class PaymentServiceTest {
         Long paymentId = 1L;
 
         PaymentResultDTO result = new PaymentResultDTO(
-                true,
+                PaymentProviderStatus.SUCCEEDED,
                 "tx-123",
+                null,
                 null,
                 "test"
         );

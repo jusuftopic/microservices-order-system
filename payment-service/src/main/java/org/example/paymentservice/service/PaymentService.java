@@ -16,6 +16,7 @@ import org.example.messagingstarter.outbox.service.OutboxDlqService;
 import org.example.paymentservice.dto.PaymentResultDTO;
 import org.example.paymentservice.entity.Payment;
 import org.example.paymentservice.enums.PaymentStatus;
+import org.example.paymentservice.enums.PaymentProviderStatus;
 import org.example.paymentservice.event.PaymentProcessingEvent;
 import org.example.paymentservice.metrics.PaymentMetrics;
 import org.example.paymentservice.repository.PaymentRepository;
@@ -99,7 +100,9 @@ public class PaymentService {
                 new PaymentProcessingEvent(
                         payment.getId(),
                         event.orderId(),
-                        event.correlationId()
+                        event.amount(),
+                        event.correlationId(),
+                        event.messageId()
                 )
         );
     }
@@ -124,9 +127,10 @@ public class PaymentService {
 
         payment.setProvider(result.provider());
 
+        payment.setTransactionId(result.transactionId());
+
         if (result.success()) {
             payment.setStatus(PaymentStatus.SUCCESS);
-            payment.setTransactionId(result.transactionId());
             log.info("[PAYMENT-SERVICE] Payment {} processed successfully. Provider {}", paymentId, result.provider());
 
             incrementMetrics(paymentMetrics.getPaymentCompletedTotal());
@@ -141,7 +145,8 @@ public class PaymentService {
                     payment.getOrderId()
             );
 
-        } else {
+        } else if (result.status() == PaymentProviderStatus.FAILED
+                || result.status() == PaymentProviderStatus.CANCELED) {
             payment.setStatus(PaymentStatus.FAILED);
             payment.setFailureReason(result.failureReason());
             log.warn("[PAYMENT-SERVICE] Payment {} processed failed. Provider {}. Reason: {}",
@@ -160,6 +165,14 @@ public class PaymentService {
                     payment.getOrderId()
             );
 
+        } else {
+            payment.setStatus(PaymentStatus.PROCESSING);
+            log.info(
+                    "[PAYMENT-SERVICE] Payment {} remains in provider state {}. Provider {}",
+                    paymentId,
+                    result.status(),
+                    result.provider()
+            );
         }
         repository.save(payment);
     }

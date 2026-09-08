@@ -1,11 +1,14 @@
 package org.example.paymentservice.integration;
 
 import org.example.paymentservice.dto.PaymentResultDTO;
+import org.example.paymentservice.dto.PaymentRequest;
 import org.example.paymentservice.service.provider.PaymentProviderWrapper;
 import org.example.paymentservice.service.provider.clients.MockPaymentClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -29,8 +32,14 @@ public class PaymentProviderIT extends AbstractIntegrationTest {
 
         // when
         PaymentResultDTO result = paymentProvider.pay(
-                1L,
-                "11"
+                new PaymentRequest(
+                        1L,
+                        1L,
+                        BigDecimal.TEN,
+                        "eur",
+                        "correlation-11",
+                        "11"
+                )
         );
 
         // then
