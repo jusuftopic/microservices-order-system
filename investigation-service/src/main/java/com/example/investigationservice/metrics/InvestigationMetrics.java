@@ -22,6 +22,8 @@ public class InvestigationMetrics {
             "investigation.ai.requests.failures.total";
     static final String AI_REQUEST_RETRIES_METRIC =
             "investigation.ai.requests.retries.total";
+    static final String AI_CIRCUIT_TRANSITIONS_METRIC =
+            "investigation.ai.circuit.transitions.total";
     static final String EXPLANATION_REQUESTS_METRIC =
             "investigation.explanations.requests.total";
     static final String AI_EXPLANATIONS_METRIC =
@@ -169,6 +171,30 @@ public class InvestigationMetrics {
                 provider,
                 model
         );
+    }
+
+    /**
+     * Records a change in the model circuit breaker's operational state.
+     *
+     * @param fromState state before the transition
+     * @param toState state after the transition
+     * @param provider configured AI provider
+     * @param model configured AI model
+     */
+    public void recordAiCircuitTransition(
+            String fromState,
+            String toState,
+            String provider,
+            String model
+    ) {
+        Counter.builder(AI_CIRCUIT_TRANSITIONS_METRIC)
+                .description("AI circuit breaker state transitions")
+                .tag("from_state", fromState)
+                .tag("to_state", toState)
+                .tag("provider", provider)
+                .tag("model", model)
+                .register(registry)
+                .increment();
     }
 
     /**

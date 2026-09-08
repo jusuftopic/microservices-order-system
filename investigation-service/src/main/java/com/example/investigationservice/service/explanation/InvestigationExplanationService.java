@@ -5,8 +5,9 @@ import com.example.investigationservice.model.AiExplanationResponse;
 import com.example.investigationservice.model.ExplanationValidationResult;
 import com.example.investigationservice.model.InvestigationContext;
 import com.example.investigationservice.model.InvestigationExplanation;
-import com.example.investigationservice.service.explanation.ai.AiExplanationGenerator;
 import com.example.investigationservice.exception.ModelCallTimeoutException;
+import com.example.investigationservice.exception.ModelCircuitOpenException;
+import com.example.investigationservice.service.explanation.ai.AiExplanationGenerator;
 import com.example.investigationservice.service.explanation.deterministic.DeterministicExplanationGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -75,6 +76,14 @@ public class InvestigationExplanationService {
                         model
                 );
             }
+        } catch (ModelCircuitOpenException exception) {
+            log.debug(
+                    "[INVESTIGATION-SERVICE][EXPLANATION] AI provider circuit is open "
+                            + "for provider {} and model {}; using fallback for order {}",
+                    provider,
+                    model,
+                    context.orderId()
+            );
         } catch (ModelCallTimeoutException exception) {
             metrics.recordAiRequestTimeout(promptVersion, provider, model);
             log.warn(

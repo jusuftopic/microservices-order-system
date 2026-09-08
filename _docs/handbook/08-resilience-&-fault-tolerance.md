@@ -57,6 +57,11 @@ After the configured waiting period, a limited number of requests are allowed ag
 
 This prevents cascading failures while protecting both the application and the external provider from unnecessary load.
 
+For AI explanations, the Circuit Breaker observes the outcome after retries
+have finished. Repeated transient failures suspend model calls, while the
+Investigation Service continues serving deterministic explanations. Circuit
+state changes are exposed through operational logs and metrics.
+
 ## Transaction Boundaries
 
 One important architectural decision is that communication with external providers is intentionally separated from database transactions.

@@ -1,5 +1,6 @@
 package com.example.investigationservice.service.explanation.ai;
 
+import com.example.investigationservice.exception.ModelCircuitOpenException;
 import com.example.investigationservice.metrics.InvestigationMetrics;
 import com.example.investigationservice.model.AiExplanationResponse;
 import com.example.investigationservice.model.AiPrompt;
@@ -96,15 +97,46 @@ class ChatClientWrapperTest {
                 null, null)).isEqualTo(1.0);
     }
 
+    @Test
+    void opensCircuitAfterRepeatedTransientOperationFailures() {
+        SimpleMeterRegistry registry = new SimpleMeterRegistry();
+        ChatClient client = mock(ChatClient.class, RETURNS_DEEP_STUBS);
+        when(client.prompt()
+                .system(PROMPT.systemInstructions())
+                .user(PROMPT.userPrompt())
+                .call()
+                .entity(AiExplanationResponse.class))
+                .thenThrow(new TransientAiException("provider unavailable"));
+        ChatClientWrapper wrapper = wrapper(client, registry);
+
+        for (int request = 0; request < 5; request++) {
+            assertThatThrownBy(() -> wrapper.generate(PROMPT))
+                    .isInstanceOf(TransientAiException.class);
+        }
+
+        assertThatThrownBy(() -> wrapper.generate(PROMPT))
+                .isInstanceOf(ModelCircuitOpenException.class);
+        assertThat(metric(
+                registry,
+                "investigation.ai.circuit.transitions.total",
+                "from_state",
+                "closed",
+                "to_state",
+                "open"
+        )).isEqualTo(1.0);
+    }
+
     private ChatClientWrapper wrapper(
             ChatClient client,
             SimpleMeterRegistry registry
     ) {
         ChatClient.Builder builder = mock(ChatClient.Builder.class);
         when(builder.build()).thenReturn(client);
-        return new ChatClientWrapper(
-                builder,
-                new InvestigationMetrics(registry),
+        InvestigationMetrics metrics = new InvestigationMetrics(registry);
+        AiFailureClassifier failureClassifier = new AiFailureClassifier();
+        AiRetryExecutor retryExecutor = new AiRetryExecutor(
+                metrics,
+                failureClassifier,
                 PROVIDER,
                 MODEL,
                 Duration.ofSeconds(4),
@@ -112,6 +144,23 @@ class ChatClientWrapperTest {
                 Duration.ofMillis(1),
                 2,
                 0.0
+        );
+        AiCircuitBreakerExecutor circuitBreakerExecutor =
+                new AiCircuitBreakerExecutor(
+                        metrics,
+                        failureClassifier,
+                        PROVIDER,
+                        MODEL,
+                        10,
+                        5,
+                        50.0f,
+                        Duration.ofSeconds(30),
+                        2
+                );
+        return new ChatClientWrapper(
+                builder,
+                retryExecutor,
+                circuitBreakerExecutor
         );
     }
 
@@ -129,6 +178,23 @@ class ChatClientWrapperTest {
             search = search.tag(additionalTag, additionalValue);
         }
         var counter = search.counter();
+        return counter == null ? 0.0 : counter.count();
+    }
+
+    private double metric(
+            SimpleMeterRegistry registry,
+            String name,
+            String firstTag,
+            String firstValue,
+            String secondTag,
+            String secondValue
+    ) {
+        var counter = registry.find(name)
+                .tag("provider", PROVIDER)
+                .tag("model", MODEL)
+                .tag(firstTag, firstValue)
+                .tag(secondTag, secondValue)
+                .counter();
         return counter == null ? 0.0 : counter.count();
     }
 
