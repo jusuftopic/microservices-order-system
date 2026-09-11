@@ -238,6 +238,44 @@ public class PaymentServiceTest {
     }
 
     @Test
+    void should_fail_payment_when_provider_requires_interactive_action() {
+        Long paymentId = 1L;
+        UUID idempotencyKey = UUID.randomUUID();
+        Payment payment = Payment.builder()
+                .id(paymentId)
+                .orderId(10L)
+                .correlationId("correlation-10")
+                .status(PaymentStatus.PROCESSING)
+                .providerIdempotencyKey(idempotencyKey)
+                .build();
+        PaymentResultDTO result = new PaymentResultDTO(
+                PaymentProviderStatus.REQUIRES_ACTION,
+                "pi_requires_action",
+                null,
+                "use_stripe_sdk",
+                "STRIPE"
+        );
+        when(repository.findByProviderIdempotencyKey(idempotencyKey))
+                .thenReturn(Optional.of(payment));
+
+        target.finalizePayment(paymentId, idempotencyKey, result);
+
+        assertEquals(PaymentStatus.FAILED, payment.getStatus());
+        assertEquals(
+                "INTERACTIVE_PAYMENT_ACTION_UNSUPPORTED",
+                payment.getFailureReason()
+        );
+        verify(repository).save(payment);
+
+        ArgumentCaptor<OutboxEvent> captor = ArgumentCaptor.forClass(OutboxEvent.class);
+        verify(outboxRepository).save(captor.capture());
+        assertEquals(EventConstants.EVENT_PAYMENT_FAILED, captor.getValue().getEventType());
+        assertTrue(captor.getValue().getPayload().contains(
+                "INTERACTIVE_PAYMENT_ACTION_UNSUPPORTED"
+        ));
+    }
+
+    @Test
     void should_throw_exception_when_payment_not_found() {
         // GIVEN
         Long paymentId = 1L;

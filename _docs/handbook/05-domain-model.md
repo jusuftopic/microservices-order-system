@@ -184,6 +184,10 @@ A newly created payment starts in `PENDING`.
 
 Before contacting the external payment provider, it moves to `PROCESSING`. Once the provider responds, it transitions to either `SUCCESS` or `FAILED`.
 
+The Stripe integration supports noninteractive payment scenarios. A provider
+response requiring customer interaction is treated as a failed payment because
+interactive authentication is outside the supported payment flow.
+
 A successful payment stores the external transaction identifier. A failed payment stores the failure reason.
 
 ### Payment Invariants

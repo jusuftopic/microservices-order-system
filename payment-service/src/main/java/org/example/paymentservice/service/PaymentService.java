@@ -40,6 +40,9 @@ import java.util.UUID;
 @Slf4j
 public class PaymentService {
 
+    private static final String INTERACTIVE_ACTION_UNSUPPORTED =
+            "INTERACTIVE_PAYMENT_ACTION_UNSUPPORTED";
+
     private final PaymentRepository repository;
     private final InboxRepository inboxRepository;
     private final ApplicationEventPublisher eventPublisher;
@@ -181,18 +184,34 @@ public class PaymentService {
             );
 
         } else if (result.status() == PaymentProviderStatus.FAILED
-                || result.status() == PaymentProviderStatus.CANCELED) {
+                || result.status() == PaymentProviderStatus.CANCELED
+                || result.status() == PaymentProviderStatus.REQUIRES_ACTION) {
+            String failureReason = result.status() == PaymentProviderStatus.REQUIRES_ACTION
+                    ? INTERACTIVE_ACTION_UNSUPPORTED
+                    : result.failureReason();
+
             payment.setStatus(PaymentStatus.FAILED);
-            payment.setFailureReason(result.failureReason());
-            log.warn("[PAYMENT-SERVICE] Payment {} processed failed. Provider {}. Reason: {}",
-                    paymentId, result.provider(), result.failureReason());
+            payment.setFailureReason(failureReason);
+
+            if (result.status() == PaymentProviderStatus.REQUIRES_ACTION) {
+                log.warn(
+                        "[PAYMENT-SERVICE] Payment {} requires unsupported interactive action {} "
+                                + "from provider {}; marking payment as failed",
+                        paymentId,
+                        result.nextActionType(),
+                        result.provider()
+                );
+            } else {
+                log.warn("[PAYMENT-SERVICE] Payment {} processed failed. Provider {}. Reason: {}",
+                        paymentId, result.provider(), failureReason);
+            }
 
             incrementMetrics(paymentMetrics.getPaymentFailedTotal());
 
             storeOutbox(
                     new PaymentFailedEvent(
                             payment.getOrderId(),
-                            result.failureReason(),
+                            failureReason,
                             payment.getCorrelationId(),
                             UUID.randomUUID()
                     ),
