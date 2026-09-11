@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -66,9 +67,16 @@ public class PaymentService {
         Payment payment = Optional.ofNullable(repository.findByOrderId(event.orderId()))
                 .orElseGet(() -> createPayment(event));
 
-        if (payment.getStatus() == PaymentStatus.SUCCESS) {
-            log.info("[PAYMENT-SERVICE] Order {} already successfully stored.", event.orderId());
+        if (payment.getStatus().isFinalState()) {
+            log.info("[PAYMENT-SERVICE] Payment for order {} is already in final state {}.",
+                    event.orderId(), payment.getStatus());
             return;
+        }
+
+        if (!Objects.equals(payment.getProviderIdempotencyKey(), event.messageId())) {
+            throw new IllegalStateException(
+                    "Order already belongs to a different payment operation"
+            );
         }
 
         if (payment.getStatus() == PaymentStatus.PROCESSING) {
@@ -112,18 +120,45 @@ public class PaymentService {
                 .orderId(event.orderId())
                 .status(PaymentStatus.PENDING)
                 .correlationId(event.correlationId())
+                .providerIdempotencyKey(event.messageId())
                 .build();
     }
 
     /**
-     * Independent transaction after receiving payment result:
+     * Independent transaction after receiving a payment result:
      * - updates result from payment provider
      * - does NOT depend on original transaction
+     * - applies a provider operation result at most once
+     *
+     * @param paymentId expected internal payment identifier
+     * @param providerIdempotencyKey identifier of the provider operation
+     * @param result provider result to apply
      */
     @Transactional
-    public void finalizePayment(Long paymentId, PaymentResultDTO result) {
-        Payment payment = repository.findById(paymentId)
-                .orElseThrow();
+    public void finalizePayment(
+            Long paymentId,
+            UUID providerIdempotencyKey,
+            PaymentResultDTO result
+    ) {
+        Payment payment = repository.findByProviderIdempotencyKey(providerIdempotencyKey)
+                .orElseThrow(() -> new IllegalStateException(
+                        "No payment exists for the supplied provider operation"
+                ));
+
+        if (!payment.getId().equals(paymentId)) {
+            throw new IllegalStateException(
+                    "Provider operation does not belong to the supplied payment"
+            );
+        }
+
+        if (payment.getStatus().isFinalState()) {
+            log.info(
+                    "[PAYMENT-SERVICE] Payment {} already has final state {}; ignoring repeated provider result",
+                    paymentId,
+                    payment.getStatus()
+            );
+            return;
+        }
 
         payment.setProvider(result.provider());
 

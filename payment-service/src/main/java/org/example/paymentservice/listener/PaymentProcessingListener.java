@@ -42,7 +42,7 @@ public class PaymentProcessingListener {
                 event.commandId().toString()
         ));
 
-        paymentService.finalizePayment(event.paymentId(), result);
+        paymentService.finalizePayment(event.paymentId(), event.commandId(), result);
     }
 
 }

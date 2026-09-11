@@ -24,7 +24,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
 import java.math.BigDecimal;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -90,7 +89,9 @@ public class PaymentServiceTest {
         // THEN
         verify(inboxRepository).insertIfNotExists(messageId);
         verify(eventPublisher).publishEvent(any(PaymentProcessingEvent.class));
-        verify(repository, atLeastOnce()).save(any(Payment.class));
+        ArgumentCaptor<Payment> paymentCaptor = ArgumentCaptor.forClass(Payment.class);
+        verify(repository).save(paymentCaptor.capture());
+        assertEquals(messageId, paymentCaptor.getValue().getProviderIdempotencyKey());
     }
 
     @Test
@@ -125,6 +126,7 @@ public class PaymentServiceTest {
         Payment existingPayment = Payment.builder()
                 .orderId(1L)
                 .status(PaymentStatus.SUCCESS)
+                .providerIdempotencyKey(messageId)
                 .build();
 
         when(repository.findByOrderId(1L)).thenReturn(existingPayment);
@@ -142,10 +144,12 @@ public class PaymentServiceTest {
 
         // GIVEN
         Long paymentId = 1L;
+        UUID idempotencyKey = UUID.randomUUID();
 
         Payment payment = Payment.builder()
                 .id(paymentId)
                 .status(PaymentStatus.PROCESSING)
+                .providerIdempotencyKey(idempotencyKey)
                 .build();
 
         PaymentResultDTO result = new PaymentResultDTO(
@@ -156,16 +160,17 @@ public class PaymentServiceTest {
                 "test"
         );
 
-        when(repository.findById(paymentId)).thenReturn(Optional.of(payment));
+        when(repository.findByProviderIdempotencyKey(idempotencyKey))
+                .thenReturn(Optional.of(payment));
 
         // WHEN
-        target.finalizePayment(paymentId, result);
+        target.finalizePayment(paymentId, idempotencyKey, result);
 
         // THEN
         assertEquals(PaymentStatus.SUCCESS, payment.getStatus());
         assertEquals("tx-123", payment.getTransactionId());
 
-        verify(repository).findById(paymentId);
+        verify(repository).findByProviderIdempotencyKey(idempotencyKey);
         verify(repository).save(payment);
 
 
@@ -188,10 +193,12 @@ public class PaymentServiceTest {
 
         // GIVEN
         Long paymentId = 1L;
+        UUID idempotencyKey = UUID.randomUUID();
 
         Payment payment = Payment.builder()
                 .id(paymentId)
                 .status(PaymentStatus.PROCESSING)
+                .providerIdempotencyKey(idempotencyKey)
                 .build();
 
         PaymentResultDTO result = new PaymentResultDTO(
@@ -202,16 +209,17 @@ public class PaymentServiceTest {
                 "test"
         );
 
-        when(repository.findById(paymentId)).thenReturn(Optional.of(payment));
+        when(repository.findByProviderIdempotencyKey(idempotencyKey))
+                .thenReturn(Optional.of(payment));
 
         // WHEN
-        target.finalizePayment(paymentId, result);
+        target.finalizePayment(paymentId, idempotencyKey, result);
 
         // THEN
         assertEquals(PaymentStatus.FAILED, payment.getStatus());
         assertEquals("card_declined", payment.getFailureReason());
 
-        verify(repository).findById(paymentId);
+        verify(repository).findByProviderIdempotencyKey(idempotencyKey);
         verify(repository).save(payment);
 
 
@@ -233,6 +241,7 @@ public class PaymentServiceTest {
     void should_throw_exception_when_payment_not_found() {
         // GIVEN
         Long paymentId = 1L;
+        UUID idempotencyKey = UUID.randomUUID();
 
         PaymentResultDTO result = new PaymentResultDTO(
                 PaymentProviderStatus.SUCCEEDED,
@@ -242,14 +251,40 @@ public class PaymentServiceTest {
                 "test"
         );
 
-        when(repository.findById(paymentId)).thenReturn(Optional.empty());
+        when(repository.findByProviderIdempotencyKey(idempotencyKey))
+                .thenReturn(Optional.empty());
 
         // WHEN / THEN
-        assertThrows(NoSuchElementException.class,
-                () -> target.finalizePayment(paymentId, result));
+        assertThrows(IllegalStateException.class,
+                () -> target.finalizePayment(paymentId, idempotencyKey, result));
 
-        verify(repository).findById(paymentId);
+        verify(repository).findByProviderIdempotencyKey(idempotencyKey);
         verify(repository, never()).save(any());
+    }
+
+    @Test
+    void should_ignore_provider_result_when_payment_is_already_final() {
+        Long paymentId = 1L;
+        UUID idempotencyKey = UUID.randomUUID();
+        Payment payment = Payment.builder()
+                .id(paymentId)
+                .status(PaymentStatus.SUCCESS)
+                .providerIdempotencyKey(idempotencyKey)
+                .build();
+        PaymentResultDTO repeatedResult = new PaymentResultDTO(
+                PaymentProviderStatus.SUCCEEDED,
+                "tx-123",
+                null,
+                null,
+                "test"
+        );
+        when(repository.findByProviderIdempotencyKey(idempotencyKey))
+                .thenReturn(Optional.of(payment));
+
+        target.finalizePayment(paymentId, idempotencyKey, repeatedResult);
+
+        verify(repository, never()).save(any());
+        verifyNoInteractions(outboxRepository);
     }
 
 }
