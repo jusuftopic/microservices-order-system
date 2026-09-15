@@ -1,6 +1,9 @@
 package org.example.paymentservice.service.provider.clients;
 
 import com.stripe.StripeClient;
+import com.stripe.exception.ApiConnectionException;
+import com.stripe.exception.ApiException;
+import com.stripe.exception.RateLimitException;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
 import com.stripe.net.RequestOptions;
@@ -10,13 +13,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.paymentservice.dto.PaymentRequest;
 import org.example.paymentservice.dto.PaymentResultDTO;
 import org.example.paymentservice.enums.PaymentProviderStatus;
+import org.example.paymentservice.exception.PaymentProviderNonRetryableException;
+import org.example.paymentservice.exception.PaymentProviderRetryableException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.math.RoundingMode;
 import java.util.Currency;
 import java.util.Locale;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Stripe implementation of the payment-provider boundary.
@@ -39,21 +46,21 @@ public class StripePaymentClient implements PaymentClient {
      */
     @Override
     public PaymentResultDTO pay(PaymentRequest request) {
-        PaymentIntentCreateParams params = PaymentIntentCreateParams.builder()
-                .setAmount(toMinorUnits(request))
-                .setCurrency(request.currency().toLowerCase(Locale.ROOT))
-                .setPaymentMethod(paymentMethod)
-                .setConfirm(true)
-                .addPaymentMethodType("card")
-                .putMetadata("payment_id", request.paymentId().toString())
-                .putMetadata("order_id", request.orderId().toString())
-                .putMetadata("correlation_id", request.correlationId())
-                .build();
-        RequestOptions options = RequestOptions.builder()
-                .setIdempotencyKey(request.idempotencyKey())
-                .build();
-
         try {
+            PaymentIntentCreateParams params = PaymentIntentCreateParams.builder()
+                    .setAmount(toMinorUnits(request))
+                    .setCurrency(request.currency().toLowerCase(Locale.ROOT))
+                    .setPaymentMethod(paymentMethod)
+                    .setConfirm(true)
+                    .addPaymentMethodType("card")
+                    .putMetadata("payment_id", request.paymentId().toString())
+                    .putMetadata("order_id", request.orderId().toString())
+                    .putMetadata("correlation_id", request.correlationId())
+                    .build();
+            RequestOptions options = RequestOptions.builder()
+                    .setIdempotencyKey(request.idempotencyKey())
+                    .build();
+
             PaymentIntent intent = stripeClient.v1()
                     .paymentIntents()
                     .create(params, options);
@@ -66,11 +73,65 @@ public class StripePaymentClient implements PaymentClient {
             );
             return result;
         } catch (StripeException exception) {
-            throw new StripePaymentProviderException(
-                    "Stripe rejected or could not process the PaymentIntent request",
+            throw translate(exception);
+        } catch (Exception exception) {
+            throw translateUnexpected(exception);
+        }
+    }
+
+    static RuntimeException translate(StripeException exception) {
+        String message = "Stripe could not process the PaymentIntent request";
+        if (isRetryable(exception)) {
+            return new PaymentProviderRetryableException(
+                    message,
+                    "STRIPE",
+                    exception.getRequestId(),
+                    exception.getCode(),
                     exception
             );
         }
+        return new PaymentProviderNonRetryableException(
+                message,
+                "STRIPE",
+                exception.getRequestId(),
+                exception.getCode(),
+                exception
+        );
+    }
+
+    private static boolean isRetryable(StripeException exception) {
+        if (exception instanceof ApiConnectionException
+                || exception instanceof RateLimitException) {
+            return true;
+        }
+        if (exception instanceof ApiException && exception.getStatusCode() != null) {
+            int status = exception.getStatusCode();
+            return status == 408 || status == 424 || status >= 500;
+        }
+        return false;
+    }
+
+    static RuntimeException translateUnexpected(Exception exception) {
+        Throwable cause = exception;
+        while (cause != null) {
+            if (cause instanceof IOException || cause instanceof TimeoutException) {
+                return new PaymentProviderRetryableException(
+                        "Temporary failure while preparing or sending the Stripe request",
+                        "STRIPE",
+                        null,
+                        null,
+                        exception
+                );
+            }
+            cause = cause.getCause();
+        }
+        return new PaymentProviderNonRetryableException(
+                "Unexpected failure while preparing or sending the Stripe request",
+                "STRIPE",
+                null,
+                null,
+                exception
+        );
     }
 
     private long toMinorUnits(PaymentRequest request) {

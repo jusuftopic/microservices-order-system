@@ -82,6 +82,12 @@ The Payment Service first persists its local payment state and commits the trans
 
 Communication with the provider is protected by retries for transient infrastructure failures and a Circuit Breaker for prolonged outages. Each retry represents a real provider call and therefore contributes to the Circuit Breaker's failure statistics, allowing it to accurately measure the health of the external dependency. Combined with idempotent payment requests, these mechanisms enable the system to recover from temporary failures while preventing duplicate payment execution.
 
+Provider-specific errors are translated at the integration boundary into
+retryable and non-retryable payment-provider failures. This keeps resilience
+policy independent of a provider SDK. When retryable attempts are exhausted,
+the payment outcome remains unknown rather than being reported as a definitive
+decline; it must be resolved through provider reconciliation.
+
 This approach ensures that:
 
 * database consistency is preserved regardless of external failures
