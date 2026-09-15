@@ -40,7 +40,7 @@ import java.util.UUID;
 @Slf4j
 public class PaymentService {
 
-    private static final String INTERACTIVE_ACTION_UNSUPPORTED =
+    public static final String INTERACTIVE_ACTION_UNSUPPORTED =
             "INTERACTIVE_PAYMENT_ACTION_UNSUPPORTED";
 
     private final PaymentRepository repository;

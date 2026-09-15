@@ -262,7 +262,7 @@ public class PaymentServiceTest {
 
         assertEquals(PaymentStatus.FAILED, payment.getStatus());
         assertEquals(
-                "INTERACTIVE_PAYMENT_ACTION_UNSUPPORTED",
+                PaymentService.INTERACTIVE_ACTION_UNSUPPORTED,
                 payment.getFailureReason()
         );
         verify(repository).save(payment);
@@ -271,7 +271,7 @@ public class PaymentServiceTest {
         verify(outboxRepository).save(captor.capture());
         assertEquals(EventConstants.EVENT_PAYMENT_FAILED, captor.getValue().getEventType());
         assertTrue(captor.getValue().getPayload().contains(
-                "INTERACTIVE_PAYMENT_ACTION_UNSUPPORTED"
+                PaymentService.INTERACTIVE_ACTION_UNSUPPORTED
         ));
     }
 
