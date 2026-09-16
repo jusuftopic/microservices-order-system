@@ -65,7 +65,17 @@ If it does not exist, the service:
 3. stores any resulting Outbox message
 4. commits the work in a local transaction
 
-The `messageId` therefore acts as the deduplication key for incoming messages.
+The `messageId` therefore acts as the idempotency and deduplication key for
+incoming messages. Where appropriate, the service also considers the current
+state of the affected domain entity before applying the operation. For example,
+the Payment Service combines message deduplication with the payment status so
+that a repeated or late result cannot modify a payment that has already reached
+a final state.
+
+Inbox deduplication answers whether a message was processed before; the domain
+entity state answers whether the requested operation is still valid. Both checks
+are required when message uniqueness alone cannot protect the business
+invariant.
 
 ## Delivery Semantics
 
