@@ -22,11 +22,11 @@ public class PaymentArchitectureTest {
 
     /**
      * Enforces a strict layered architecture:
-     * Kafka Listener → Service → Repository.
+     * HTTP/Kafka entry points → Service → Repository.
      *
      * <ul>
-     *     <li>Kafka listeners are entry points and must not be accessed by other layers</li>
-     *     <li>Services may only be accessed by Kafka listeners</li>
+     *     <li>Controllers and Kafka listeners are entry points</li>
+     *     <li>Services may only be accessed by entry points</li>
      *     <li>Repositories may only be accessed by Services</li>
      * </ul>
      */
@@ -34,12 +34,14 @@ public class PaymentArchitectureTest {
     static final ArchRule layering =
             layeredArchitecture()
                     .consideringAllDependencies()
+                    .layer("Controller").definedBy("..controller..")
                     .layer("Listener").definedBy("..listener..")
                     .layer("Service").definedBy("..service..")
                     .layer("Repository").definedBy("..repository..")
 
+                    .whereLayer("Controller").mayNotBeAccessedByAnyLayer()
                     .whereLayer("Listener").mayNotBeAccessedByAnyLayer()
-                    .whereLayer("Service").mayOnlyBeAccessedByLayers("Listener")
+                    .whereLayer("Service").mayOnlyBeAccessedByLayers("Controller", "Listener")
                     .whereLayer("Repository").mayOnlyBeAccessedByLayers("Service");
 
 

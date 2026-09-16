@@ -5,6 +5,7 @@ import lombok.*;
 import org.example.paymentservice.enums.PaymentStatus;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 /**
  * Payment entity represents a payment attempt for an Order.
@@ -48,6 +49,13 @@ public class Payment {
      * External transaction ID.
      */
     private String transactionId;
+
+    /**
+     * Stable identifier used for every provider request belonging to this
+     * payment operation.
+     */
+    @Column(nullable = false, unique = true, updatable = false)
+    private UUID providerIdempotencyKey;
 
     /**
      * Correlation ID.

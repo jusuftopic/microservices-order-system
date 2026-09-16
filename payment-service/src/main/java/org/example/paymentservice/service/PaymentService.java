@@ -16,6 +16,7 @@ import org.example.messagingstarter.outbox.service.OutboxDlqService;
 import org.example.paymentservice.dto.PaymentResultDTO;
 import org.example.paymentservice.entity.Payment;
 import org.example.paymentservice.enums.PaymentStatus;
+import org.example.paymentservice.enums.PaymentProviderStatus;
 import org.example.paymentservice.event.PaymentProcessingEvent;
 import org.example.paymentservice.metrics.PaymentMetrics;
 import org.example.paymentservice.repository.PaymentRepository;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -38,6 +40,9 @@ import java.util.UUID;
 @Slf4j
 public class PaymentService {
 
+    public static final String INTERACTIVE_ACTION_UNSUPPORTED =
+            "INTERACTIVE_PAYMENT_ACTION_UNSUPPORTED";
+
     private final PaymentRepository repository;
     private final InboxRepository inboxRepository;
     private final ApplicationEventPublisher eventPublisher;
@@ -45,6 +50,7 @@ public class PaymentService {
     private final OutboxRepository outboxRepository;
     private final OutboxDlqService outboxDlqService;
     private final PaymentMetrics paymentMetrics;
+    private final PaymentStatusTransitionPolicy transitionPolicy;
 
     /**
      * Creates a payment for a given order.
@@ -65,9 +71,16 @@ public class PaymentService {
         Payment payment = Optional.ofNullable(repository.findByOrderId(event.orderId()))
                 .orElseGet(() -> createPayment(event));
 
-        if (payment.getStatus() == PaymentStatus.SUCCESS) {
-            log.info("[PAYMENT-SERVICE] Order {} already successfully stored.", event.orderId());
+        if (payment.getStatus().isFinalState()) {
+            log.info("[PAYMENT-SERVICE] Payment for order {} is already in final state {}.",
+                    event.orderId(), payment.getStatus());
             return;
+        }
+
+        if (!Objects.equals(payment.getProviderIdempotencyKey(), event.messageId())) {
+            throw new IllegalStateException(
+                    "Order already belongs to a different payment operation"
+            );
         }
 
         if (payment.getStatus() == PaymentStatus.PROCESSING) {
@@ -99,7 +112,9 @@ public class PaymentService {
                 new PaymentProcessingEvent(
                         payment.getId(),
                         event.orderId(),
-                        event.correlationId()
+                        event.amount(),
+                        event.correlationId(),
+                        event.messageId()
                 )
         );
     }
@@ -109,25 +124,65 @@ public class PaymentService {
                 .orderId(event.orderId())
                 .status(PaymentStatus.PENDING)
                 .correlationId(event.correlationId())
+                .providerIdempotencyKey(event.messageId())
                 .build();
     }
 
     /**
-     * Independent transaction after receiving payment result:
+     * Independent transaction after receiving a payment result:
      * - updates result from payment provider
      * - does NOT depend on original transaction
+     * - applies a provider operation result at most once
+     *
+     * @param paymentId expected internal payment identifier
+     * @param providerIdempotencyKey identifier of the provider operation
+     * @param result provider result to apply
      */
     @Transactional
-    public void finalizePayment(Long paymentId, PaymentResultDTO result) {
-        Payment payment = repository.findById(paymentId)
-                .orElseThrow();
+    public void finalizePayment(
+            Long paymentId,
+            UUID providerIdempotencyKey,
+            PaymentResultDTO result
+    ) {
+        Payment payment = repository.findByProviderIdempotencyKey(providerIdempotencyKey)
+                .orElseThrow(() -> new IllegalStateException(
+                        "No payment exists for the supplied provider operation"
+                ));
+
+        if (!payment.getId().equals(paymentId)) {
+            throw new IllegalStateException(
+                    "Provider operation does not belong to the supplied payment"
+            );
+        }
+
+        applyProviderResult(payment, result);
+    }
+
+    private void applyProviderResult(Payment payment, PaymentResultDTO result) {
+        PaymentStatus currentStatus = payment.getStatus();
+        PaymentStatus targetStatus = transitionPolicy.targetStatus(
+                currentStatus,
+                result.status()
+        );
+
+        if (currentStatus.isFinalState()) {
+            log.info(
+                    "[PAYMENT-SERVICE] Payment {} already has final state {}; "
+                            + "ignoring provider state {}",
+                    payment.getId(),
+                    currentStatus,
+                    result.status()
+            );
+            return;
+        }
 
         payment.setProvider(result.provider());
+        payment.setTransactionId(result.transactionId());
+        payment.setStatus(targetStatus);
 
-        if (result.success()) {
-            payment.setStatus(PaymentStatus.SUCCESS);
-            payment.setTransactionId(result.transactionId());
-            log.info("[PAYMENT-SERVICE] Payment {} processed successfully. Provider {}", paymentId, result.provider());
+        if (targetStatus == PaymentStatus.SUCCESS) {
+            log.info("[PAYMENT-SERVICE] Payment {} processed successfully. Provider {}",
+                    payment.getId(), result.provider());
 
             incrementMetrics(paymentMetrics.getPaymentCompletedTotal());
 
@@ -141,18 +196,33 @@ public class PaymentService {
                     payment.getOrderId()
             );
 
-        } else {
+        } else if (targetStatus == PaymentStatus.FAILED) {
+            String failureReason = result.status() == PaymentProviderStatus.REQUIRES_ACTION
+                    ? INTERACTIVE_ACTION_UNSUPPORTED
+                    : result.failureReason();
+
             payment.setStatus(PaymentStatus.FAILED);
-            payment.setFailureReason(result.failureReason());
-            log.warn("[PAYMENT-SERVICE] Payment {} processed failed. Provider {}. Reason: {}",
-                    paymentId, result.provider(), result.failureReason());
+            payment.setFailureReason(failureReason);
+
+            if (result.status() == PaymentProviderStatus.REQUIRES_ACTION) {
+                log.warn(
+                        "[PAYMENT-SERVICE] Payment {} requires unsupported interactive action {} "
+                                + "from provider {}; marking payment as failed",
+                        payment.getId(),
+                        result.nextActionType(),
+                        result.provider()
+                );
+            } else {
+                log.warn("[PAYMENT-SERVICE] Payment {} processed failed. Provider {}. Reason: {}",
+                        payment.getId(), result.provider(), failureReason);
+            }
 
             incrementMetrics(paymentMetrics.getPaymentFailedTotal());
 
             storeOutbox(
                     new PaymentFailedEvent(
                             payment.getOrderId(),
-                            result.failureReason(),
+                            failureReason,
                             payment.getCorrelationId(),
                             UUID.randomUUID()
                     ),
@@ -160,6 +230,13 @@ public class PaymentService {
                     payment.getOrderId()
             );
 
+        } else {
+            log.info(
+                    "[PAYMENT-SERVICE] Payment {} remains in provider state {}. Provider {}",
+                    payment.getId(),
+                    result.status(),
+                    result.provider()
+            );
         }
         repository.save(payment);
     }

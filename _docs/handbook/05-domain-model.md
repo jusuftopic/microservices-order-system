@@ -161,7 +161,8 @@ A `Payment` contains:
 * the related order identifier
 * the current payment status
 * payment provider information
-* an external transaction identifier
+* an external transaction identifier representing the provider payment
+* a stable provider idempotency key derived from the initiating payment command
 * a correlation identifier
 * an optional failure reason
 * a creation timestamp
@@ -183,6 +184,10 @@ A newly created payment starts in `PENDING`.
 
 Before contacting the external payment provider, it moves to `PROCESSING`. Once the provider responds, it transitions to either `SUCCESS` or `FAILED`.
 
+The Stripe integration supports noninteractive payment scenarios. A provider
+response requiring customer interaction is treated as a failed payment because
+interactive authentication is outside the supported payment flow.
+
 A successful payment stores the external transaction identifier. A failed payment stores the failure reason.
 
 ### Payment Invariants
@@ -191,9 +196,10 @@ The Payment Service prevents duplicate processing by checking the existing payme
 
 For example:
 
-* a successful payment is not processed again
+* a payment in a final state is not processed or finalized again
 * a payment already in progress is not started again
 * the order identifier is unique within the payment model
+* the provider idempotency key identifies exactly one local payment operation
 
 These rules reduce the risk of charging the same order multiple times.
 

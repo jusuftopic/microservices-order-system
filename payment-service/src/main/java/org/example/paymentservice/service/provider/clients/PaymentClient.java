@@ -1,9 +1,7 @@
 package org.example.paymentservice.service.provider.clients;
 
-import org.apache.kafka.common.protocol.types.Field;
+import org.example.paymentservice.dto.PaymentRequest;
 import org.example.paymentservice.dto.PaymentResultDTO;
-
-import java.util.UUID;
 
 /**
  * Unified interface for different payment providers connected to the system
@@ -15,10 +13,8 @@ public interface PaymentClient {
     /**
      * Initiate payment process towards 3rd party payment system
      *
-     * @param orderId Identifier of the order
-     * @param idempotencyKey Key sent to 3rd party payment service ensures reliable
-     *                       track of already processed events
+     * @param request provider-neutral payment request
      * @return The result of the payment process
      */
-    PaymentResultDTO pay(Long orderId, String idempotencyKey);
+    PaymentResultDTO pay(PaymentRequest request);
 }
