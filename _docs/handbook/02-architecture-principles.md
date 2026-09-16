@@ -26,6 +26,10 @@ The architecture is designed to support automated verification through unit, int
 
 Building, testing, and deployment are automated through CI/CD pipelines to reduce manual effort, improve consistency, and increase delivery confidence.
 
+## Evaluation-first LLM driven approach
+
+Support of LLM capabilities, using evaluation approach to handle LLM capabilities as a probabilistic dependency
+
 ## Cloud-ready architecture
 
 The system is designed for deployment on modern cloud platforms. Stateless services, containerization, declarative infrastructure, and automated deployment enable consistent execution across local and cloud environments.

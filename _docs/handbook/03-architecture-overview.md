@@ -5,6 +5,7 @@
 This chapter provides a high-level view of the order processing system and its main architectural building blocks. It explains how the system is organized around business capabilities and how the services cooperate to process an order reliably.
 
 The system is designed as an event-driven microservice architecture. Each service owns a specific business capability and communicates with other services through asynchronous events where reliability and decoupling are important.
+System provides dedicated API capabilities to expose current order status with human-understandable explanation supported by LLM model integration and deterministic fallback possibility.
 
 ## Main Components
 
