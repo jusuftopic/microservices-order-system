@@ -56,6 +56,7 @@ public class StripePaymentClient implements PaymentClient {
                     .putMetadata("payment_id", request.paymentId().toString())
                     .putMetadata("order_id", request.orderId().toString())
                     .putMetadata("correlation_id", request.correlationId())
+                    .putMetadata("idempotency_key", request.idempotencyKey())
                     .build();
             RequestOptions options = RequestOptions.builder()
                     .setIdempotencyKey(request.idempotencyKey())

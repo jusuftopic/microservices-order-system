@@ -1,15 +1,17 @@
 package org.example.paymentservice.service.provider.webhook;
 
+import com.stripe.model.PaymentIntent;
+
 /**
- * Authenticated Stripe event information required by the webhook boundary.
+ * Authenticated Stripe PaymentIntent observation required by payment handling.
  *
  * @param id unique Stripe event identifier
  * @param type Stripe event type
- * @param rawPayload original verified event payload
+ * @param paymentIntent authenticated PaymentIntent snapshot
  */
 public record StripeWebhookEvent(
         String id,
         String type,
-        String rawPayload
+        PaymentIntent paymentIntent
 ) {
 }

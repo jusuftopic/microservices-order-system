@@ -15,7 +15,7 @@ class PaymentWebhookControllerTest {
     @Test
     void acknowledgesVerifiedWebhook() {
         StripeWebhookEvent event = new StripeWebhookEvent(
-                "evt_1", "payment_intent.succeeded", "payload"
+                "evt_1", "payment_intent.succeeded", null
         );
         StubWebhookVerifier verifier = new StubWebhookVerifier(event, null);
         RecordingWebhookHandler handler = new RecordingWebhookHandler();
@@ -67,6 +67,10 @@ class PaymentWebhookControllerTest {
     }
 
     private static final class RecordingWebhookHandler extends StripeWebhookHandler {
+
+        private RecordingWebhookHandler() {
+            super(null);
+        }
 
         private StripeWebhookEvent handledEvent;
 

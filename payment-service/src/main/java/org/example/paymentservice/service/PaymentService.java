@@ -50,6 +50,7 @@ public class PaymentService {
     private final OutboxRepository outboxRepository;
     private final OutboxDlqService outboxDlqService;
     private final PaymentMetrics paymentMetrics;
+    private final PaymentStatusTransitionPolicy transitionPolicy;
 
     /**
      * Creates a payment for a given order.
@@ -154,22 +155,34 @@ public class PaymentService {
             );
         }
 
-        if (payment.getStatus().isFinalState()) {
+        applyProviderResult(payment, result);
+    }
+
+    private void applyProviderResult(Payment payment, PaymentResultDTO result) {
+        PaymentStatus currentStatus = payment.getStatus();
+        PaymentStatus targetStatus = transitionPolicy.targetStatus(
+                currentStatus,
+                result.status()
+        );
+
+        if (currentStatus.isFinalState()) {
             log.info(
-                    "[PAYMENT-SERVICE] Payment {} already has final state {}; ignoring repeated provider result",
-                    paymentId,
-                    payment.getStatus()
+                    "[PAYMENT-SERVICE] Payment {} already has final state {}; "
+                            + "ignoring provider state {}",
+                    payment.getId(),
+                    currentStatus,
+                    result.status()
             );
             return;
         }
 
         payment.setProvider(result.provider());
-
         payment.setTransactionId(result.transactionId());
+        payment.setStatus(targetStatus);
 
-        if (result.success()) {
-            payment.setStatus(PaymentStatus.SUCCESS);
-            log.info("[PAYMENT-SERVICE] Payment {} processed successfully. Provider {}", paymentId, result.provider());
+        if (targetStatus == PaymentStatus.SUCCESS) {
+            log.info("[PAYMENT-SERVICE] Payment {} processed successfully. Provider {}",
+                    payment.getId(), result.provider());
 
             incrementMetrics(paymentMetrics.getPaymentCompletedTotal());
 
@@ -183,9 +196,7 @@ public class PaymentService {
                     payment.getOrderId()
             );
 
-        } else if (result.status() == PaymentProviderStatus.FAILED
-                || result.status() == PaymentProviderStatus.CANCELED
-                || result.status() == PaymentProviderStatus.REQUIRES_ACTION) {
+        } else if (targetStatus == PaymentStatus.FAILED) {
             String failureReason = result.status() == PaymentProviderStatus.REQUIRES_ACTION
                     ? INTERACTIVE_ACTION_UNSUPPORTED
                     : result.failureReason();
@@ -197,13 +208,13 @@ public class PaymentService {
                 log.warn(
                         "[PAYMENT-SERVICE] Payment {} requires unsupported interactive action {} "
                                 + "from provider {}; marking payment as failed",
-                        paymentId,
+                        payment.getId(),
                         result.nextActionType(),
                         result.provider()
                 );
             } else {
                 log.warn("[PAYMENT-SERVICE] Payment {} processed failed. Provider {}. Reason: {}",
-                        paymentId, result.provider(), failureReason);
+                        payment.getId(), result.provider(), failureReason);
             }
 
             incrementMetrics(paymentMetrics.getPaymentFailedTotal());
@@ -220,10 +231,9 @@ public class PaymentService {
             );
 
         } else {
-            payment.setStatus(PaymentStatus.PROCESSING);
             log.info(
                     "[PAYMENT-SERVICE] Payment {} remains in provider state {}. Provider {}",
-                    paymentId,
+                    payment.getId(),
                     result.status(),
                     result.provider()
             );

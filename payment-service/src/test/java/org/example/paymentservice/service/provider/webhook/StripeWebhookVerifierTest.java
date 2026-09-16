@@ -19,8 +19,18 @@ class StripeWebhookVerifierTest {
             {
               "id": "evt_payment_succeeded",
               "object": "event",
+              "api_version": "2026-02-25.clover",
+              "created": 1760000000,
               "type": "payment_intent.succeeded",
-              "data": {"object": {"id": "pi_test", "object": "payment_intent"}}
+              "data": {"object": {
+                "id": "pi_test",
+                "object": "payment_intent",
+                "status": "succeeded",
+                "metadata": {
+                  "payment_id": "1",
+                  "idempotency_key": "784b3660-cd8f-4f4e-bf12-55d7cc7e43bb"
+                }
+              }}
             }
             """;
 
@@ -35,7 +45,7 @@ class StripeWebhookVerifierTest {
 
         assertThat(result.id()).isEqualTo("evt_payment_succeeded");
         assertThat(result.type()).isEqualTo("payment_intent.succeeded");
-        assertThat(result.rawPayload()).isEqualTo(PAYLOAD);
+        assertThat(result.paymentIntent().getId()).isEqualTo("pi_test");
     }
 
     @Test

@@ -5,7 +5,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.kafka.KafkaContainer;
+import org.testcontainers.kafka.ConfluentKafkaContainer;
 import org.testcontainers.utility.DockerImageName;
 
 /**
@@ -20,7 +20,7 @@ public class AbstractIntegrationTest {
             .withUsername("test")
             .withPassword("test");
 
-    static final KafkaContainer kafka = new KafkaContainer(
+    static final ConfluentKafkaContainer kafka = new ConfluentKafkaContainer(
             DockerImageName.parse("confluentinc/cp-kafka:7.5.0")
     );
 

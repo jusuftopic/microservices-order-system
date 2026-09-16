@@ -15,6 +15,7 @@ import org.example.paymentservice.event.PaymentProcessingEvent;
 import org.example.paymentservice.metrics.PaymentMetrics;
 import org.example.paymentservice.repository.PaymentRepository;
 import org.example.paymentservice.service.PaymentService;
+import org.example.paymentservice.service.PaymentStatusTransitionPolicy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -62,7 +63,7 @@ public class PaymentServiceTest {
         target = new PaymentService(
                 repository, inboxRepository, eventPublisher,
                 new ObjectMapper(), outboxRepository, outboxDlqService,
-                paymentMetrics
+                paymentMetrics, new PaymentStatusTransitionPolicy()
         );
     }
 
@@ -323,6 +324,43 @@ public class PaymentServiceTest {
 
         verify(repository, never()).save(any());
         verifyNoInteractions(outboxRepository);
+    }
+
+    @Test
+    void should_allow_processing_observation_before_terminal_webhook_result() {
+        Long paymentId = 1L;
+        UUID idempotencyKey = UUID.fromString(
+                "784b3660-cd8f-4f4e-bf12-55d7cc7e43bb"
+        );
+        Payment payment = Payment.builder()
+                .id(paymentId)
+                .orderId(10L)
+                .correlationId("correlation-10")
+                .status(PaymentStatus.PROCESSING)
+                .providerIdempotencyKey(idempotencyKey)
+                .build();
+        when(repository.findByProviderIdempotencyKey(idempotencyKey))
+                .thenReturn(Optional.of(payment));
+
+        target.finalizePayment(paymentId, idempotencyKey, new PaymentResultDTO(
+                PaymentProviderStatus.PROCESSING,
+                "pi_success",
+                null,
+                null,
+                "STRIPE"
+        ));
+        target.finalizePayment(paymentId, idempotencyKey, new PaymentResultDTO(
+                PaymentProviderStatus.SUCCEEDED,
+                "pi_success",
+                null,
+                null,
+                "STRIPE"
+        ));
+
+        assertEquals(PaymentStatus.SUCCESS, payment.getStatus());
+        assertEquals("pi_success", payment.getTransactionId());
+        verify(repository, times(2)).save(payment);
+        verify(outboxRepository).save(any(OutboxEvent.class));
     }
 
 }
