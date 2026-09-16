@@ -26,135 +26,48 @@ The Order Service is the authority for the overall order lifecycle. Other servic
 
 ## Order Service
 
-The Order Service is the central business authority for the order lifecycle. It receives customer order requests, creates orders, and controls how an order moves through its lifecycle.
+The Order Service is the authority for the overall order lifecycle.
 
-It is responsible for:
-
-* creating new orders
-* storing order items and customer information
-* generating the initial inventory reservation request
-* reacting to inventory reservation results
-* triggering payment requests after inventory is reserved
-* reacting to payment results
-* triggering inventory commit after successful payment
-* triggering inventory release after failed payment
-* marking orders as completed or failed
-* handling timeout scenarios
-* initiating compensation actions
-* emitting customer notification requests
-* update order status according every update
-
-The Order Service does not reserve stock, charge payments, or send notifications directly. It coordinates the workflow by publishing commands and reacting to outcome events.
-
-The order lifecycle is protected by explicit status transitions. This prevents invalid state changes and ensures that the order can only move through allowed business states.
+* creates and manages orders
+* coordinates the order workflow across other services
+* controls order status transitions
+* decides when compensation or timeout handling is required
 
 ## Inventory Service
 
-The Inventory Service owns inventory-related business rules. It decides whether requested products are available and manages the difference between available and reserved stock.
+The Inventory Service is the authority for stock and reservations.
 
-It is responsible for:
-
-* receiving inventory reservation requests
-* checking whether requested products exist
-* checking whether enough stock is available
-* reserving inventory for an order
-* committing previously reserved inventory after successful payment
-* releasing reserved inventory when compensation is required
-* publishing inventory success or failure outcomes
-
-The Inventory Service does not decide whether an order is completed or failed. It only reports inventory outcomes back to the system.
-
-This separation keeps stock management independent from the order lifecycle while still allowing the Order Service to make final workflow decisions.
+* manages available and reserved inventory
+* reserves stock for an order
+* commits or releases reservations
+* reports inventory outcomes without deciding the order status
 
 ## Payment Service
 
-The Payment Service owns payment processing. It creates and updates payment records, interacts with the payment provider abstraction, and reports payment outcomes.
+The Payment Service is the authority for payment processing and payment state.
 
-It is responsible for:
+* manages payment records and their lifecycle
+* integrates with external payment providers
+* handles payment and refund requests reliably
+* reports payment outcomes without deciding the order status
 
-* receiving payment requests
-* creating payment records for orders
-* preventing duplicate payment processing
-* moving payments through pending, processing, success, or failed states
-* calling the payment provider outside the main database transaction
-* storing payment success or failure events
-* handling refund requests as part of compensation
-
-The Payment Service does not decide whether the order is completed. It reports whether payment succeeded or failed, and the Order Service uses that outcome to continue the order workflow.
-
-A key design decision is that external payment communication is separated from the database transaction. This avoids keeping database locks open during slow or unreliable provider calls.
-
-In addition to managing payment state, the Payment Service is responsible for reliable communication with external payment providers. Since external systems may experience temporary failures or increased response times, payment requests are executed using resilient communication patterns.
-
-The service automatically retries transient failures and temporarily suspends requests to an unavailable provider to prevent cascading failures. These mechanisms improve system stability while allowing the payment provider to recover without affecting the overall reliability of the order processing workflow.
 ## Notification Service
 
-The Notification Service owns customer communication. It receives notification requests and delegates delivery to a notification sender implementation.
+The Notification Service owns customer communication related to order processing.
 
-It is responsible for:
-
-* receiving notification request events
-* sending order-related customer notifications
-* supporting different sender implementations
-* recording notification metrics
-* isolating notification failures from the main order workflow
-
-The Notification Service does not make business decisions. Failed notification delivery must not change the order status or block order completion.
-
-This makes notification delivery a supporting capability rather than a dependency that controls the core business flow.
+* receives requests for order-related notifications
+* delivers notifications through the configured communication channel
+* tracks notification outcomes
+* remains independent from order lifecycle decisions
 
 ## Investigation Service
 
-The Investigation Service is an LLM-supported order status provider. It
-consumes authoritative lifecycle facts, builds a local timeline projection and
-uses that evidence to generate a human-readable explanation of the distributed
-workflow.
+The Investigation Service provides an explanatory view of the distributed order workflow.
 
-It is responsible for:
-
-* consuming order lifecycle evidence without blocking order processing
-* maintaining its own order timeline projection
-* deriving the latest known authoritative status from collected evidence
-* generating an LLM-supported order status grounded in collected evidence
-* validating the generated response against the evidence and response contract
-* using a deterministic explanation when generation or validation fails
-* exposing the result through `GET /api/v1/investigations/orders/{orderId}`
-
-It owns a PostgreSQL evidence store for its timeline and does not access the
-Order Service database. Derived investigation state remains rebuildable from
-the collected evidence.
-
-The Investigation Service does not own or update order state. It remains
-outside the critical workflow. The generated explanation is a first-class API
-response only after validation; the collected lifecycle evidence remains the
-source of authoritative business facts.
-
-Investigation queries are coordinated by an application service that reads the
-local timeline and delegates explanation selection to a dedicated component.
-AI generation is accessed through a provider-independent port; provider SDKs
-and Spring AI types remain in adapters outside the application workflow. The
-mock adapter is the configured default and does not contact an external model
-provider.
-
-The versioned `order-investigation-v1` prompt sends only the restricted
-investigation context and treats all supplied evidence as data. The structured
-AI candidate contains explanation text and the status, reason, decision and
-compensation codes represented by that text. These codes are not authoritative;
-they make the generated explanation deterministically verifiable against the
-timeline before it is exposed.
-The explanation component validates AI output before selecting it and delegates
-to the deterministic generator when generation or validation fails. The
-deterministic generator explains the latest timeline evidence through the
-shared lifecycle reason, decision and compensation vocabulary.
-
-Lifecycle events are persisted in the timeline evidence store and read in a
-stable chronological order. The query flow creates a restricted explanation
-context and a complete API timeline from that internal representation. A valid
-order ID without collected evidence returns an empty investigation report.
-Zero, negative and non-numeric identifiers return `400 Bad Request`. Unknown
-endpoints and unsupported methods preserve `404 Not Found` and
-`405 Method Not Allowed` semantics, while unexpected failures return a
-sanitized `500 Internal Server Error` response.
+* builds a local timeline from authoritative lifecycle evidence
+* provides human-readable explanations of an order's current state
+* validates AI-supported explanations and provides a deterministic fallback
+* remains outside the critical order-processing path and never changes order state
 
 ## Shared Technical Capabilities
 
