@@ -9,53 +9,29 @@ Rather than focusing on business functionality, the project emphasizes architect
 # Business Context Diagram
 
 ```mermaid
-flowchart TB
+flowchart LR
     Customer["👤 Customer"]
-    Investigator["🔎 Support / Operations"]
+    Support["🔎 Support / Operations"]
 
-subgraph System["Ordering System"]
-OMS["🏢 Ordering System
+    subgraph System["Ordering System"]
+        OrderProcessing["Order Processing"]
+        Investigation["Investigation Service"]
+    end
 
-Coordinates order placement,
-payment processing,
-inventory reservation,
-and customer notification"]
+    PaymentProvider["💳 Payment Provider"]
+    NotificationProvider["✉️ Notification Provider"]
 
-Investigation["🔎 Investigation Service
+    Customer -->|"Place and track order"| OrderProcessing
+    OrderProcessing -->|"Process payment"| PaymentProvider
+    OrderProcessing -->|"Send notification"| NotificationProvider
+    Support -->|"Investigate order"| Investigation
+    OrderProcessing -->|"Order history"| Investigation
 
-Explains order status from
-lifecycle evidence"]
-end
-
-PaymentProvider["💳 External Payment Provider"]
-
-NotificationProvider["✉️ External Notification Provider"]
-
-LlmProvider["🤖 External LLM Provider"]
-
-Customer -->|"Places an order"| OMS
-OMS -->|"Order confirmation & status"| Customer
-
-OMS -->|"Payment request"| PaymentProvider
-PaymentProvider -->|"Payment result"| OMS
-
-OMS -->|"Notification request"| NotificationProvider
-
-OMS -->|"Order lifecycle evidence"| Investigation
-Investigator -->|"Investigates an order"| Investigation
-Investigation -->|"Grounded order explanation"| Investigator
-Investigation -->|"Explanation request"| LlmProvider
-LlmProvider -->|"Generated response"| Investigation
-
-style System fill:#eef4ff,stroke:#3b5fc0,stroke-width:2px
-
-style OMS fill:#3b5fc0,stroke:#1f3a8a,color:#ffffff
-style Investigation fill:#3b5fc0,stroke:#1f3a8a,color:#ffffff
-
-style Customer fill:#f5f5f5,stroke:#888
-style Investigator fill:#f5f5f5,stroke:#888
-
-style PaymentProvider fill:#fff4e5,stroke:#c98a1c
-style NotificationProvider fill:#fff4e5,stroke:#c98a1c
-style LlmProvider fill:#fff4e5,stroke:#c98a1c
+    style System fill:#eef4ff,stroke:#3b5fc0,stroke-width:2px
+    style OrderProcessing fill:#3b5fc0,stroke:#1f3a8a,color:#ffffff
+    style Investigation fill:#3b5fc0,stroke:#1f3a8a,color:#ffffff
+    style Customer fill:#f5f5f5,stroke:#888
+    style Support fill:#f5f5f5,stroke:#888
+    style PaymentProvider fill:#fff4e5,stroke:#c98a1c
+    style NotificationProvider fill:#fff4e5,stroke:#c98a1c
 ```
