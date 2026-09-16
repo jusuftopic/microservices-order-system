@@ -69,7 +69,7 @@ class PaymentWebhookControllerTest {
     private static final class RecordingWebhookHandler extends StripeWebhookHandler {
 
         private RecordingWebhookHandler() {
-            super(null);
+            super(null, null);
         }
 
         private StripeWebhookEvent handledEvent;

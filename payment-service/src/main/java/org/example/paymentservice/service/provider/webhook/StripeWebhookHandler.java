@@ -2,9 +2,8 @@ package org.example.paymentservice.service.provider.webhook;
 
 import com.stripe.model.PaymentIntent;
 import lombok.extern.slf4j.Slf4j;
-import org.example.paymentservice.dto.PaymentResultDTO;
-import org.example.paymentservice.enums.PaymentProviderStatus;
 import org.example.paymentservice.service.PaymentService;
+import org.example.paymentservice.service.provider.StripePaymentResultMapper;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
@@ -28,9 +27,14 @@ public class StripeWebhookHandler {
     );
 
     private final PaymentService paymentService;
+    private final StripePaymentResultMapper resultMapper;
 
-    public StripeWebhookHandler(PaymentService paymentService) {
+    public StripeWebhookHandler(
+            PaymentService paymentService,
+            StripePaymentResultMapper resultMapper
+    ) {
         this.paymentService = paymentService;
+        this.resultMapper = resultMapper;
     }
 
     /**
@@ -60,7 +64,7 @@ public class StripeWebhookHandler {
         paymentService.finalizePayment(
                 paymentId,
                 idempotencyKey,
-                toResult(intent)
+                resultMapper.toResult(intent)
         );
 
         log.info(
@@ -105,29 +109,4 @@ public class StripeWebhookHandler {
         }
     }
 
-    private PaymentResultDTO toResult(PaymentIntent intent) {
-        PaymentProviderStatus status = switch (intent.getStatus()) {
-            case "succeeded" -> PaymentProviderStatus.SUCCEEDED;
-            case "processing", "requires_confirmation" ->
-                    PaymentProviderStatus.PROCESSING;
-            case "requires_action" -> PaymentProviderStatus.REQUIRES_ACTION;
-            case "requires_payment_method" -> PaymentProviderStatus.FAILED;
-            case "canceled" -> PaymentProviderStatus.CANCELED;
-            default -> throw new IllegalArgumentException(
-                    "Unsupported Stripe PaymentIntent status: " + intent.getStatus()
-            );
-        };
-        String failureReason = intent.getLastPaymentError() == null
-                ? null : intent.getLastPaymentError().getCode();
-        String nextActionType = intent.getNextAction() == null
-                ? null : intent.getNextAction().getType();
-
-        return new PaymentResultDTO(
-                status,
-                intent.getId(),
-                failureReason,
-                nextActionType,
-                "STRIPE"
-        );
-    }
 }

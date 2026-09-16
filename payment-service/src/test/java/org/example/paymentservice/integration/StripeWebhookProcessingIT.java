@@ -6,6 +6,7 @@ import org.example.paymentservice.entity.Payment;
 import org.example.paymentservice.enums.PaymentStatus;
 import org.example.paymentservice.repository.PaymentRepository;
 import org.example.paymentservice.service.PaymentService;
+import org.example.paymentservice.service.provider.StripePaymentResultMapper;
 import org.example.paymentservice.service.provider.webhook.StripeWebhookEvent;
 import org.example.paymentservice.service.provider.webhook.StripeWebhookHandler;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,7 +42,10 @@ class StripeWebhookProcessingIT extends AbstractIntegrationTest {
     void setUp() {
         outboxRepository.deleteAll();
         paymentRepository.deleteAll();
-        handler = new StripeWebhookHandler(paymentService);
+        handler = new StripeWebhookHandler(
+                paymentService,
+                new StripePaymentResultMapper()
+        );
     }
 
     @Test

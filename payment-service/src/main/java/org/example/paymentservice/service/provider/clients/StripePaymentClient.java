@@ -12,9 +12,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.paymentservice.dto.PaymentRequest;
 import org.example.paymentservice.dto.PaymentResultDTO;
-import org.example.paymentservice.enums.PaymentProviderStatus;
 import org.example.paymentservice.exception.PaymentProviderNonRetryableException;
 import org.example.paymentservice.exception.PaymentProviderRetryableException;
+import org.example.paymentservice.service.provider.StripePaymentResultMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
@@ -35,6 +35,7 @@ import java.util.concurrent.TimeoutException;
 public class StripePaymentClient implements PaymentClient {
 
     private final StripeClient stripeClient;
+    private final StripePaymentResultMapper resultMapper;
 
     @Value("${app.payment.stripe.test-payment-method}")
     private String paymentMethod;
@@ -65,7 +66,7 @@ public class StripePaymentClient implements PaymentClient {
             PaymentIntent intent = stripeClient.v1()
                     .paymentIntents()
                     .create(params, options);
-            PaymentResultDTO result = toResult(intent);
+            PaymentResultDTO result = resultMapper.toResult(intent);
             log.info(
                     "[PAYMENT-PROVIDER][STRIPE] PaymentIntent {} for order {} reached state {}",
                     intent.getId(),
@@ -144,29 +145,4 @@ public class StripePaymentClient implements PaymentClient {
                 .longValueExact();
     }
 
-    private PaymentResultDTO toResult(PaymentIntent intent) {
-        PaymentProviderStatus status = switch (intent.getStatus()) {
-            case "succeeded" -> PaymentProviderStatus.SUCCEEDED;
-            case "processing", "requires_confirmation" ->
-                    PaymentProviderStatus.PROCESSING;
-            case "requires_action" -> PaymentProviderStatus.REQUIRES_ACTION;
-            case "requires_payment_method" -> PaymentProviderStatus.FAILED;
-            case "canceled" -> PaymentProviderStatus.CANCELED;
-            default -> throw new IllegalStateException(
-                    "Unsupported Stripe PaymentIntent status: " + intent.getStatus()
-            );
-        };
-        String failureReason = intent.getLastPaymentError() == null
-                ? null : intent.getLastPaymentError().getCode();
-        String nextActionType = intent.getNextAction() == null
-                ? null : intent.getNextAction().getType();
-
-        return new PaymentResultDTO(
-                status,
-                intent.getId(),
-                failureReason,
-                nextActionType,
-                "STRIPE"
-        );
-    }
 }
