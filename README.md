@@ -1,216 +1,166 @@
+<div align="center">
+
 # Microservices Order System
 
-> A production-oriented reference architecture demonstrating reliable event-driven communication, distributed workflow orchestration, cloud-native deployment and evolutionary architecture.
+**A production-oriented architecture portfolio for reliable, observable and evolvable distributed systems.**
 
-This repository is not intended to showcase how to build microservices.
+[![CI](https://github.com/jusuftopic/microservices-order-system/actions/workflows/ci.yml/badge.svg)](https://github.com/jusuftopic/microservices-order-system/actions/workflows/ci.yml)
+![Java](https://img.shields.io/badge/Java-Spring%20Boot-6DB33F?logo=springboot&logoColor=white)
+![Kafka](https://img.shields.io/badge/Messaging-Apache%20Kafka-231F20?logo=apachekafka&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/Data-PostgreSQL-4169E1?logo=postgresql&logoColor=white)
+![Kubernetes](https://img.shields.io/badge/Platform-Kubernetes-326CE5?logo=kubernetes&logoColor=white)
 
-It demonstrates how architectural patterns can be combined to build systems that remain reliable, observable and evolvable even when individual services, external providers or infrastructure components fail.
+[Architecture](#architecture-at-a-glance) · [Engineering focus](#engineering-focus) · [Handbook](#architecture-handbook) · [Project status](#project-status)
+
+</div>
+
+---
 
 ## Why this project exists
-Modern software systems fail in many different ways. Networks become unavailable, services restart unexpectedly, external providers become slow, and messages may be delivered more than once. This project demonstrates how architectural patterns can be combined to preserve business correctness despite these failures while keeping the system maintainable and evolvable.
 
-The objective of this repository is to explore how production-oriented distributed systems are designed rather than how individual technologies are used.
+Distributed systems rarely fail cleanly. Networks become unavailable, services restart, external providers slow down, and messages may arrive more than once.
 
-Instead of maximizing the number of features and technologies, the project focuses on answering questions such as:
+This project explores how architectural decisions, implementation patterns, automated validation and observability can work together to preserve business correctness under those conditions. The goal is not to maximize the number of services or technologies. It is to keep the system **reliable, understandable and deployable as it evolves**.
 
-- How do services communicate reliably inside the system boundaries?
-- How do services communicate reliably with 3rd party systems?
-- How do we recover after partial failures?
-- Who owns business state?
-- How do we avoid distributed transactions?
-- How should architectural decisions be documented?
-- How can AI be introduced without compromising reliability?
+The repository focuses on questions such as:
 
+- How should services communicate when delivery is asynchronous and failures are partial?
+- How is business state owned without relying on distributed transactions?
+- How can recovery behaviour be designed, tested and observed?
+- How should architecture decisions and trade-offs be documented?
+- How can a non-deterministic LLM dependency be integrated without becoming authoritative for business state?
 
-## What this project demonstrates
-
-This repository demonstrates practical implementation of:
-
-✓ Event-driven architecture
-
-✓ Saga orchestration
-
-✓ Inbox / Outbox Pattern
-
-✓ Idempotent message processing
-
-✓ Distributed failure recovery
-
-✓ Service ownership
-
-✓ Architectural Decision Records (ADR)
-
-✓ Cloud-native deployment
-
-✓ Kubernetes
-
-✓ CI/CD
-
-✓ Observability
-
-✓ Architecture documentation
-
-✓ Evolutionary architecture
-
-✓ API Gateway with path-based routing and rate limiting
-
-## Architecture Overview
+## Architecture at a glance
 
 ```mermaid
 flowchart TB
-    Client(["👤 Customer / Client"])
+    Client(["Customer / Client"])
 
     subgraph System["Ordering System"]
         direction TB
 
-        ApiGateway["🛡️ API Gateway"]
-        OrderService["📦 Order Service"]
+        Gateway["API Gateway"]
+        Order["Order Service"]
+        Inventory["Inventory Service"]
+        Payment["Payment Service"]
+        Notification["Notification Service"]
+        Investigation["Investigation Service"]
+        Kafka[("Apache Kafka")]
 
-        Kafka[("📨 Kafka")]
-
-        InventoryService["📦 Inventory Service"]
-        PaymentService["💳 Payment Service"]
-        NotificationService["🔔 Notification Service"]
-        InvestigationService["🔎 Investigation Service"]
-
-        OrderDb[("Order DB")]
-        InventoryDb[("Inventory DB")]
-        PaymentDb[("Payment DB")]
-        NotificationDb[("Notification DB")]
-        InvestigationDb[("Investigation DB")]
-
-        ApiGateway -->|"/api/v1/orders"| OrderService
-        ApiGateway -->|"/api/v1/investigations"| InvestigationService
-
-        OrderService --> OrderDb
-        InventoryService --> InventoryDb
-        PaymentService --> PaymentDb
-        NotificationService --> NotificationDb
-        InvestigationService --> InvestigationDb
-
-        OrderService --> Kafka
-        Kafka --> InventoryService
-        Kafka --> PaymentService
-        Kafka --> NotificationService
-        Kafka --> InvestigationService
+        Gateway --> Order
+        Gateway --> Investigation
+        Order --> Kafka
+        Kafka --> Inventory
+        Kafka --> Payment
+        Kafka --> Notification
+        Kafka --> Investigation
     end
 
-    PaymentProvider["External Payment Provider"]
-    NotificationProvider["External Notification Provider"]
-    LlmProvider["External LLM Provider"]
+    PaymentProvider["Payment Provider"]
+    NotificationProvider["Notification Provider"]
+    LLMProvider["LLM Provider"]
 
-    Client --> ApiGateway
+    Client --> Gateway
+    Payment --> PaymentProvider
+    Notification --> NotificationProvider
+    Investigation --> LLMProvider
 
-    PaymentService --> PaymentProvider
-    NotificationService --> NotificationProvider
-    InvestigationService --> LlmProvider
-
-    style System fill:#eef4ff,stroke:#3b5fc0,stroke-width:2px
-
-    style OrderService fill:#3b5fc0,stroke:#1f3a8a,color:#fff
-    style InventoryService fill:#3b5fc0,stroke:#1f3a8a,color:#fff
-    style PaymentService fill:#3b5fc0,stroke:#1f3a8a,color:#fff
-    style NotificationService fill:#3b5fc0,stroke:#1f3a8a,color:#fff
-    style InvestigationService fill:#3b5fc0,stroke:#1f3a8a,color:#fff
-    style ApiGateway fill:#2f855a,stroke:#1f5f40,color:#fff
-
-    style Kafka fill:#fff4e5,stroke:#c98a1c
-
-    style OrderDb fill:#f5f5f5
-    style InventoryDb fill:#f5f5f5
-    style PaymentDb fill:#f5f5f5
-    style NotificationDb fill:#f5f5f5
-    style InvestigationDb fill:#f5f5f5
-
-    style PaymentProvider fill:#fff4e5,stroke:#c98a1c
-    style NotificationProvider fill:#fff4e5,stroke:#c98a1c
-    style LlmProvider fill:#fff4e5,stroke:#c98a1c
+    style System fill:#f5f8ff,stroke:#3157a4,stroke-width:2px
+    style Gateway fill:#0f766e,stroke:#0b514b,color:#fff
+    style Kafka fill:#fff4df,stroke:#b97811
+    style Order fill:#3157a4,stroke:#213d76,color:#fff
+    style Inventory fill:#3157a4,stroke:#213d76,color:#fff
+    style Payment fill:#3157a4,stroke:#213d76,color:#fff
+    style Notification fill:#3157a4,stroke:#213d76,color:#fff
+    style Investigation fill:#3157a4,stroke:#213d76,color:#fff
 ```
 
-## Repository philosophy
+## Engineering focus
 
-The goal is not to build the biggest microservice project.
+| Concern | How the project addresses it |
+|---|---|
+| Reliable messaging | Transactional publication, idempotent processing and explicit failure handling |
+| Distributed workflows | Orchestrated order lifecycle with compensation and recovery paths |
+| Service ownership | Database per service, local transactions and explicit domain responsibility |
+| Resilience | Retries, circuit breaking, graceful shutdown and dead-letter handling |
+| External dependencies | Controlled provider integration with fallback behaviour and rate limiting |
+| Observability | Business and technical metrics, centralized logging and operational documentation |
+| Delivery | CI pipeline, containerized services and Kubernetes deployment manifests |
+| AI integration | Structured and validated LLM interaction with deterministic fallback behaviour |
 
-The goal is to continuously evolve the architecture while keeping the system deployable, documented and production-oriented.
+## System components
 
-Every major improvement challenges an existing architecture.
+| Component | Responsibility |
+|---|---|
+| Order Service | Owns the order lifecycle and coordinates the distributed workflow |
+| Inventory Service | Reserves and commits inventory |
+| Payment Service | Integrates resilient payment processing |
+| Notification Service | Handles customer notification delivery |
+| Investigation Service | Provides validated LLM-supported order analysis with deterministic fallback |
+| API Gateway | Provides the public entry point, path-based routing and request protection |
 
-Therefore, every decision is treated as an architectural evolution and accompanied by documentation explaining:
+## Architecture handbook
 
-- the problem
-- considered alternatives
-- chosen solution
-- trade-offs
-- future evolution
+The implementation is supported by a living handbook that explains the design, not only the code:
 
-## Current Implementation
-
-The current implementation focuses on production-oriented architectural capabilities rather than feature completeness.
-
-### Business Services
-- Order Service – order lifecycle orchestration
-- Inventory Service – inventory reservation and commit
-- Payment Service – resilient payment processing
-- Notification Service – customer notification delivery
-- Investigation Service – validated LLM-supported order status with deterministic fallback
-
-### Distributed Communication
-- Apache Kafka for asynchronous messaging
-- Saga orchestration with compensation workflows
-- Inbox/Outbox pattern for reliable event publication and idempotent processing
-
-### Reliability & Resilience
-- Retry and Circuit Breaker patterns
-- Dead Letter Queue (DLQ) handling
-- Graceful shutdown
-- Edge rate limiting and concurrent-request protection for costly operations
-
-### Data Management
-- Database-per-service using PostgreSQL
-- Explicit service ownership
-- Local transactions with eventual consistency
-
-### Operations
-- Traefik API Gateway as the single public API entry point
-- Path-based routing to Order and Investigation APIs
-- Business and technical metrics
-- Centralized logging
-- Kubernetes deployment manifests
-- CI pipeline
-
-## Documentation
-
-- [Business Context](_docs/handbook/01-business-context.md)
-- [Architecture Overview](_docs/handbook/03-architecture-overview.md)
-- [Service Responsibilities](_docs/handbook/04-service-responsibilities.md)
-- [Event Flow](_docs/handbook/06-event-flow.md)
-- [Reliable Messaging](_docs/handbook/07-reliable-messaging.md)
-- [Resilience & Fault Tolerance](_docs/handbook/08-resilience-&-fault-tolerance.md)
-- [Failure Scenarios](_docs/handbook/15-failure-scenarios.md)
-- [Tradeoffs](_docs/handbook/14-tradeoffs.md)
-- [Deployment](_docs/handbook/11-deployment.md)
+- [Business context](_docs/handbook/01-business-context.md)
+- [Architecture overview](_docs/handbook/03-architecture-overview.md)
+- [Service responsibilities](_docs/handbook/04-service-responsibilities.md)
+- [Event flow](_docs/handbook/06-event-flow.md)
+- [Reliable messaging](_docs/handbook/07-reliable-messaging.md)
+- [Resilience and fault tolerance](_docs/handbook/08-resilience-&-fault-tolerance.md)
 - [Observability](_docs/handbook/09-observability.md)
-- [CI Pipeline](_docs/handbook/12-pipeline.md)
+- [Deployment](_docs/handbook/11-deployment.md)
+- [CI pipeline](_docs/handbook/12-pipeline.md)
+- [Trade-offs](_docs/handbook/14-tradeoffs.md)
+- [Failure scenarios](_docs/handbook/15-failure-scenarios.md)
 - [Architecture Decision Records](_docs/handbook/16-architecture-decision-records.md)
 
-## Project Evolution
+## Repository structure
 
-This repository is intentionally developed as a long-term architecture portfolio.
+```text
+.
+├── order-service/
+├── inventory-service/
+├── payment-service/
+├── notification-service/
+├── investigation-service/
+├── messaging-starter/
+├── commons/
+├── _gateway/
+├── _k8s/
+├── _observability/
+├── _docs/
+└── .github/workflows/
+```
 
-Rather than adding technologies for their own sake, each new iteration explores a meaningful architectural concern while keeping the system production-oriented and fully deployable.
+## Project status
 
-### Completed
-- Reliable event-driven architecture
-- Inbox / Outbox messaging
-- Saga orchestration
-- Architecture handbook
-- Architecture Decision Records (ADR)
-- Kubernetes deployment
+This is an **ongoing personal engineering project** developed as a long-term architecture portfolio.
+
+### Implemented
+
+- Reliable event-driven workflows
+- Architecture handbook and ADRs
+- Kubernetes deployment manifests
 - CI pipeline
+- Observability foundations
+- API gateway with path-based routing and rate limiting
+- Validated LLM-supported investigation flow
 
-### In Progress
-- AWS deployment
+### In progress
 
-### Planned
-- AI-assisted Features
-- Production hardening
+- AWS deployment in the separate [infrastructure repository](https://github.com/jusuftopic/microservices-order-system-infrastructure)
+- Continued production hardening and failure-scenario validation
+
+## Design principle
+
+Every major improvement should answer a concrete architectural problem. New technology is introduced only when it makes the system more reliable, observable, secure or easier to evolve.
+
+---
+
+<div align="center">
+
+Built and documented by [Jusuf Topić](https://github.com/jusuftopic) · [LinkedIn](https://www.linkedin.com/in/jusuf-topic-407789200) · [Medium](https://medium.com/@jusuftopic)
+
+</div>
