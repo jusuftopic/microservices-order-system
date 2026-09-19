@@ -8,7 +8,10 @@ import org.example.messagingstarter.outbox.entity.OutboxEvent;
 import org.example.messagingstarter.outbox.repository.OutboxRepository;
 import org.example.messagingstarter.outbox.service.OutboxDlqService;
 import org.example.paymentservice.dto.PaymentResultDTO;
+import org.example.paymentservice.dto.RefundRequest;
+import org.example.paymentservice.dto.RefundResult;
 import org.example.paymentservice.entity.Payment;
+import org.example.paymentservice.enums.RefundStatus;
 import org.example.paymentservice.enums.PaymentStatus;
 import org.example.paymentservice.enums.PaymentProviderStatus;
 import org.example.paymentservice.event.PaymentProcessingEvent;
@@ -16,6 +19,7 @@ import org.example.paymentservice.metrics.PaymentMetrics;
 import org.example.paymentservice.repository.PaymentRepository;
 import org.example.paymentservice.service.PaymentService;
 import org.example.paymentservice.service.PaymentStatusTransitionPolicy;
+import org.example.paymentservice.service.provider.PaymentProviderWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,6 +59,9 @@ public class PaymentServiceTest {
     @Mock
     private PaymentMetrics paymentMetrics;
 
+    @Mock
+    private PaymentProviderWrapper paymentProviderWrapper;
+
     /* class under test */
     private PaymentService target;
 
@@ -63,8 +70,73 @@ public class PaymentServiceTest {
         target = new PaymentService(
                 repository, inboxRepository, eventPublisher,
                 new ObjectMapper(), outboxRepository, outboxDlqService,
-                paymentMetrics, new PaymentStatusTransitionPolicy()
+                paymentMetrics, new PaymentStatusTransitionPolicy(),
+                paymentProviderWrapper
         );
+    }
+
+    @Test
+    void should_refund_successful_payment() {
+        UUID providerIdempotencyKey = UUID.randomUUID();
+        Payment payment = Payment.builder()
+                .id(7L)
+                .orderId(3L)
+                .status(PaymentStatus.SUCCESS)
+                .refundStatus(RefundStatus.NOT_REQUESTED)
+                .transactionId("provider-payment-7")
+                .providerIdempotencyKey(providerIdempotencyKey)
+                .build();
+        when(repository.findByOrderId(3L)).thenReturn(payment);
+        when(paymentProviderWrapper.refund(any())).thenReturn(
+                new RefundResult(true, "provider-refund-7", null)
+        );
+
+        target.refundPayment(3L);
+
+        ArgumentCaptor<RefundRequest> requestCaptor =
+                ArgumentCaptor.forClass(RefundRequest.class);
+        verify(paymentProviderWrapper).refund(requestCaptor.capture());
+        assertEquals(7L, requestCaptor.getValue().refundOperationId());
+        assertEquals(3L, requestCaptor.getValue().orderId());
+        assertEquals("provider-payment-7", requestCaptor.getValue().providerPaymentId());
+        assertEquals("refund-" + providerIdempotencyKey,
+                requestCaptor.getValue().idempotencyKey());
+        assertEquals(RefundStatus.SUCCESS, payment.getRefundStatus());
+        verify(repository, times(3)).save(payment);
+    }
+
+    @Test
+    void should_reject_refund_for_payment_that_is_not_successful() {
+        Payment payment = Payment.builder()
+                .id(7L)
+                .orderId(3L)
+                .status(PaymentStatus.PROCESSING)
+                .refundStatus(RefundStatus.NOT_REQUESTED)
+                .build();
+        when(repository.findByOrderId(3L)).thenReturn(payment);
+
+        assertThrows(IllegalStateException.class, () -> target.refundPayment(3L));
+
+        verifyNoInteractions(paymentProviderWrapper);
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void should_not_repeat_refund_in_final_state() {
+        Payment payment = Payment.builder()
+                .id(7L)
+                .orderId(3L)
+                .status(PaymentStatus.SUCCESS)
+                .refundStatus(RefundStatus.SUCCESS)
+                .transactionId("provider-payment-7")
+                .providerIdempotencyKey(UUID.randomUUID())
+                .build();
+        when(repository.findByOrderId(3L)).thenReturn(payment);
+
+        target.refundPayment(3L);
+
+        verifyNoInteractions(paymentProviderWrapper);
+        verify(repository, never()).save(any());
     }
 
     @Test

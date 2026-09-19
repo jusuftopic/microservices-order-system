@@ -2,6 +2,7 @@ package org.example.paymentservice.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.example.paymentservice.enums.RefundStatus;
 import org.example.paymentservice.enums.PaymentStatus;
 
 import java.time.LocalDateTime;
@@ -67,10 +68,21 @@ public class Payment {
      */
     private String failureReason;
 
+    /**
+     * Refund state associated with this payment.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private RefundStatus refundStatus = RefundStatus.NOT_REQUESTED;
+
     private LocalDateTime createdAt;
 
     @PrePersist
     public void prePersist() {
+        if (refundStatus == null) {
+            refundStatus = RefundStatus.NOT_REQUESTED;
+        }
         createdAt = LocalDateTime.now();
     }
 }

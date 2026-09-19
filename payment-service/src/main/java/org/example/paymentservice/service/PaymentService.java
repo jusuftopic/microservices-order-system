@@ -14,12 +14,16 @@ import org.example.messagingstarter.outbox.entity.OutboxEvent;
 import org.example.messagingstarter.outbox.repository.OutboxRepository;
 import org.example.messagingstarter.outbox.service.OutboxDlqService;
 import org.example.paymentservice.dto.PaymentResultDTO;
+import org.example.paymentservice.dto.RefundRequest;
+import org.example.paymentservice.dto.RefundResult;
 import org.example.paymentservice.entity.Payment;
+import org.example.paymentservice.enums.RefundStatus;
 import org.example.paymentservice.enums.PaymentStatus;
 import org.example.paymentservice.enums.PaymentProviderStatus;
 import org.example.paymentservice.event.PaymentProcessingEvent;
 import org.example.paymentservice.metrics.PaymentMetrics;
 import org.example.paymentservice.repository.PaymentRepository;
+import org.example.paymentservice.service.provider.PaymentProviderWrapper;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,6 +55,7 @@ public class PaymentService {
     private final OutboxDlqService outboxDlqService;
     private final PaymentMetrics paymentMetrics;
     private final PaymentStatusTransitionPolicy transitionPolicy;
+    private final PaymentProviderWrapper paymentProviderWrapper;
 
     /**
      * Creates a payment for a given order.
@@ -123,9 +128,68 @@ public class PaymentService {
         return Payment.builder()
                 .orderId(event.orderId())
                 .status(PaymentStatus.PENDING)
+                .refundStatus(RefundStatus.NOT_REQUESTED)
                 .correlationId(event.correlationId())
                 .providerIdempotencyKey(event.messageId())
                 .build();
+    }
+
+    /**
+     * Initiates a refund for the successful payment associated with an order.
+     * Repeated calls reuse the same provider idempotency key.
+     *
+     * @param orderId order whose payment must be refunded
+     */
+    public void refundPayment(Long orderId) {
+        Payment payment = Optional.ofNullable(repository.findByOrderId(orderId))
+                .orElseThrow(() -> new IllegalStateException(
+                        "No payment exists for refund order " + orderId
+                ));
+
+        if (payment.getStatus() != PaymentStatus.SUCCESS) {
+            throw new IllegalStateException("Only a successful payment can be refunded");
+        }
+        if (payment.getTransactionId() == null || payment.getTransactionId().isBlank()) {
+            throw new IllegalStateException(
+                    "Successful payment has no provider transaction identifier"
+            );
+        }
+
+        RefundStatus currentRefundStatus = Optional.ofNullable(payment.getRefundStatus())
+                .orElse(RefundStatus.NOT_REQUESTED);
+        if (currentRefundStatus.isFinalState()) {
+            log.info(
+                    "[PAYMENT-SERVICE][REFUND] Payment {} already has final refund state {}",
+                    payment.getId(),
+                    currentRefundStatus
+            );
+            return;
+        }
+
+        RefundRequest request = new RefundRequest(
+                payment.getId(),
+                payment.getOrderId(),
+                payment.getTransactionId(),
+                null,
+                "refund-" + payment.getProviderIdempotencyKey()
+        );
+
+        payment.setRefundStatus(RefundStatus.REQUESTED);
+        repository.save(payment);
+        payment.setRefundStatus(RefundStatus.PROCESSING);
+        repository.save(payment);
+
+        RefundResult result = paymentProviderWrapper.refund(request);
+        payment.setRefundStatus(
+                result.succeeded() ? RefundStatus.SUCCESS : RefundStatus.FAILED
+        );
+        repository.save(payment);
+
+        log.info(
+                "[PAYMENT-SERVICE][REFUND] Payment {} refund completed with state {}",
+                payment.getId(),
+                payment.getRefundStatus()
+        );
     }
 
     /**
