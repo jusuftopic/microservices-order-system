@@ -6,8 +6,10 @@ import com.stripe.exception.ApiException;
 import com.stripe.exception.RateLimitException;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
+import com.stripe.model.Refund;
 import com.stripe.net.RequestOptions;
 import com.stripe.param.PaymentIntentCreateParams;
+import com.stripe.param.RefundCreateParams;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.paymentservice.dto.PaymentRequest;
@@ -16,7 +18,7 @@ import org.example.paymentservice.dto.RefundRequest;
 import org.example.paymentservice.dto.RefundResult;
 import org.example.paymentservice.exception.PaymentProviderNonRetryableException;
 import org.example.paymentservice.exception.PaymentProviderRetryableException;
-import org.example.paymentservice.mapper.StripePaymentResultMapper;
+import org.example.paymentservice.mapper.StripeResultMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
@@ -37,7 +39,7 @@ import java.util.concurrent.TimeoutException;
 public class StripePaymentClient implements PaymentClient {
 
     private final StripeClient stripeClient;
-    private final StripePaymentResultMapper resultMapper;
+    private final StripeResultMapper resultMapper;
 
     @Value("${app.payment.stripe.test-payment-method}")
     private String paymentMethod;
@@ -85,16 +87,71 @@ public class StripePaymentClient implements PaymentClient {
 
     @Override
     public RefundResult refund(RefundRequest request) {
-        log.warn(
-                "[PAYMENT-PROVIDER][STRIPE] Refund integration is not implemented; "
-                        + "refund operation {} was not sent to Stripe",
-                request.refundOperationId()
-        );
-        return new RefundResult(false, null, "STRIPE_REFUND_NOT_IMPLEMENTED");
+        try {
+            validateRefundRequest(request);
+
+            Refund refund;
+            if (request.providerRefundId() != null
+                    && !request.providerRefundId().isBlank()) {
+                refund = stripeClient.v1()
+                        .refunds()
+                        .retrieve(request.providerRefundId());
+            } else {
+                RefundCreateParams params = RefundCreateParams.builder()
+                        .setPaymentIntent(request.providerPaymentId())
+                        .putMetadata(
+                                "refund_operation_id",
+                                request.refundOperationId().toString()
+                        )
+                        .putMetadata("order_id", request.orderId().toString())
+                        .putMetadata("idempotency_key", request.idempotencyKey())
+                        .build();
+                RequestOptions options = RequestOptions.builder()
+                        .setIdempotencyKey(request.idempotencyKey())
+                        .build();
+
+                refund = stripeClient.v1().refunds().create(params, options);
+            }
+
+            RefundResult result = resultMapper.toResult(refund);
+            log.info(
+                    "[PAYMENT-PROVIDER][STRIPE] Refund {} for operation {} reached state {}",
+                    refund.getId(),
+                    request.refundOperationId(),
+                    refund.getStatus()
+            );
+            return result;
+        } catch (StripeException exception) {
+            throw translate(exception);
+        } catch (Exception exception) {
+            throw translateUnexpected(exception);
+        }
+    }
+
+    private void validateRefundRequest(RefundRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("Refund request is required");
+        }
+        if (request.refundOperationId() == null) {
+            throw new IllegalArgumentException("Refund operation ID is required");
+        }
+        if (request.orderId() == null) {
+            throw new IllegalArgumentException("Order ID is required");
+        }
+        if (request.idempotencyKey() == null || request.idempotencyKey().isBlank()) {
+            throw new IllegalArgumentException("Refund idempotency key is required");
+        }
+        boolean retrievingExistingRefund = request.providerRefundId() != null
+                && !request.providerRefundId().isBlank();
+        if (!retrievingExistingRefund
+                && (request.providerPaymentId() == null
+                || request.providerPaymentId().isBlank())) {
+            throw new IllegalArgumentException("Provider payment ID is required");
+        }
     }
 
     static RuntimeException translate(StripeException exception) {
-        String message = "Stripe could not process the PaymentIntent request";
+        String message = "Stripe could not process the provider request";
         if (isRetryable(exception)) {
             return new PaymentProviderRetryableException(
                     message,

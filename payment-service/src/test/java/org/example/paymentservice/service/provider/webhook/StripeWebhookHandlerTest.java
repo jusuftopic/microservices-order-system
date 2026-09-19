@@ -3,7 +3,7 @@ package org.example.paymentservice.service.provider.webhook;
 import com.stripe.model.PaymentIntent;
 import org.example.paymentservice.dto.PaymentResultDTO;
 import org.example.paymentservice.service.PaymentService;
-import org.example.paymentservice.mapper.StripePaymentResultMapper;
+import org.example.paymentservice.mapper.StripeResultMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,7 +33,7 @@ class StripeWebhookHandlerTest {
     void setUp() {
         handler = new StripeWebhookHandler(
                 paymentService,
-                new StripePaymentResultMapper()
+                new StripeResultMapper()
         );
     }
 

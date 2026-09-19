@@ -1,18 +1,20 @@
 package org.example.paymentservice.mapper;
 
 import com.stripe.model.PaymentIntent;
+import com.stripe.model.Refund;
 import org.example.paymentservice.dto.PaymentResultDTO;
+import org.example.paymentservice.dto.RefundResult;
 import org.example.paymentservice.enums.PaymentProviderStatus;
 import org.springframework.stereotype.Component;
 
 /**
- * Translates Stripe PaymentIntent snapshots into the provider-neutral payment result.
+ * Translates Stripe responses into provider-neutral payment contracts.
  */
 @Component
-public class StripePaymentResultMapper {
+public class StripeResultMapper {
 
     /**
-     * Maps the current Stripe PaymentIntent state into the internal provider contract.
+     * Maps a Stripe PaymentIntent into the internal payment result.
      *
      * @param intent Stripe PaymentIntent returned synchronously or by a webhook
      * @return provider-neutral payment result
@@ -41,5 +43,30 @@ public class StripePaymentResultMapper {
                 nextActionType,
                 "STRIPE"
         );
+    }
+
+    /**
+     * Maps a Stripe Refund into the internal refund result.
+     *
+     * @param refund Stripe refund snapshot
+     * @return provider-neutral refund result
+     */
+    public RefundResult toResult(Refund refund) {
+        boolean succeeded = "succeeded".equals(refund.getStatus());
+        String reason = switch (refund.getStatus()) {
+            case "succeeded" -> null;
+            case "pending" -> refund.getPendingReason() == null
+                    ? "REFUND_PENDING"
+                    : refund.getPendingReason();
+            case "requires_action" -> "REFUND_REQUIRES_ACTION";
+            case "canceled" -> refund.getFailureReason() == null
+                    ? "REFUND_CANCELED"
+                    : refund.getFailureReason();
+            case "failed" -> refund.getFailureReason() == null
+                    ? "REFUND_FAILED"
+                    : refund.getFailureReason();
+            default -> "UNSUPPORTED_REFUND_STATUS_" + refund.getStatus();
+        };
+        return new RefundResult(succeeded, refund.getId(), reason);
     }
 }

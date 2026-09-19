@@ -3,7 +3,7 @@ package org.example.paymentservice.service.provider.webhook;
 import com.stripe.model.PaymentIntent;
 import lombok.extern.slf4j.Slf4j;
 import org.example.paymentservice.service.PaymentService;
-import org.example.paymentservice.mapper.StripePaymentResultMapper;
+import org.example.paymentservice.mapper.StripeResultMapper;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
@@ -27,11 +27,11 @@ public class StripeWebhookHandler {
     );
 
     private final PaymentService paymentService;
-    private final StripePaymentResultMapper resultMapper;
+    private final StripeResultMapper resultMapper;
 
     public StripeWebhookHandler(
             PaymentService paymentService,
-            StripePaymentResultMapper resultMapper
+            StripeResultMapper resultMapper
     ) {
         this.paymentService = paymentService;
         this.resultMapper = resultMapper;
