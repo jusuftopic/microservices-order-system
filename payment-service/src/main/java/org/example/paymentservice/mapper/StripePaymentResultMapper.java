@@ -1,4 +1,4 @@
-package org.example.paymentservice.service.provider;
+package org.example.paymentservice.mapper;
 
 import com.stripe.model.PaymentIntent;
 import org.example.paymentservice.dto.PaymentResultDTO;

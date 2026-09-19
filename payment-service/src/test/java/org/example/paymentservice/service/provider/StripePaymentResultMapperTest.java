@@ -4,6 +4,7 @@ import com.stripe.model.PaymentIntent;
 import com.stripe.model.PaymentIntent.NextAction;
 import com.stripe.model.StripeError;
 import org.example.paymentservice.enums.PaymentProviderStatus;
+import org.example.paymentservice.mapper.StripePaymentResultMapper;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

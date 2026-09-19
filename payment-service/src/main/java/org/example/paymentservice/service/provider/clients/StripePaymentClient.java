@@ -16,7 +16,7 @@ import org.example.paymentservice.dto.RefundRequest;
 import org.example.paymentservice.dto.RefundResult;
 import org.example.paymentservice.exception.PaymentProviderNonRetryableException;
 import org.example.paymentservice.exception.PaymentProviderRetryableException;
-import org.example.paymentservice.service.provider.StripePaymentResultMapper;
+import org.example.paymentservice.mapper.StripePaymentResultMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
