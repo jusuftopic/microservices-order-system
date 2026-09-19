@@ -12,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.paymentservice.dto.PaymentRequest;
 import org.example.paymentservice.dto.PaymentResultDTO;
+import org.example.paymentservice.dto.RefundRequest;
+import org.example.paymentservice.dto.RefundResult;
 import org.example.paymentservice.exception.PaymentProviderNonRetryableException;
 import org.example.paymentservice.exception.PaymentProviderRetryableException;
 import org.example.paymentservice.service.provider.StripePaymentResultMapper;
@@ -79,6 +81,16 @@ public class StripePaymentClient implements PaymentClient {
         } catch (Exception exception) {
             throw translateUnexpected(exception);
         }
+    }
+
+    @Override
+    public RefundResult refund(RefundRequest request) {
+        log.warn(
+                "[PAYMENT-PROVIDER][STRIPE] Refund integration is not implemented; "
+                        + "refund operation {} was not sent to Stripe",
+                request.refundOperationId()
+        );
+        return new RefundResult(false, null, "STRIPE_REFUND_NOT_IMPLEMENTED");
     }
 
     static RuntimeException translate(StripeException exception) {
