@@ -63,7 +63,7 @@ public class PaymentRequestKafkaListener {
                 event.correlationId()
         );
 
-        paymentService.handleRefund(event);
+        paymentService.refundPayment(event.orderId());
     }
 
     /**

@@ -141,6 +141,7 @@ public class PaymentService {
      * @param orderId order whose payment must be refunded
      */
     public void refundPayment(Long orderId) {
+        incrementMetrics(paymentMetrics.getPaymentRefundRequestsTotal());
         Payment payment = Optional.ofNullable(repository.findByOrderId(orderId))
                 .orElseThrow(() -> new IllegalStateException(
                         "No payment exists for refund order " + orderId
@@ -190,6 +191,8 @@ public class PaymentService {
                 payment.getId(),
                 payment.getRefundStatus()
         );
+
+        incrementMetrics(paymentMetrics.getPaymentRefundCompletedTotal());
     }
 
     /**
@@ -349,8 +352,7 @@ public class PaymentService {
      * @param event {@link RefundPaymentCommand} to handle
      */
     public void handleRefund(RefundPaymentCommand event) {
-        incrementMetrics(paymentMetrics.getPaymentRefundRequestsTotal());
-        incrementMetrics(paymentMetrics.getPaymentRefundCompletedTotal());
+
     }
 
     private void incrementMetrics(final Counter counter) {
