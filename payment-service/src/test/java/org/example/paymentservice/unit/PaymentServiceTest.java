@@ -3,6 +3,7 @@ package org.example.paymentservice.unit;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.messagingstarter.EventConstants;
 import org.example.messagingstarter.contracts.commands.ProcessPaymentCommand;
+import org.example.messagingstarter.contracts.commands.RefundPaymentCommand;
 import org.example.messagingstarter.inbox.repository.InboxRepository;
 import org.example.messagingstarter.outbox.entity.OutboxEvent;
 import org.example.messagingstarter.outbox.repository.OutboxRepository;
@@ -77,6 +78,10 @@ public class PaymentServiceTest {
 
     @Test
     void should_refund_successful_payment() {
+        final RefundPaymentCommand refundPaymentCommand = new RefundPaymentCommand(
+                3L, "corrId1", UUID.randomUUID()
+        );
+
         UUID providerIdempotencyKey = UUID.randomUUID();
         Payment payment = Payment.builder()
                 .id(7L)
@@ -86,12 +91,14 @@ public class PaymentServiceTest {
                 .transactionId("provider-payment-7")
                 .providerIdempotencyKey(providerIdempotencyKey)
                 .build();
-        when(repository.findByOrderId(3L)).thenReturn(payment);
+
+        when(inboxRepository.insertIfNotExists(refundPaymentCommand.messageId())).thenReturn(1);
+        when(repository.findByOrderId(refundPaymentCommand.orderId())).thenReturn(payment);
         when(paymentProviderWrapper.refund(any())).thenReturn(
                 new RefundResult(true, "provider-refund-7", null)
         );
 
-        target.refundPayment(3L);
+        target.refundPayment(refundPaymentCommand);
 
         ArgumentCaptor<RefundRequest> requestCaptor =
                 ArgumentCaptor.forClass(RefundRequest.class);
@@ -102,20 +109,26 @@ public class PaymentServiceTest {
         assertEquals("refund-" + providerIdempotencyKey,
                 requestCaptor.getValue().idempotencyKey());
         assertEquals(RefundStatus.SUCCESS, payment.getRefundStatus());
-        verify(repository, times(3)).save(payment);
+        verify(repository, times(2)).save(payment);
     }
 
     @Test
     void should_reject_refund_for_payment_that_is_not_successful() {
+        final RefundPaymentCommand refundPaymentCommand = new RefundPaymentCommand(
+                3L, "corrId1", UUID.randomUUID()
+        );
+
         Payment payment = Payment.builder()
                 .id(7L)
                 .orderId(3L)
                 .status(PaymentStatus.PROCESSING)
                 .refundStatus(RefundStatus.NOT_REQUESTED)
                 .build();
-        when(repository.findByOrderId(3L)).thenReturn(payment);
 
-        assertThrows(IllegalStateException.class, () -> target.refundPayment(3L));
+        when(inboxRepository.insertIfNotExists(refundPaymentCommand.messageId())).thenReturn(1);
+        when(repository.findByOrderId(refundPaymentCommand.orderId())).thenReturn(payment);
+
+        assertThrows(IllegalStateException.class, () -> target.refundPayment(refundPaymentCommand));
 
         verifyNoInteractions(paymentProviderWrapper);
         verify(repository, never()).save(any());
@@ -123,6 +136,10 @@ public class PaymentServiceTest {
 
     @Test
     void should_not_repeat_refund_in_final_state() {
+        final RefundPaymentCommand refundPaymentCommand = new RefundPaymentCommand(
+                3L, "corrId1", UUID.randomUUID()
+        );
+
         Payment payment = Payment.builder()
                 .id(7L)
                 .orderId(3L)
@@ -131,9 +148,11 @@ public class PaymentServiceTest {
                 .transactionId("provider-payment-7")
                 .providerIdempotencyKey(UUID.randomUUID())
                 .build();
-        when(repository.findByOrderId(3L)).thenReturn(payment);
 
-        target.refundPayment(3L);
+        when(inboxRepository.insertIfNotExists(refundPaymentCommand.messageId())).thenReturn(1);
+        when(repository.findByOrderId(refundPaymentCommand.orderId())).thenReturn(payment);
+
+        target.refundPayment(refundPaymentCommand);
 
         verifyNoInteractions(paymentProviderWrapper);
         verify(repository, never()).save(any());

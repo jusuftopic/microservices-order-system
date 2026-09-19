@@ -138,9 +138,18 @@ public class PaymentService {
      * Initiates a refund for the successful payment associated with an order.
      * Repeated calls reuse the same provider idempotency key.
      *
-     * @param orderId order whose payment must be refunded
+     * @param refundCommand Refund payment command
      */
-    public void refundPayment(Long orderId) {
+    public void refundPayment(RefundPaymentCommand refundCommand) {
+        int inserted = inboxRepository.insertIfNotExists(refundCommand.messageId());
+
+        if (inserted == 0) {
+            log.warn("[PAYMENT-SERVICE] Order {} already processed.",refundCommand.orderId());
+            return;
+        }
+
+        final long orderId = refundCommand.orderId();
+
         incrementMetrics(paymentMetrics.getPaymentRefundRequestsTotal());
         Payment payment = Optional.ofNullable(repository.findByOrderId(orderId))
                 .orElseThrow(() -> new IllegalStateException(
@@ -175,8 +184,6 @@ public class PaymentService {
                 "refund-" + payment.getProviderIdempotencyKey()
         );
 
-        payment.setRefundStatus(RefundStatus.REQUESTED);
-        repository.save(payment);
         payment.setRefundStatus(RefundStatus.PROCESSING);
         repository.save(payment);
 

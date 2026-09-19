@@ -46,24 +46,24 @@ public class PaymentRequestKafkaListener {
      * Handles incoming payment refund requests.
      *
      * <p>
-     * This event represents a compensation step in the order workflow.
+     * This refundCommand represents a compensation step in the order workflow.
      * It is triggered when a previously successful payment needs to be refunded,
      * typically due to a failure in downstream processing (e.g. inventory commit failure).
      * </p>
      *
-     * @param event payment refund request event
+     * @param refundCommand payment refund request refundCommand
      */
     @KafkaHandler
     public void handlePaymentRefundRequested(
-            RefundPaymentCommand event
+            RefundPaymentCommand refundCommand
     ) {
         log.warn(
                 "[PAYMENT-SERVICE][KAFKA-LISTENER] Received payment refund request for order {} correlationId {}",
-                event.orderId(),
-                event.correlationId()
+                refundCommand.orderId(),
+                refundCommand.correlationId()
         );
 
-        paymentService.refundPayment(event.orderId());
+        paymentService.refundPayment(refundCommand);
     }
 
     /**
