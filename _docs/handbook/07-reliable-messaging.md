@@ -90,6 +90,12 @@ Instead, it combines:
 
 This provides effectively-once business processing at the service boundary, provided that the Inbox record and business changes are committed atomically.
 
+The handoff from a committed payment refund to its provider call currently
+uses an in-process after-commit event rather than a durable Outbox record. This
+keeps the provider call outside the database transaction, but a process failure
+between commit and listener execution can leave the refund awaiting manual
+recovery. That limited reliability gap is an accepted project trade-off.
+
 ## Publication Retry
 
 The Outbox publisher retries messages that cannot be published successfully.

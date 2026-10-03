@@ -5,6 +5,7 @@ import com.stripe.model.PaymentIntent.NextAction;
 import com.stripe.model.Refund;
 import com.stripe.model.StripeError;
 import org.example.paymentservice.enums.PaymentProviderStatus;
+import org.example.paymentservice.enums.RefundProviderStatus;
 import org.example.paymentservice.mapper.StripeResultMapper;
 import org.junit.jupiter.api.Test;
 
@@ -62,7 +63,7 @@ class StripeResultMapperTest {
 
         var result = mapper.toResult(refund);
 
-        assertThat(result.succeeded()).isTrue();
+        assertThat(result.status()).isEqualTo(RefundProviderStatus.SUCCEEDED);
         assertThat(result.providerRefundId()).isEqualTo("re_success");
         assertThat(result.failureReason()).isNull();
     }
@@ -74,7 +75,7 @@ class StripeResultMapperTest {
 
         var result = mapper.toResult(refund);
 
-        assertThat(result.succeeded()).isFalse();
+        assertThat(result.status()).isEqualTo(RefundProviderStatus.PROCESSING);
         assertThat(result.failureReason()).isEqualTo("processing");
     }
 
@@ -85,7 +86,7 @@ class StripeResultMapperTest {
 
         var result = mapper.toResult(refund);
 
-        assertThat(result.succeeded()).isFalse();
+        assertThat(result.status()).isEqualTo(RefundProviderStatus.FAILED);
         assertThat(result.failureReason()).isEqualTo("insufficient_funds");
     }
 

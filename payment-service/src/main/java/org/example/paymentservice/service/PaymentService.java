@@ -21,9 +21,9 @@ import org.example.paymentservice.enums.RefundStatus;
 import org.example.paymentservice.enums.PaymentStatus;
 import org.example.paymentservice.enums.PaymentProviderStatus;
 import org.example.paymentservice.event.PaymentProcessingEvent;
+import org.example.paymentservice.event.RefundProcessingEvent;
 import org.example.paymentservice.metrics.PaymentMetrics;
 import org.example.paymentservice.repository.PaymentRepository;
-import org.example.paymentservice.service.provider.PaymentProviderWrapper;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,7 +55,6 @@ public class PaymentService {
     private final OutboxDlqService outboxDlqService;
     private final PaymentMetrics paymentMetrics;
     private final PaymentStatusTransitionPolicy transitionPolicy;
-    private final PaymentProviderWrapper paymentProviderWrapper;
 
     /**
      * Creates a payment for a given order.
@@ -140,6 +139,7 @@ public class PaymentService {
      *
      * @param refundCommand Refund payment command
      */
+    @Transactional
     public void refundPayment(RefundPaymentCommand refundCommand) {
         int inserted = inboxRepository.insertIfNotExists(refundCommand.messageId());
 
@@ -176,30 +176,100 @@ public class PaymentService {
             return;
         }
 
-        RefundRequest request = new RefundRequest(
+        payment.setRefundStatus(RefundStatus.PROCESSING);
+        repository.save(payment);
+        log.info(
+                "[PAYMENT-SERVICE][REFUND] Payment {} refund accepted for processing",
+                payment.getId()
+        );
+        eventPublisher.publishEvent(new RefundProcessingEvent(payment.getId()));
+    }
+
+    /**
+     * Builds the provider request from committed payment state. The provider
+     * call itself is performed by the after-commit listener.
+     */
+    @Transactional(readOnly = true)
+    public RefundRequest prepareRefundRequest(Long paymentId) {
+        Payment payment = repository.findById(paymentId)
+                .orElseThrow(() -> new IllegalStateException(
+                        "No payment exists for refund processing"
+                ));
+
+        if (payment.getStatus() != PaymentStatus.SUCCESS) {
+            throw new IllegalStateException("Only a successful payment can be refunded");
+        }
+        if (payment.getRefundStatus() != RefundStatus.PROCESSING
+                && payment.getRefundStatus() != RefundStatus.OUTCOME_UNKNOWN) {
+            throw new IllegalStateException("Payment is not awaiting refund processing");
+        }
+
+        return new RefundRequest(
                 payment.getId(),
                 payment.getOrderId(),
                 payment.getTransactionId(),
-                null,
+                payment.getProviderRefundId(),
                 "refund-" + payment.getProviderIdempotencyKey()
         );
+    }
 
-        payment.setRefundStatus(RefundStatus.PROCESSING);
+    /**
+     * Applies a synchronous provider response or an authenticated webhook
+     * observation to the same refund state transition boundary.
+     */
+    @Transactional
+    public void finalizeRefund(Long paymentId, RefundResult result) {
+        Objects.requireNonNull(result, "Refund result is required");
+        Payment payment = repository.findByIdForUpdate(paymentId)
+                .orElseThrow(() -> new IllegalStateException(
+                        "No payment exists for the supplied refund result"
+                ));
+
+        RefundStatus currentStatus = Optional.ofNullable(payment.getRefundStatus())
+                .orElse(RefundStatus.NOT_REQUESTED);
+        if (currentStatus.isFinalState()) {
+            log.info(
+                    "[PAYMENT-SERVICE][REFUND] Payment {} already has final refund state {}; "
+                            + "ignoring repeated provider result",
+                    paymentId,
+                    currentStatus
+            );
+            return;
+        }
+        if (currentStatus != RefundStatus.PROCESSING
+                && currentStatus != RefundStatus.OUTCOME_UNKNOWN) {
+            throw new IllegalStateException("Payment has no refund in progress");
+        }
+        if (payment.getProviderRefundId() != null
+                && result.providerRefundId() != null
+                && !payment.getProviderRefundId().equals(result.providerRefundId())) {
+            throw new IllegalStateException(
+                    "Provider refund does not belong to the supplied payment"
+            );
+        }
+
+        payment.setProviderRefundId(result.providerRefundId());
+        payment.setRefundFailureReason(result.failureReason());
+        RefundStatus targetStatus = switch (result.status()) {
+            case SUCCEEDED -> RefundStatus.SUCCESS;
+            case FAILED -> RefundStatus.FAILED;
+            case PROCESSING -> RefundStatus.PROCESSING;
+            case OUTCOME_UNKNOWN -> RefundStatus.OUTCOME_UNKNOWN;
+        };
+        payment.setRefundStatus(targetStatus);
         repository.save(payment);
 
-        RefundResult result = paymentProviderWrapper.refund(request);
-        payment.setRefundStatus(
-                result.succeeded() ? RefundStatus.SUCCESS : RefundStatus.FAILED
-        );
-        repository.save(payment);
+        if (targetStatus == RefundStatus.SUCCESS) {
+            incrementMetrics(paymentMetrics.getPaymentRefundCompletedTotal());
+        } else if (targetStatus == RefundStatus.FAILED) {
+            incrementMetrics(paymentMetrics.getPaymentRefundFailedTotal());
+        }
 
         log.info(
-                "[PAYMENT-SERVICE][REFUND] Payment {} refund completed with state {}",
-                payment.getId(),
+                "[PAYMENT-SERVICE][REFUND] Payment {} refund finalized with state {}",
+                paymentId,
                 payment.getRefundStatus()
         );
-
-        incrementMetrics(paymentMetrics.getPaymentRefundCompletedTotal());
     }
 
     /**
@@ -351,15 +421,6 @@ public class PaymentService {
                     e
             );
         }
-    }
-
-    /**
-     * Handles payment refund.
-     *
-     * @param event {@link RefundPaymentCommand} to handle
-     */
-    public void handleRefund(RefundPaymentCommand event) {
-
     }
 
     private void incrementMetrics(final Counter counter) {

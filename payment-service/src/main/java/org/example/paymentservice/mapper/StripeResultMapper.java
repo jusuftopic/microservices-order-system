@@ -5,6 +5,7 @@ import com.stripe.model.Refund;
 import org.example.paymentservice.dto.PaymentResultDTO;
 import org.example.paymentservice.dto.RefundResult;
 import org.example.paymentservice.enums.PaymentProviderStatus;
+import org.example.paymentservice.enums.RefundProviderStatus;
 import org.springframework.stereotype.Component;
 
 /**
@@ -52,7 +53,13 @@ public class StripeResultMapper {
      * @return provider-neutral refund result
      */
     public RefundResult toResult(Refund refund) {
-        boolean succeeded = "succeeded".equals(refund.getStatus());
+        RefundProviderStatus status = switch (refund.getStatus()) {
+            case "succeeded" -> RefundProviderStatus.SUCCEEDED;
+            case "pending" -> RefundProviderStatus.PROCESSING;
+            case "requires_action", "canceled", "failed" ->
+                    RefundProviderStatus.FAILED;
+            default -> RefundProviderStatus.OUTCOME_UNKNOWN;
+        };
         String reason = switch (refund.getStatus()) {
             case "succeeded" -> null;
             case "pending" -> refund.getPendingReason() == null
@@ -67,6 +74,6 @@ public class StripeResultMapper {
                     : refund.getFailureReason();
             default -> "UNSUPPORTED_REFUND_STATUS_" + refund.getStatus();
         };
-        return new RefundResult(succeeded, refund.getId(), reason);
+        return new RefundResult(status, refund.getId(), reason);
     }
 }

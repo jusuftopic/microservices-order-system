@@ -8,6 +8,7 @@ import org.example.paymentservice.dto.PaymentResultDTO;
 import org.example.paymentservice.dto.RefundRequest;
 import org.example.paymentservice.dto.RefundResult;
 import org.example.paymentservice.enums.PaymentProviderStatus;
+import org.example.paymentservice.enums.RefundProviderStatus;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
@@ -73,7 +74,11 @@ public class MockPaymentClient implements PaymentClient {
     public RefundResult refund(RefundRequest request) {
         return processedRefunds.computeIfAbsent(
                 request.idempotencyKey(),
-                key -> new RefundResult(true, "mock-refund-" + key, null)
+                key -> new RefundResult(
+                        RefundProviderStatus.SUCCEEDED,
+                        "mock-refund-" + key,
+                        null
+                )
         );
     }
 

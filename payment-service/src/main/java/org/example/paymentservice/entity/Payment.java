@@ -76,6 +76,16 @@ public class Payment {
     @Builder.Default
     private RefundStatus refundStatus = RefundStatus.NOT_REQUESTED;
 
+    /**
+     * Provider-neutral identifier of the refund operation.
+     */
+    private String providerRefundId;
+
+    /**
+     * Last provider reason recorded when refund processing failed.
+     */
+    private String refundFailureReason;
+
     private LocalDateTime createdAt;
 
     @PrePersist

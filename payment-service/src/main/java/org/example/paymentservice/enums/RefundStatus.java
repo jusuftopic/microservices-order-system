@@ -6,6 +6,7 @@ package org.example.paymentservice.enums;
 public enum RefundStatus {
     NOT_REQUESTED,
     PROCESSING,
+    OUTCOME_UNKNOWN,
     SUCCESS,
     FAILED;
 

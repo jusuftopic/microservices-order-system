@@ -13,14 +13,15 @@ import org.example.paymentservice.dto.RefundRequest;
 import org.example.paymentservice.dto.RefundResult;
 import org.example.paymentservice.entity.Payment;
 import org.example.paymentservice.enums.RefundStatus;
+import org.example.paymentservice.enums.RefundProviderStatus;
 import org.example.paymentservice.enums.PaymentStatus;
 import org.example.paymentservice.enums.PaymentProviderStatus;
 import org.example.paymentservice.event.PaymentProcessingEvent;
+import org.example.paymentservice.event.RefundProcessingEvent;
 import org.example.paymentservice.metrics.PaymentMetrics;
 import org.example.paymentservice.repository.PaymentRepository;
 import org.example.paymentservice.service.PaymentService;
 import org.example.paymentservice.service.PaymentStatusTransitionPolicy;
-import org.example.paymentservice.service.provider.PaymentProviderWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -60,9 +61,6 @@ public class PaymentServiceTest {
     @Mock
     private PaymentMetrics paymentMetrics;
 
-    @Mock
-    private PaymentProviderWrapper paymentProviderWrapper;
-
     /* class under test */
     private PaymentService target;
 
@@ -71,8 +69,7 @@ public class PaymentServiceTest {
         target = new PaymentService(
                 repository, inboxRepository, eventPublisher,
                 new ObjectMapper(), outboxRepository, outboxDlqService,
-                paymentMetrics, new PaymentStatusTransitionPolicy(),
-                paymentProviderWrapper
+                paymentMetrics, new PaymentStatusTransitionPolicy()
         );
     }
 
@@ -94,22 +91,11 @@ public class PaymentServiceTest {
 
         when(inboxRepository.insertIfNotExists(refundPaymentCommand.messageId())).thenReturn(1);
         when(repository.findByOrderId(refundPaymentCommand.orderId())).thenReturn(payment);
-        when(paymentProviderWrapper.refund(any())).thenReturn(
-                new RefundResult(true, "provider-refund-7", null)
-        );
-
         target.refundPayment(refundPaymentCommand);
 
-        ArgumentCaptor<RefundRequest> requestCaptor =
-                ArgumentCaptor.forClass(RefundRequest.class);
-        verify(paymentProviderWrapper).refund(requestCaptor.capture());
-        assertEquals(7L, requestCaptor.getValue().refundOperationId());
-        assertEquals(3L, requestCaptor.getValue().orderId());
-        assertEquals("provider-payment-7", requestCaptor.getValue().providerPaymentId());
-        assertEquals("refund-" + providerIdempotencyKey,
-                requestCaptor.getValue().idempotencyKey());
-        assertEquals(RefundStatus.SUCCESS, payment.getRefundStatus());
-        verify(repository, times(2)).save(payment);
+        assertEquals(RefundStatus.PROCESSING, payment.getRefundStatus());
+        verify(repository).save(payment);
+        verify(eventPublisher).publishEvent(new RefundProcessingEvent(7L));
     }
 
     @Test
@@ -130,8 +116,110 @@ public class PaymentServiceTest {
 
         assertThrows(IllegalStateException.class, () -> target.refundPayment(refundPaymentCommand));
 
-        verifyNoInteractions(paymentProviderWrapper);
+        verify(eventPublisher, never()).publishEvent(any(RefundProcessingEvent.class));
         verify(repository, never()).save(any());
+    }
+
+    @Test
+    void should_prepare_refund_request_from_committed_payment() {
+        UUID providerIdempotencyKey = UUID.randomUUID();
+        Payment payment = Payment.builder()
+                .id(7L)
+                .orderId(3L)
+                .status(PaymentStatus.SUCCESS)
+                .refundStatus(RefundStatus.PROCESSING)
+                .transactionId("provider-payment-7")
+                .providerIdempotencyKey(providerIdempotencyKey)
+                .build();
+        when(repository.findById(7L)).thenReturn(Optional.of(payment));
+
+        RefundRequest request = target.prepareRefundRequest(7L);
+
+        assertEquals(7L, request.refundOperationId());
+        assertEquals(3L, request.orderId());
+        assertEquals("provider-payment-7", request.providerPaymentId());
+        assertEquals("refund-" + providerIdempotencyKey, request.idempotencyKey());
+    }
+
+    @Test
+    void should_finalize_refund_successfully() {
+        Payment payment = Payment.builder()
+                .id(7L)
+                .refundStatus(RefundStatus.PROCESSING)
+                .build();
+        when(repository.findByIdForUpdate(7L)).thenReturn(Optional.of(payment));
+
+        target.finalizeRefund(
+                7L,
+                new RefundResult(
+                        RefundProviderStatus.SUCCEEDED,
+                        "provider-refund-7",
+                        null
+                )
+        );
+
+        assertEquals(RefundStatus.SUCCESS, payment.getRefundStatus());
+        assertEquals("provider-refund-7", payment.getProviderRefundId());
+        assertNull(payment.getRefundFailureReason());
+        verify(repository).save(payment);
+    }
+
+    @Test
+    void should_ignore_repeated_refund_result_after_finalization() {
+        Payment payment = Payment.builder()
+                .id(7L)
+                .refundStatus(RefundStatus.SUCCESS)
+                .providerRefundId("provider-refund-7")
+                .build();
+        when(repository.findByIdForUpdate(7L)).thenReturn(Optional.of(payment));
+
+        target.finalizeRefund(
+                7L,
+                new RefundResult(
+                        RefundProviderStatus.SUCCEEDED,
+                        "provider-refund-7",
+                        null
+                )
+        );
+
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void should_keep_refund_non_final_when_provider_outcome_is_unknown() {
+        Payment payment = Payment.builder()
+                .id(7L)
+                .refundStatus(RefundStatus.PROCESSING)
+                .build();
+        when(repository.findByIdForUpdate(7L)).thenReturn(Optional.of(payment));
+
+        target.finalizeRefund(7L, new RefundResult(
+                RefundProviderStatus.OUTCOME_UNKNOWN,
+                null,
+                "PAYMENT_PROVIDER_OUTCOME_UNKNOWN"
+        ));
+
+        assertEquals(RefundStatus.OUTCOME_UNKNOWN, payment.getRefundStatus());
+        assertFalse(payment.getRefundStatus().isFinalState());
+        verify(repository).save(payment);
+    }
+
+    @Test
+    void should_finalize_unknown_refund_from_later_provider_result() {
+        Payment payment = Payment.builder()
+                .id(7L)
+                .refundStatus(RefundStatus.OUTCOME_UNKNOWN)
+                .build();
+        when(repository.findByIdForUpdate(7L)).thenReturn(Optional.of(payment));
+
+        target.finalizeRefund(7L, new RefundResult(
+                RefundProviderStatus.SUCCEEDED,
+                "provider-refund-7",
+                null
+        ));
+
+        assertEquals(RefundStatus.SUCCESS, payment.getRefundStatus());
+        assertEquals("provider-refund-7", payment.getProviderRefundId());
     }
 
     @Test
@@ -154,7 +242,7 @@ public class PaymentServiceTest {
 
         target.refundPayment(refundPaymentCommand);
 
-        verifyNoInteractions(paymentProviderWrapper);
+        verify(eventPublisher, never()).publishEvent(any(RefundProcessingEvent.class));
         verify(repository, never()).save(any());
     }
 

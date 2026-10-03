@@ -2,6 +2,7 @@ package org.example.paymentservice.service.provider.clients;
 
 import org.example.paymentservice.dto.RefundRequest;
 import org.example.paymentservice.dto.RefundResult;
+import org.example.paymentservice.enums.RefundProviderStatus;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -23,7 +24,7 @@ class MockPaymentClientTest {
         RefundResult first = client.refund(request);
         RefundResult repeated = client.refund(request);
 
-        assertThat(first.succeeded()).isTrue();
+        assertThat(first.status()).isEqualTo(RefundProviderStatus.SUCCEEDED);
         assertThat(first.providerRefundId()).isEqualTo("mock-refund-refund-key-21");
         assertThat(repeated).isEqualTo(first);
     }
