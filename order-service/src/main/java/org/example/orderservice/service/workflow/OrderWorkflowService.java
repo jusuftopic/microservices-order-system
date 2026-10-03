@@ -96,11 +96,38 @@ public class OrderWorkflowService {
             OrderStatus targetStatus,
             OrderTransitionContext context
     ) {
+        return tryUpdateStatus(orderId, targetStatus, context).order();
+    }
+
+    /**
+     * Attempts a transition and reports whether it was committed. Final states
+     * and repeated observations of the target state are treated as safe no-ops.
+     */
+    @Transactional
+    public OrderTransitionResult tryUpdateStatus(
+            Long orderId,
+            OrderStatus targetStatus,
+            OrderTransitionContext context
+    ) {
         Order order = repository.findById(orderId)
                 .orElseThrow();
         final OrderStatus currentStatus = order.getStatus();
 
-        if (currentStatus.isFinalState()) return order;
+        if (currentStatus.isFinalState() || currentStatus == targetStatus) {
+            log.info(
+                    "[ORDER-SERVICE][WORKFLOW] Order {} remained in {}; "
+                            + "transition to {} was not applied",
+                    orderId,
+                    currentStatus,
+                    targetStatus
+            );
+            return new OrderTransitionResult(
+                    order,
+                    currentStatus,
+                    targetStatus,
+                    false
+            );
+        }
 
         validateTransition(currentStatus, targetStatus);
 
@@ -132,7 +159,12 @@ public class OrderWorkflowService {
         log.info("[ORDER-SERVICE][WORKFLOW] Order {} transitioned {} -> {}",
                 stored.getId(), currentStatus, targetStatus);
 
-        return stored;
+        return new OrderTransitionResult(
+                stored,
+                currentStatus,
+                targetStatus,
+                true
+        );
     }
 
     private void validateTransition(OrderStatus current, OrderStatus target) {

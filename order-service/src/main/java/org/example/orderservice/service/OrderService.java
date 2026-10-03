@@ -22,6 +22,7 @@ import org.example.orderservice.repository.OrderRepository;
 import org.example.orderservice.service.outbox.OrderOutboxService;
 import org.example.orderservice.service.workflow.OrderWorkflowService;
 import org.example.orderservice.service.workflow.OrderTransitionContext;
+import org.example.orderservice.service.workflow.OrderTransitionResult;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -174,7 +175,7 @@ public class OrderService {
         }
 
         UUID commitInventoryCommandId = UUID.randomUUID();
-        Order order = workflowService.updateStatus(
+        OrderTransitionResult transition = workflowService.tryUpdateStatus(
                 event.orderId(),
                 OrderStatus.PAYMENT_COMPLETED,
                 OrderTransitionContext.causedBy(
@@ -185,6 +186,12 @@ public class OrderService {
                         .withDecision(OrchestrationDecisionCode.COMMIT_INVENTORY,
                                 commitInventoryCommandId)
         );
+
+        Order order = transition.order();
+        if (!transition.transitioned()) {
+            handlePaymentCompletedOutsideExpectedState(order, event);
+            return;
+        }
 
         log.info("[ORDER-SERVICE] Payment completed for order {}", order.getId());
 
@@ -200,6 +207,47 @@ public class OrderService {
                         event.correlationId(),
                         commitInventoryCommandId
                 )
+        );
+    }
+
+    private void handlePaymentCompletedOutsideExpectedState(
+            Order order,
+            PaymentCompletedEvent event
+    ) {
+        if (order.getStatus() == OrderStatus.TIMED_OUT) {
+            UUID refundCommandId = UUID.randomUUID();
+            log.warn(
+                    "[ORDER-SERVICE] Payment completed after order {} timed out; "
+                            + "requesting compensation refund",
+                    order.getId()
+            );
+            outboxService.storeEvent(
+                    order.getId(),
+                    "ORDER",
+                    EventConstants.EVENT_PAYMENT_REFUND_REQUESTED,
+                    new RefundPaymentCommand(
+                            order.getId(),
+                            event.correlationId(),
+                            refundCommandId
+                    )
+            );
+            return;
+        }
+
+        if (order.getStatus() == OrderStatus.PAYMENT_COMPLETED
+                || order.getStatus() == OrderStatus.INVENTORY_COMMIT_COMPLETED
+                || order.getStatus() == OrderStatus.COMPLETED) {
+            log.info(
+                    "[ORDER-SERVICE] Ignoring repeated payment completion for order {} "
+                            + "in state {}",
+                    order.getId(),
+                    order.getStatus()
+            );
+            return;
+        }
+
+        throw new IllegalStateException(
+                "Payment completed for order in unexpected state " + order.getStatus()
         );
     }
 
