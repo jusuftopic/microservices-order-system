@@ -109,7 +109,7 @@ services:
 
   # INVESTIGATION DB
   investigation-db:
-    image: postgres:15
+    image: pgvector/pgvector:pg15
     container_name: investigation-db
     environment:
       POSTGRES_DB: investigation_db
@@ -149,6 +149,12 @@ services:
       DB_USERNAME: investigation_user
       DB_PASSWORD: change-me
       INVESTIGATION_MOCK_DATA_ENABLED: ${INVESTIGATION_MOCK_DATA_ENABLED:-false}
+      AI_EMBEDDING_MODEL: ${AI_EMBEDDING_MODEL:-none}
+      AI_EMBEDDING_MODEL_NAME: ${AI_EMBEDDING_MODEL_NAME:-gemini-embedding-001}
+      AI_EMBEDDING_DIMENSIONS: ${AI_EMBEDDING_DIMENSIONS:-768}
+      AI_VECTOR_STORE_TYPE: ${AI_VECTOR_STORE_TYPE:-none}
+      AI_VECTOR_STORE_INITIALIZE_SCHEMA: ${AI_VECTOR_STORE_INITIALIZE_SCHEMA:-false}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
     depends_on:
       investigation-db:
         condition: service_healthy
