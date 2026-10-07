@@ -5,7 +5,10 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.example.paymentservice.dto.PaymentRequest;
 import org.example.paymentservice.dto.PaymentResultDTO;
+import org.example.paymentservice.dto.RefundRequest;
+import org.example.paymentservice.dto.RefundResult;
 import org.example.paymentservice.enums.PaymentProviderStatus;
+import org.example.paymentservice.enums.RefundProviderStatus;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
@@ -26,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class MockPaymentClient implements PaymentClient {
 
     private final Map<String, PaymentResultDTO> processed = new ConcurrentHashMap<>();
+    private final Map<String, RefundResult> processedRefunds = new ConcurrentHashMap<>();
 
     @Setter
     private volatile Boolean forceSuccess = false;
@@ -66,7 +70,20 @@ public class MockPaymentClient implements PaymentClient {
 
     }
 
+    @Override
+    public RefundResult refund(RefundRequest request) {
+        return processedRefunds.computeIfAbsent(
+                request.idempotencyKey(),
+                key -> new RefundResult(
+                        RefundProviderStatus.SUCCEEDED,
+                        "mock-refund-" + key,
+                        null
+                )
+        );
+    }
+
     public void resetCache() {
         processed.clear();
+        processedRefunds.clear();
     }
 }

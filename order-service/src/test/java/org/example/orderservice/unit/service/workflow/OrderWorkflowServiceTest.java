@@ -11,6 +11,7 @@ import org.example.orderservice.repository.OrderRepository;
 import org.example.orderservice.service.outbox.OrderOutboxService;
 import org.example.orderservice.service.workflow.OrderWorkflowService;
 import org.example.orderservice.service.workflow.OrderTransitionContext;
+import org.example.orderservice.service.workflow.OrderTransitionResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -331,6 +332,32 @@ public class OrderWorkflowServiceTest {
         );
 
         verify(repository).findById(orderId);
+        verify(repository, never()).save(any());
+        verifyNoInteractions(outboxService);
+    }
+
+    @Test
+    void should_report_that_transition_from_final_state_was_not_applied() {
+        Long orderId = 1L;
+        Order order = Order.builder()
+                .id(orderId)
+                .status(OrderStatus.TIMED_OUT)
+                .build();
+        when(repository.findById(orderId)).thenReturn(Optional.of(order));
+
+        OrderTransitionResult result = service.tryUpdateStatus(
+                orderId,
+                OrderStatus.PAYMENT_COMPLETED,
+                OrderTransitionContext.causedBy(
+                        LifecycleReasonCode.PAYMENT_COMPLETED,
+                        LifecycleTrigger.PAYMENT_COMPLETED,
+                        UUID.randomUUID()
+                )
+        );
+
+        assertFalse(result.transitioned());
+        assertEquals(OrderStatus.TIMED_OUT, result.previousStatus());
+        assertEquals(OrderStatus.TIMED_OUT, result.order().getStatus());
         verify(repository, never()).save(any());
         verifyNoInteractions(outboxService);
     }

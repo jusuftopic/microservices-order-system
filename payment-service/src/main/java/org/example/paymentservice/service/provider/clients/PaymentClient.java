@@ -2,6 +2,8 @@ package org.example.paymentservice.service.provider.clients;
 
 import org.example.paymentservice.dto.PaymentRequest;
 import org.example.paymentservice.dto.PaymentResultDTO;
+import org.example.paymentservice.dto.RefundRequest;
+import org.example.paymentservice.dto.RefundResult;
 
 /**
  * Unified interface for different payment providers connected to the system
@@ -17,4 +19,12 @@ public interface PaymentClient {
      * @return The result of the payment process
      */
     PaymentResultDTO pay(PaymentRequest request);
+
+    /**
+     * Refunds a previously completed provider payment.
+     *
+     * @param request provider-neutral refund request
+     * @return provider-neutral refund result
+     */
+    RefundResult refund(RefundRequest request);
 }

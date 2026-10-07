@@ -4,7 +4,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.paymentservice.dto.PaymentRequest;
 import org.example.paymentservice.dto.PaymentResultDTO;
+import org.example.paymentservice.dto.RefundRequest;
+import org.example.paymentservice.dto.RefundResult;
 import org.example.paymentservice.enums.PaymentProviderStatus;
+import org.example.paymentservice.enums.RefundProviderStatus;
 import org.example.paymentservice.service.provider.clients.PaymentClient;
 import org.example.paymentservice.exception.PaymentProviderNonRetryableException;
 import org.example.paymentservice.exception.PaymentProviderRetryableException;
@@ -27,6 +30,51 @@ public class PaymentProviderWrapper {
     @io.github.resilience4j.retry.annotation.Retry(name = "payment")
     public PaymentResultDTO pay(PaymentRequest request) {
        return paymentClient.pay(request);
+    }
+
+    @io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker(
+            name = "payment",
+            fallbackMethod = "refundFallback"
+    )
+    @io.github.resilience4j.retry.annotation.Retry(name = "payment")
+    public RefundResult refund(RefundRequest request) {
+        return paymentClient.refund(request);
+    }
+
+    RefundResult refundFallback(RefundRequest request, Throwable exception) {
+        if (exception instanceof PaymentProviderNonRetryableException providerException) {
+            log.error(
+                    "[PAYMENT-SERVICE][PAYMENT-PROVIDER-WRAPPER] Non-retryable refund "
+                            + "rejection. orderId={} idempotencyKey={} provider={} "
+                            + "providerRequestId={} errorCode={}",
+                    request.orderId(),
+                    request.idempotencyKey(),
+                    providerException.getProvider(),
+                    providerException.getProviderRequestId(),
+                    providerException.getErrorCode(),
+                    providerException
+            );
+            return new RefundResult(
+                    RefundProviderStatus.FAILED,
+                    null,
+                    "PAYMENT_PROVIDER_REQUEST_REJECTED"
+            );
+        }
+
+        log.error(
+                "[PAYMENT-SERVICE][PAYMENT-PROVIDER-WRAPPER] Refund provider call failed "
+                        + "after resilience handling; outcome is unknown. "
+                        + "orderId={} idempotencyKey={} exceptionType={}",
+                request.orderId(),
+                request.idempotencyKey(),
+                exception.getClass().getSimpleName(),
+                exception
+        );
+        return new RefundResult(
+                RefundProviderStatus.OUTCOME_UNKNOWN,
+                null,
+                "PAYMENT_PROVIDER_OUTCOME_UNKNOWN"
+        );
     }
 
     /**

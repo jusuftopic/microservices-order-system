@@ -3,15 +3,21 @@ package org.example.paymentservice.unit;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.messagingstarter.EventConstants;
 import org.example.messagingstarter.contracts.commands.ProcessPaymentCommand;
+import org.example.messagingstarter.contracts.commands.RefundPaymentCommand;
 import org.example.messagingstarter.inbox.repository.InboxRepository;
 import org.example.messagingstarter.outbox.entity.OutboxEvent;
 import org.example.messagingstarter.outbox.repository.OutboxRepository;
 import org.example.messagingstarter.outbox.service.OutboxDlqService;
 import org.example.paymentservice.dto.PaymentResultDTO;
+import org.example.paymentservice.dto.RefundRequest;
+import org.example.paymentservice.dto.RefundResult;
 import org.example.paymentservice.entity.Payment;
+import org.example.paymentservice.enums.RefundStatus;
+import org.example.paymentservice.enums.RefundProviderStatus;
 import org.example.paymentservice.enums.PaymentStatus;
 import org.example.paymentservice.enums.PaymentProviderStatus;
 import org.example.paymentservice.event.PaymentProcessingEvent;
+import org.example.paymentservice.event.RefundProcessingEvent;
 import org.example.paymentservice.metrics.PaymentMetrics;
 import org.example.paymentservice.repository.PaymentRepository;
 import org.example.paymentservice.service.PaymentService;
@@ -65,6 +71,179 @@ public class PaymentServiceTest {
                 new ObjectMapper(), outboxRepository, outboxDlqService,
                 paymentMetrics, new PaymentStatusTransitionPolicy()
         );
+    }
+
+    @Test
+    void should_refund_successful_payment() {
+        final RefundPaymentCommand refundPaymentCommand = new RefundPaymentCommand(
+                3L, "corrId1", UUID.randomUUID()
+        );
+
+        UUID providerIdempotencyKey = UUID.randomUUID();
+        Payment payment = Payment.builder()
+                .id(7L)
+                .orderId(3L)
+                .status(PaymentStatus.SUCCESS)
+                .refundStatus(RefundStatus.NOT_REQUESTED)
+                .transactionId("provider-payment-7")
+                .providerIdempotencyKey(providerIdempotencyKey)
+                .build();
+
+        when(inboxRepository.insertIfNotExists(refundPaymentCommand.messageId())).thenReturn(1);
+        when(repository.findByOrderId(refundPaymentCommand.orderId())).thenReturn(payment);
+        target.refundPayment(refundPaymentCommand);
+
+        assertEquals(RefundStatus.PROCESSING, payment.getRefundStatus());
+        verify(repository).save(payment);
+        verify(eventPublisher).publishEvent(new RefundProcessingEvent(7L));
+    }
+
+    @Test
+    void should_reject_refund_for_payment_that_is_not_successful() {
+        final RefundPaymentCommand refundPaymentCommand = new RefundPaymentCommand(
+                3L, "corrId1", UUID.randomUUID()
+        );
+
+        Payment payment = Payment.builder()
+                .id(7L)
+                .orderId(3L)
+                .status(PaymentStatus.PROCESSING)
+                .refundStatus(RefundStatus.NOT_REQUESTED)
+                .build();
+
+        when(inboxRepository.insertIfNotExists(refundPaymentCommand.messageId())).thenReturn(1);
+        when(repository.findByOrderId(refundPaymentCommand.orderId())).thenReturn(payment);
+
+        assertThrows(IllegalStateException.class, () -> target.refundPayment(refundPaymentCommand));
+
+        verify(eventPublisher, never()).publishEvent(any(RefundProcessingEvent.class));
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void should_prepare_refund_request_from_committed_payment() {
+        UUID providerIdempotencyKey = UUID.randomUUID();
+        Payment payment = Payment.builder()
+                .id(7L)
+                .orderId(3L)
+                .status(PaymentStatus.SUCCESS)
+                .refundStatus(RefundStatus.PROCESSING)
+                .transactionId("provider-payment-7")
+                .providerIdempotencyKey(providerIdempotencyKey)
+                .build();
+        when(repository.findById(7L)).thenReturn(Optional.of(payment));
+
+        RefundRequest request = target.prepareRefundRequest(7L);
+
+        assertEquals(7L, request.refundOperationId());
+        assertEquals(3L, request.orderId());
+        assertEquals("provider-payment-7", request.providerPaymentId());
+        assertEquals("refund-" + providerIdempotencyKey, request.idempotencyKey());
+    }
+
+    @Test
+    void should_finalize_refund_successfully() {
+        Payment payment = Payment.builder()
+                .id(7L)
+                .refundStatus(RefundStatus.PROCESSING)
+                .build();
+        when(repository.findByIdForUpdate(7L)).thenReturn(Optional.of(payment));
+
+        target.finalizeRefund(
+                7L,
+                new RefundResult(
+                        RefundProviderStatus.SUCCEEDED,
+                        "provider-refund-7",
+                        null
+                )
+        );
+
+        assertEquals(RefundStatus.SUCCESS, payment.getRefundStatus());
+        assertEquals("provider-refund-7", payment.getProviderRefundId());
+        assertNull(payment.getRefundFailureReason());
+        verify(repository).save(payment);
+    }
+
+    @Test
+    void should_ignore_repeated_refund_result_after_finalization() {
+        Payment payment = Payment.builder()
+                .id(7L)
+                .refundStatus(RefundStatus.SUCCESS)
+                .providerRefundId("provider-refund-7")
+                .build();
+        when(repository.findByIdForUpdate(7L)).thenReturn(Optional.of(payment));
+
+        target.finalizeRefund(
+                7L,
+                new RefundResult(
+                        RefundProviderStatus.SUCCEEDED,
+                        "provider-refund-7",
+                        null
+                )
+        );
+
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void should_keep_refund_non_final_when_provider_outcome_is_unknown() {
+        Payment payment = Payment.builder()
+                .id(7L)
+                .refundStatus(RefundStatus.PROCESSING)
+                .build();
+        when(repository.findByIdForUpdate(7L)).thenReturn(Optional.of(payment));
+
+        target.finalizeRefund(7L, new RefundResult(
+                RefundProviderStatus.OUTCOME_UNKNOWN,
+                null,
+                "PAYMENT_PROVIDER_OUTCOME_UNKNOWN"
+        ));
+
+        assertEquals(RefundStatus.OUTCOME_UNKNOWN, payment.getRefundStatus());
+        assertFalse(payment.getRefundStatus().isFinalState());
+        verify(repository).save(payment);
+    }
+
+    @Test
+    void should_finalize_unknown_refund_from_later_provider_result() {
+        Payment payment = Payment.builder()
+                .id(7L)
+                .refundStatus(RefundStatus.OUTCOME_UNKNOWN)
+                .build();
+        when(repository.findByIdForUpdate(7L)).thenReturn(Optional.of(payment));
+
+        target.finalizeRefund(7L, new RefundResult(
+                RefundProviderStatus.SUCCEEDED,
+                "provider-refund-7",
+                null
+        ));
+
+        assertEquals(RefundStatus.SUCCESS, payment.getRefundStatus());
+        assertEquals("provider-refund-7", payment.getProviderRefundId());
+    }
+
+    @Test
+    void should_not_repeat_refund_in_final_state() {
+        final RefundPaymentCommand refundPaymentCommand = new RefundPaymentCommand(
+                3L, "corrId1", UUID.randomUUID()
+        );
+
+        Payment payment = Payment.builder()
+                .id(7L)
+                .orderId(3L)
+                .status(PaymentStatus.SUCCESS)
+                .refundStatus(RefundStatus.SUCCESS)
+                .transactionId("provider-payment-7")
+                .providerIdempotencyKey(UUID.randomUUID())
+                .build();
+
+        when(inboxRepository.insertIfNotExists(refundPaymentCommand.messageId())).thenReturn(1);
+        when(repository.findByOrderId(refundPaymentCommand.orderId())).thenReturn(payment);
+
+        target.refundPayment(refundPaymentCommand);
+
+        verify(eventPublisher, never()).publishEvent(any(RefundProcessingEvent.class));
+        verify(repository, never()).save(any());
     }
 
     @Test

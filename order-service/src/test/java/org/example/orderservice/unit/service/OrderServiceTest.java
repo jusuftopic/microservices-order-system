@@ -17,6 +17,7 @@ import org.example.orderservice.service.OrderService;
 import org.example.orderservice.service.outbox.OrderOutboxService;
 import org.example.orderservice.service.workflow.OrderWorkflowService;
 import org.example.orderservice.service.workflow.OrderTransitionContext;
+import org.example.orderservice.service.workflow.OrderTransitionResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -273,11 +274,16 @@ public class OrderServiceTest {
         when(inboxRepository.insertIfNotExists(event.messageId()))
                 .thenReturn(1);
 
-        when(workflowService.updateStatus(
+        when(workflowService.tryUpdateStatus(
                 eq(orderId),
                 eq(OrderStatus.PAYMENT_COMPLETED),
                 any(OrderTransitionContext.class)
-        )).thenReturn(order);
+        )).thenReturn(new OrderTransitionResult(
+                order,
+                OrderStatus.INVENTORY_RESERVE_COMPLETED,
+                OrderStatus.PAYMENT_COMPLETED,
+                true
+        ));
 
         // WHEN
         orderService.handlePaymentCompleted(event);
@@ -287,7 +293,7 @@ public class OrderServiceTest {
                 .insertIfNotExists(event.messageId());
 
         verify(workflowService)
-                .updateStatus(
+                .tryUpdateStatus(
                         eq(orderId),
                         eq(OrderStatus.PAYMENT_COMPLETED),
                         any(OrderTransitionContext.class)
@@ -299,6 +305,75 @@ public class OrderServiceTest {
                 eq(EventConstants.EVENT_INVENTORY_COMMIT_REQUESTED),
                 any(CommitInventoryCommand.class)
         );
+    }
+
+    @Test
+    void should_refund_late_payment_success_after_order_timeout() {
+        Long orderId = 1L;
+        Order timedOutOrder = Order.builder()
+                .id(orderId)
+                .status(OrderStatus.TIMED_OUT)
+                .build();
+        PaymentCompletedEvent event = new PaymentCompletedEvent(
+                orderId,
+                "corr-123",
+                UUID.randomUUID()
+        );
+        when(inboxRepository.insertIfNotExists(event.messageId())).thenReturn(1);
+        when(workflowService.tryUpdateStatus(
+                eq(orderId),
+                eq(OrderStatus.PAYMENT_COMPLETED),
+                any(OrderTransitionContext.class)
+        )).thenReturn(new OrderTransitionResult(
+                timedOutOrder,
+                OrderStatus.TIMED_OUT,
+                OrderStatus.PAYMENT_COMPLETED,
+                false
+        ));
+
+        orderService.handlePaymentCompleted(event);
+
+        verify(outboxService, never()).storeEvent(
+                eq(orderId),
+                eq("ORDER"),
+                eq(EventConstants.EVENT_INVENTORY_COMMIT_REQUESTED),
+                any(CommitInventoryCommand.class)
+        );
+        verify(outboxService).storeEvent(
+                eq(orderId),
+                eq("ORDER"),
+                eq(EventConstants.EVENT_PAYMENT_REFUND_REQUESTED),
+                any(RefundPaymentCommand.class)
+        );
+    }
+
+    @Test
+    void should_not_repeat_downstream_action_for_repeated_payment_success() {
+        Long orderId = 1L;
+        Order progressedOrder = Order.builder()
+                .id(orderId)
+                .status(OrderStatus.PAYMENT_COMPLETED)
+                .build();
+        PaymentCompletedEvent event = new PaymentCompletedEvent(
+                orderId,
+                "corr-123",
+                UUID.randomUUID()
+        );
+        when(inboxRepository.insertIfNotExists(event.messageId())).thenReturn(1);
+        when(workflowService.tryUpdateStatus(
+                eq(orderId),
+                eq(OrderStatus.PAYMENT_COMPLETED),
+                any(OrderTransitionContext.class)
+        )).thenReturn(new OrderTransitionResult(
+                progressedOrder,
+                OrderStatus.PAYMENT_COMPLETED,
+                OrderStatus.PAYMENT_COMPLETED,
+                false
+        ));
+
+        orderService.handlePaymentCompleted(event);
+
+        verifyNoInteractions(outboxService);
     }
 
 

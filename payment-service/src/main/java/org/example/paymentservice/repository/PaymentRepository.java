@@ -3,6 +3,8 @@ package org.example.paymentservice.repository;
 import org.example.paymentservice.entity.Payment;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import jakarta.persistence.LockModeType;
 
 import java.util.Optional;
@@ -32,4 +34,12 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<Payment> findByProviderIdempotencyKey(UUID providerIdempotencyKey);
+
+    /**
+     * Locks one payment while a provider refund observation is finalized. The
+     * external provider call is completed before this method is invoked.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT payment FROM Payment payment WHERE payment.id = :paymentId")
+    Optional<Payment> findByIdForUpdate(@Param("paymentId") Long paymentId);
 }

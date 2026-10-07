@@ -96,6 +96,16 @@ If payment processing fails after inventory has already been reserved, the Order
 
 If inventory cannot be committed after a successful payment, the workflow initiates compensation by requesting a payment refund. After the refund is completed, the order is marked as failed.
 
+The Payment Service first commits the refund state locally. An after-commit
+application event then starts the provider call, and the provider result is
+applied in a separate transaction. This keeps the remote call outside the
+database transaction and allows a later provider webhook to use the same
+refund-finalization boundary.
+
+When the provider definitively rejects a refund, the refund is marked as
+failed. When retries end without a definitive provider response, its state is
+recorded as unknown so a later webhook or reconciliation can resolve it.
+
 The workflow also protects against indefinitely running business processes. Orders that remain in an intermediate state beyond an acceptable timeout are automatically transitioned to the `TIMED_OUT` state.
 
 ## Preserving Service Ownership
