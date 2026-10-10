@@ -1,4 +1,4 @@
-package com.example.investigationservice.service.knowledge.ingestion;
+package com.example.investigationservice.exception;
 
 /**
  * Indicates that distributed ingestion coordination could not be performed.

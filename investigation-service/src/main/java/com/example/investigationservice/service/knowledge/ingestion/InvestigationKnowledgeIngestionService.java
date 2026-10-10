@@ -1,8 +1,10 @@
 package com.example.investigationservice.service.knowledge.ingestion;
 
+import com.example.investigationservice.exception.KnowledgeIngestionLockException;
 import com.example.investigationservice.metrics.InvestigationMetrics;
 import com.example.investigationservice.model.InvestigationKnowledgeDocument;
 import com.example.investigationservice.service.knowledge.InvestigationKnowledgeStore;
+import com.example.investigationservice.service.knowledge.ingestion.lock.KnowledgeIngestionLock;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -27,6 +29,9 @@ public class InvestigationKnowledgeIngestionService {
     private final InvestigationMetrics metrics;
     private final String corpusVersion;
 
+    private static final String RETRY_STORE_OPERATION = "store";
+    private static final String RETRY_VERIFY_OPERATION = "verify";
+
     public InvestigationKnowledgeIngestionService(
             KnowledgeCorpusLoader corpusLoader,
             InvestigationKnowledgeStore knowledgeStore,
@@ -44,31 +49,31 @@ public class InvestigationKnowledgeIngestionService {
     }
 
     public void ingest() {
-        List<InvestigationKnowledgeDocument> documents =
-                corpusLoader.load(corpusVersion);
+        List<InvestigationKnowledgeDocument> documents = corpusLoader.load(corpusVersion);
         if (documents.isEmpty()) {
             fail("Corpus contains no effective knowledge documents", null);
         }
+
+        boolean acquired;
+        try {
+            acquired = ingestionLock.execute(() -> ingestLocked(documents, getDocumentIds(documents)));
+        } catch (KnowledgeIngestionLockException exception) {
+            fail("Could not execute corpus ingestion under the database lock", exception);
+            return;
+        }
+        if (!acquired) {
+            fail("Another corpus ingestion job holds the database lock", null);
+        }
+    }
+
+    private Set<String> getDocumentIds(List<InvestigationKnowledgeDocument> documents) {
         Set<String> expectedIds = documents.stream()
                 .map(InvestigationKnowledgeDocument::id)
                 .collect(java.util.stream.Collectors.toSet());
         if (expectedIds.size() != documents.size()) {
             fail("Corpus contains duplicate document identifiers", null);
         }
-
-        boolean acquired;
-        try {
-            acquired = ingestionLock.execute(
-                    () -> ingestLocked(documents, expectedIds)
-            );
-        } catch (KnowledgeIngestionLockException exception) {
-            fail("Could not execute corpus ingestion under the database lock",
-                    exception);
-            return;
-        }
-        if (!acquired) {
-            fail("Another corpus ingestion job holds the database lock", null);
-        }
+        return expectedIds;
     }
 
     private void ingestLocked(
@@ -83,7 +88,7 @@ public class InvestigationKnowledgeIngestionService {
         );
         try {
             for (InvestigationKnowledgeDocument document : documents) {
-                retryExecutor.execute(corpusVersion, "store", () -> {
+                retryExecutor.execute(corpusVersion, RETRY_STORE_OPERATION, () -> {
                     knowledgeStore.store(List.of(document));
                     return null;
                 });
@@ -92,7 +97,7 @@ public class InvestigationKnowledgeIngestionService {
 
             Set<String> storedIds = retryExecutor.execute(
                     corpusVersion,
-                    "verify",
+                    RETRY_VERIFY_OPERATION,
                     () -> knowledgeStore.getStoredDocumentIds(corpusVersion)
             );
             Set<String> missingIds = new HashSet<>(expectedIds);

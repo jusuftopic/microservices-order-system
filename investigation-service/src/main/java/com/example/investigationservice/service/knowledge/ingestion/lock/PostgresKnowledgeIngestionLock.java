@@ -1,5 +1,6 @@
-package com.example.investigationservice.service.knowledge.ingestion;
+package com.example.investigationservice.service.knowledge.ingestion.lock;
 
+import com.example.investigationservice.exception.KnowledgeIngestionLockException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.jdbc.core.ConnectionCallback;
@@ -33,18 +34,14 @@ public class PostgresKnowledgeIngestionLock implements KnowledgeIngestionLock {
         try {
             return Boolean.TRUE.equals(jdbcTemplate.execute(
                     (ConnectionCallback<Boolean>) connection -> {
-                        if (!tryLock(connection.prepareStatement(
-                                "SELECT pg_try_advisory_lock(?)"
-                        ))) {
+                        if (!tryLock(connection.prepareStatement("SELECT pg_try_advisory_lock(?)"))) {
                             return false;
                         }
                         try {
                             ingestion.run();
                             return true;
                         } finally {
-                            unlock(connection.prepareStatement(
-                                    "SELECT pg_advisory_unlock(?)"
-                            ));
+                            unlock(connection.prepareStatement("SELECT pg_advisory_unlock(?)"));
                         }
                     }
             ));

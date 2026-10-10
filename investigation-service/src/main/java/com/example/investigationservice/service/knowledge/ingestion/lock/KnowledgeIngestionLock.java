@@ -1,4 +1,4 @@
-package com.example.investigationservice.service.knowledge.ingestion;
+package com.example.investigationservice.service.knowledge.ingestion.lock;
 
 /**
  * Coordinates one corpus-ingestion run across application instances.
