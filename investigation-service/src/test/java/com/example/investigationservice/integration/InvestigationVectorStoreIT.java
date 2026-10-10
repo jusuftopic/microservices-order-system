@@ -1,13 +1,14 @@
 package com.example.investigationservice.integration;
 
+import com.example.investigationservice.model.InvestigationKnowledgeDocument;
+import com.example.investigationservice.model.InvestigationKnowledgeMatch;
+import com.example.investigationservice.service.knowledge.InvestigationKnowledgeStore;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
-import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -60,34 +61,35 @@ class InvestigationVectorStoreIT {
     }
 
     @Autowired
-    private VectorStore vectorStore;
+    private InvestigationKnowledgeStore knowledgeStore;
 
     @Test
     void storesAndRetrievesSemanticallySimilarKnowledge() {
-        Document compensation = new Document(
+        InvestigationKnowledgeDocument compensation = new InvestigationKnowledgeDocument(
+                "payment-failure-compensation",
                 "Payment failed after inventory reservation. Inventory release is required.",
                 Map.of("sourceId", "payment-failure-compensation", "version", 1)
         );
-        Document notification = new Document(
+        InvestigationKnowledgeDocument notification = new InvestigationKnowledgeDocument(
+                "order-lifecycle-happy-path",
                 "A completed order can request a customer notification.",
                 Map.of("sourceId", "order-lifecycle-happy-path", "version", 1)
         );
 
-        vectorStore.add(List.of(compensation, notification));
+        knowledgeStore.store(List.of(compensation, notification));
 
-        List<Document> matches = vectorStore.similaritySearch(
-                SearchRequest.builder()
-                        .query("How should a payment failure be compensated?")
-                        .topK(1)
-                        .similarityThreshold(0.8)
-                        .build()
+        List<InvestigationKnowledgeMatch> matches = knowledgeStore.search(
+                "How should a payment failure be compensated?",
+                1,
+                0.8
         );
 
         assertThat(matches).singleElement().satisfies(match -> {
-            assertThat(match.getText()).isEqualTo(compensation.getText());
-            assertThat(match.getMetadata())
+            assertThat(match.document().content()).isEqualTo(compensation.content());
+            assertThat(match.document().metadata())
                     .containsEntry("sourceId", "payment-failure-compensation")
                     .containsEntry("version", 1);
+            assertThat(match.score()).isGreaterThanOrEqualTo(0.8);
         });
     }
 

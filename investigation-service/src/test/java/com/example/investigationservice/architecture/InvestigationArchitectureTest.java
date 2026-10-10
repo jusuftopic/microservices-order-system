@@ -48,7 +48,10 @@ class InvestigationArchitectureTest {
     @ArchTest
     static final ArchRule spring_ai_is_confined_to_ai_adapters =
             noClasses()
-                    .that().resideOutsideOfPackage("..service.explanation.ai..")
+                    .that().resideOutsideOfPackages(
+                            "..service.explanation.ai..",
+                            "..service.knowledge.vector.."
+                    )
                     .should().dependOnClassesThat().resideInAnyPackage("org.springframework.ai..");
 
     /**
