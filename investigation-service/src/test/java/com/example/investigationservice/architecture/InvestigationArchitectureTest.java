@@ -50,7 +50,8 @@ class InvestigationArchitectureTest {
             noClasses()
                     .that().resideOutsideOfPackages(
                             "..service.explanation.ai..",
-                            "..service.knowledge.vector.."
+                            "..service.knowledge.vector..",
+                            "..service.knowledge.ingestion.."
                     )
                     .should().dependOnClassesThat().resideInAnyPackage("org.springframework.ai..");
 

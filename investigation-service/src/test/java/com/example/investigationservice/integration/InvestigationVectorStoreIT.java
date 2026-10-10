@@ -44,6 +44,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Testcontainers(disabledWithoutDocker = true)
 class InvestigationVectorStoreIT {
 
+    private static final String CORPUS_VERSION = "order-investigation-v1";
+    private static final String COMPENSATION_ID =
+            "786915b5-0da9-3f53-8ca3-99b2bd77d61f";
+    private static final String NOTIFICATION_ID =
+            "7d76f88d-246a-3d31-82e7-d80dbcf22f23";
+
     @Container
     static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>(
             DockerImageName.parse("pgvector/pgvector:pg15")
@@ -66,17 +72,28 @@ class InvestigationVectorStoreIT {
     @Test
     void storesAndRetrievesSemanticallySimilarKnowledge() {
         InvestigationKnowledgeDocument compensation = new InvestigationKnowledgeDocument(
-                "payment-failure-compensation",
+                COMPENSATION_ID,
                 "Payment failed after inventory reservation. Inventory release is required.",
-                Map.of("sourceId", "payment-failure-compensation", "version", 1)
+                Map.of(
+                        "sourceId", "payment-failure-compensation",
+                        "version", 1,
+                        "corpusVersion", CORPUS_VERSION
+                )
         );
         InvestigationKnowledgeDocument notification = new InvestigationKnowledgeDocument(
-                "order-lifecycle-happy-path",
+                NOTIFICATION_ID,
                 "A completed order can request a customer notification.",
-                Map.of("sourceId", "order-lifecycle-happy-path", "version", 1)
+                Map.of(
+                        "sourceId", "order-lifecycle-happy-path",
+                        "version", 1,
+                        "corpusVersion", CORPUS_VERSION
+                )
         );
 
         knowledgeStore.store(List.of(compensation, notification));
+
+        assertThat(knowledgeStore.getStoredDocumentIds(CORPUS_VERSION))
+                .contains(COMPENSATION_ID, NOTIFICATION_ID);
 
         List<InvestigationKnowledgeMatch> matches = knowledgeStore.search(
                 "How should a payment failure be compensated?",

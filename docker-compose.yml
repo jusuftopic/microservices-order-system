@@ -154,12 +154,41 @@ services:
       AI_EMBEDDING_DIMENSIONS: ${AI_EMBEDDING_DIMENSIONS:-768}
       AI_VECTOR_STORE_TYPE: ${AI_VECTOR_STORE_TYPE:-none}
       AI_VECTOR_STORE_INITIALIZE_SCHEMA: ${AI_VECTOR_STORE_INITIALIZE_SCHEMA:-false}
+      RAG_CORPUS_VERSION: ${RAG_CORPUS_VERSION:-order-investigation-v1}
+      RAG_INGESTION_ENABLED: "false"
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
     depends_on:
       investigation-db:
         condition: service_healthy
       kafka:
         condition: service_started
+
+  investigation-knowledge-ingestion:
+    profiles: [ "rag-ingestion" ]
+    build:
+      context: .
+      dockerfile: investigation-service/Dockerfile.dev
+    environment:
+      SPRING_MAIN_WEB_APPLICATION_TYPE: none
+      SPRING_KAFKA_LISTENER_AUTO_STARTUP: false
+      SPRING_KAFKA_ADMIN_AUTO_CREATE: false
+      DB_HOST: investigation-db
+      DB_PORT: 5432
+      DB_NAME: investigation_db
+      DB_USERNAME: investigation_user
+      DB_PASSWORD: change-me
+      AI_EMBEDDING_MODEL: google-genai
+      AI_EMBEDDING_MODEL_NAME: ${AI_EMBEDDING_MODEL_NAME:-gemini-embedding-001}
+      AI_EMBEDDING_DIMENSIONS: ${AI_EMBEDDING_DIMENSIONS:-768}
+      AI_VECTOR_STORE_TYPE: pgvector
+      AI_VECTOR_STORE_INITIALIZE_SCHEMA: ${AI_VECTOR_STORE_INITIALIZE_SCHEMA:-true}
+      RAG_CORPUS_VERSION: ${RAG_CORPUS_VERSION:-order-investigation-v1}
+      RAG_INGESTION_ENABLED: "true"
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    depends_on:
+      investigation-db:
+        condition: service_healthy
+    restart: "no"
 
   # PAYMENT-SERVICE
   payment-service:

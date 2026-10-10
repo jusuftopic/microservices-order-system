@@ -33,6 +33,12 @@ public class InvestigationMetrics {
             "investigation.explanations.deterministic.total";
     static final String UNAVAILABLE_EXPLANATIONS_METRIC =
             "investigation.explanations.unavailable.total";
+    static final String RAG_INGESTION_RUNS_METRIC =
+            "investigation.rag.ingestion.runs.total";
+    static final String RAG_INGESTION_DOCUMENTS_METRIC =
+            "investigation.rag.ingestion.documents.total";
+    static final String RAG_INGESTION_RETRIES_METRIC =
+            "investigation.rag.ingestion.retries.total";
 
     private final Counter lifecycleConcurrentInserts;
     private final Counter deterministicExplanations;
@@ -45,6 +51,9 @@ public class InvestigationMetrics {
     private final Meter.MeterProvider<Counter> aiCircuitTransitions;
     private final Meter.MeterProvider<Counter> explanationRequests;
     private final Meter.MeterProvider<Counter> aiExplanations;
+    private final Meter.MeterProvider<Counter> ragIngestionRuns;
+    private final Meter.MeterProvider<Counter> ragIngestionDocuments;
+    private final Meter.MeterProvider<Counter> ragIngestionRetries;
 
     /**
      * Registers metrics that describe lifecycle evidence processing.
@@ -84,6 +93,15 @@ public class InvestigationMetrics {
                 .withRegistry(registry);
         aiExplanations = Counter.builder(AI_EXPLANATIONS_METRIC)
                 .description("Validated AI explanations selected")
+                .withRegistry(registry);
+        ragIngestionRuns = Counter.builder(RAG_INGESTION_RUNS_METRIC)
+                .description("RAG corpus ingestion runs")
+                .withRegistry(registry);
+        ragIngestionDocuments = Counter.builder(RAG_INGESTION_DOCUMENTS_METRIC)
+                .description("RAG corpus documents ingested")
+                .withRegistry(registry);
+        ragIngestionRetries = Counter.builder(RAG_INGESTION_RETRIES_METRIC)
+                .description("RAG ingestion retry attempts")
                 .withRegistry(registry);
     }
 
@@ -262,6 +280,34 @@ public class InvestigationMetrics {
      */
     public void recordUnavailableExplanation() {
         unavailableExplanations.increment();
+    }
+
+    /**
+     * Records the outcome of one corpus ingestion run.
+     */
+    public void recordRagIngestionRun(String corpusVersion, String outcome) {
+        ragIngestionRuns.withTags(
+                "corpus_version", corpusVersion,
+                "outcome", outcome
+        ).increment();
+    }
+
+    /**
+     * Records one successfully stored corpus document.
+     */
+    public void recordRagIngestionDocument(String corpusVersion) {
+        ragIngestionDocuments.withTag("corpus_version", corpusVersion)
+                .increment();
+    }
+
+    /**
+     * Records a repeated ingestion operation after a transient failure.
+     */
+    public void recordRagIngestionRetry(String corpusVersion, String operation) {
+        ragIngestionRetries.withTags(
+                "corpus_version", corpusVersion,
+                "operation", operation
+        ).increment();
     }
 
 }
