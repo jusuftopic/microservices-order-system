@@ -4,18 +4,21 @@ import com.example.investigationservice.dto.response.OrderInvestigationResponse;
 import com.example.investigationservice.dto.response.InvestigationQuestionResponse;
 import com.example.investigationservice.model.InvestigationContext;
 import com.example.investigationservice.model.InvestigationExplanation;
+import com.example.investigationservice.model.InvestigationKnowledgeMatch;
 import com.example.investigationservice.model.InvestigationKnowledgeQuery;
 import com.example.investigationservice.model.OrderTimeline;
 import com.example.investigationservice.model.OrderTimelineBrief;
 import com.example.investigationservice.service.explanation.InvestigationExplanationService;
 import com.example.investigationservice.service.knowledge.InvestigationKnowledgeStore;
 import com.example.investigationservice.service.knowledge.retrieval.InvestigationKnowledgeQueryFactory;
+import com.example.investigationservice.service.knowledge.retrieval.InvestigationQuestionGenerator;
 import com.example.investigationservice.mapper.OrderTimelineMapper;
 import com.example.investigationservice.validation.InvestigationQuestionValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -31,6 +34,7 @@ public class InvestigationQueryService {
     private final Optional<InvestigationKnowledgeStore> knowledgeStore;
     private final InvestigationKnowledgeQueryFactory knowledgeQueryFactory;
     private final InvestigationQuestionValidator questionValidator;
+    private final InvestigationQuestionGenerator questionGenerator;
     private final int maxKnowledgeResults;
     private final double minimumKnowledgeSimilarity;
 
@@ -41,6 +45,7 @@ public class InvestigationQueryService {
             Optional<InvestigationKnowledgeStore> knowledgeStore,
             InvestigationKnowledgeQueryFactory knowledgeQueryFactory,
             InvestigationQuestionValidator questionValidator,
+            InvestigationQuestionGenerator questionGenerator,
             @Value("${app.rag.query.max-results}") int maxKnowledgeResults,
             @Value("${app.rag.query.minimum-similarity}")
             double minimumKnowledgeSimilarity
@@ -51,6 +56,7 @@ public class InvestigationQueryService {
         this.knowledgeStore = knowledgeStore;
         this.knowledgeQueryFactory = knowledgeQueryFactory;
         this.questionValidator = questionValidator;
+        this.questionGenerator = questionGenerator;
         this.maxKnowledgeResults = maxKnowledgeResults;
         this.minimumKnowledgeSimilarity = minimumKnowledgeSimilarity;
     }
@@ -94,28 +100,25 @@ public class InvestigationQueryService {
         InvestigationKnowledgeQuery knowledgeQuery =
                 knowledgeQueryFactory.create(query, timeline);
 
-        knowledgeStore.ifPresent(store -> {
-            store.search(
-                    knowledgeQuery.text(),
-                    maxKnowledgeResults,
-                    minimumKnowledgeSimilarity
-            );
-            log.debug(
-                    "[INVESTIGATION-SERVICE][QUERY-SERVICE] Executed retrieval "
-                            + "query {} for order {}",
-                    knowledgeQuery.version(),
-                    orderId
-            );
-        });
-        if (knowledgeStore.isEmpty()) {
-            log.debug(
-                    "[INVESTIGATION-SERVICE][QUERY-SERVICE] Retrieval query {} "
-                            + "for order {} was not executed because no knowledge "
-                            + "store is configured",
-                    knowledgeQuery.version(),
-                    orderId
-            );
-        }
-        return Optional.empty();
+        List<InvestigationKnowledgeMatch> matches = knowledgeStore
+                .map(store -> store.search(
+                        knowledgeQuery.text(),
+                        maxKnowledgeResults,
+                        minimumKnowledgeSimilarity
+                ))
+                .orElseGet(List::of);
+
+        return questionGenerator.generate(query, timeline, matches)
+                .filter(candidate -> questionValidator.isValidResponse(
+                        candidate,
+                        timeline,
+                        matches
+                ))
+                .map(candidate -> new InvestigationQuestionResponse(
+                        orderId,
+                        candidate.answer(),
+                        timeline.currentStatus(),
+                        List.copyOf(candidate.referencedKnowledgeIds())
+                ));
     }
 }

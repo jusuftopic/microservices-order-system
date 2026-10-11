@@ -43,17 +43,24 @@ public class ChatClientWrapper {
      * @return structured response, when the model produces one
      */
     public Optional<AiExplanationResponse> generate(AiPrompt prompt) {
+        return generate(prompt, AiExplanationResponse.class);
+    }
+
+    public <T> Optional<T> generate(AiPrompt prompt, Class<T> responseType) {
         return circuitBreakerExecutor.execute(() ->
-                retryExecutor.execute(prompt, () -> invoke(prompt))
+                retryExecutor.execute(
+                        prompt,
+                        () -> invoke(prompt, responseType)
+                )
         );
     }
 
-    private Optional<AiExplanationResponse> invoke(AiPrompt prompt) {
-        AiExplanationResponse response = chatClient.prompt()
+    private <T> Optional<T> invoke(AiPrompt prompt, Class<T> responseType) {
+        T response = chatClient.prompt()
                 .system(prompt.systemInstructions())
                 .user(prompt.userPrompt())
                 .call()
-                .entity(AiExplanationResponse.class);
+                .entity(responseType);
         return Optional.ofNullable(response);
     }
 }

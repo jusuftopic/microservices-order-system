@@ -51,7 +51,7 @@ public class InvestigationController {
      *
      * @param orderId positive order identifier
      * @param request investigation question
-     * @return empty response until question answering is implemented
+     * @return grounded answer, or no content when no valid answer is available
      */
     @PostMapping("/{orderId}/questions")
     public ResponseEntity<InvestigationQuestionResponse> askQuestion(
