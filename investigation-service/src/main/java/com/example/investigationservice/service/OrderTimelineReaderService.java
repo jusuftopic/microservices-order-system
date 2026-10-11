@@ -2,6 +2,7 @@ package com.example.investigationservice.service;
 
 import com.example.investigationservice.entity.OrderLifecycleEvidence;
 import com.example.investigationservice.model.OrderTimeline;
+import com.example.investigationservice.model.OrderTimelineBrief;
 import com.example.investigationservice.model.OrderTimelineEntry;
 import com.example.investigationservice.repository.OrderLifecycleEvidenceRepository;
 import lombok.RequiredArgsConstructor;
@@ -44,6 +45,30 @@ public class OrderTimelineReaderService {
                 orderId
         );
         return new OrderTimeline(orderId, entries);
+    }
+
+    /**
+     * Reads the minimal authoritative context used for knowledge retrieval.
+     */
+    @Transactional(readOnly = true)
+    public OrderTimelineBrief readBrief(long orderId) {
+        OrderTimeline timeline = read(orderId);
+        if (!timeline.hasEvidence()) {
+            return new OrderTimelineBrief(orderId, null, null, null, null, null);
+        }
+
+        OrderTimelineEntry latest = timeline.entries().getLast();
+        OrderTimelineEntry.OrchestrationDecision decision =
+                latest.orchestrationDecision();
+        OrderTimelineEntry.Compensation compensation = latest.compensation();
+        return new OrderTimelineBrief(
+                orderId,
+                latest.newStatus(),
+                latest.reasonCode(),
+                decision == null ? null : decision.code(),
+                compensation == null ? null : compensation.type(),
+                latest.sourceService()
+        );
     }
 
     private OrderTimelineEntry toTimelineEntry(OrderLifecycleEvidence evidence) {

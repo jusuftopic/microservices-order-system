@@ -4,11 +4,16 @@ import com.example.investigationservice.dto.response.OrderInvestigationResponse;
 import com.example.investigationservice.dto.response.InvestigationQuestionResponse;
 import com.example.investigationservice.model.InvestigationContext;
 import com.example.investigationservice.model.InvestigationExplanation;
+import com.example.investigationservice.model.InvestigationKnowledgeQuery;
 import com.example.investigationservice.model.OrderTimeline;
+import com.example.investigationservice.model.OrderTimelineBrief;
 import com.example.investigationservice.service.explanation.InvestigationExplanationService;
+import com.example.investigationservice.service.knowledge.InvestigationKnowledgeStore;
+import com.example.investigationservice.service.knowledge.retrieval.InvestigationKnowledgeQueryFactory;
 import com.example.investigationservice.mapper.OrderTimelineMapper;
-import lombok.RequiredArgsConstructor;
+import com.example.investigationservice.validation.InvestigationQuestionValidator;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -17,13 +22,38 @@ import java.util.Optional;
  * Application service responsible for assembling order investigation reports.
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class InvestigationQueryService {
 
     private final OrderTimelineReaderService timelineReader;
     private final OrderTimelineMapper timelineMapper;
     private final InvestigationExplanationService explanationService;
+    private final Optional<InvestigationKnowledgeStore> knowledgeStore;
+    private final InvestigationKnowledgeQueryFactory knowledgeQueryFactory;
+    private final InvestigationQuestionValidator questionValidator;
+    private final int maxKnowledgeResults;
+    private final double minimumKnowledgeSimilarity;
+
+    public InvestigationQueryService(
+            OrderTimelineReaderService timelineReader,
+            OrderTimelineMapper timelineMapper,
+            InvestigationExplanationService explanationService,
+            Optional<InvestigationKnowledgeStore> knowledgeStore,
+            InvestigationKnowledgeQueryFactory knowledgeQueryFactory,
+            InvestigationQuestionValidator questionValidator,
+            @Value("${app.rag.query.max-results}") int maxKnowledgeResults,
+            @Value("${app.rag.query.minimum-similarity}")
+            double minimumKnowledgeSimilarity
+    ) {
+        this.timelineReader = timelineReader;
+        this.timelineMapper = timelineMapper;
+        this.explanationService = explanationService;
+        this.knowledgeStore = knowledgeStore;
+        this.knowledgeQueryFactory = knowledgeQueryFactory;
+        this.questionValidator = questionValidator;
+        this.maxKnowledgeResults = maxKnowledgeResults;
+        this.minimumKnowledgeSimilarity = minimumKnowledgeSimilarity;
+    }
 
     /**
      * Builds the investigation report for an order.
@@ -59,10 +89,33 @@ public class InvestigationQueryService {
             long orderId,
             String query
     ) {
-        log.debug(
-                "[INVESTIGATION-SERVICE][QUERY-SERVICE] Accepted question for order {}",
-                orderId
-        );
+        questionValidator.validate(orderId, query);
+        OrderTimelineBrief timeline = timelineReader.readBrief(orderId);
+        InvestigationKnowledgeQuery knowledgeQuery =
+                knowledgeQueryFactory.create(query, timeline);
+
+        knowledgeStore.ifPresent(store -> {
+            store.search(
+                    knowledgeQuery.text(),
+                    maxKnowledgeResults,
+                    minimumKnowledgeSimilarity
+            );
+            log.debug(
+                    "[INVESTIGATION-SERVICE][QUERY-SERVICE] Executed retrieval "
+                            + "query {} for order {}",
+                    knowledgeQuery.version(),
+                    orderId
+            );
+        });
+        if (knowledgeStore.isEmpty()) {
+            log.debug(
+                    "[INVESTIGATION-SERVICE][QUERY-SERVICE] Retrieval query {} "
+                            + "for order {} was not executed because no knowledge "
+                            + "store is configured",
+                    knowledgeQuery.version(),
+                    orderId
+            );
+        }
         return Optional.empty();
     }
 }

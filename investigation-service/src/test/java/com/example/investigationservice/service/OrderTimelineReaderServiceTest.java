@@ -2,6 +2,7 @@ package com.example.investigationservice.service;
 
 import com.example.investigationservice.entity.OrderLifecycleEvidence;
 import com.example.investigationservice.model.OrderTimeline;
+import com.example.investigationservice.model.OrderTimelineBrief;
 import com.example.investigationservice.repository.OrderLifecycleEvidenceRepository;
 import org.junit.jupiter.api.Test;
 
@@ -100,6 +101,32 @@ class OrderTimelineReaderServiceTest {
         OrderTimeline timeline = reader.read(42L);
 
         assertNull(timeline.entries().get(0).orchestrationDecision());
+    }
+
+    @Test
+    void returnsBriefFromLatestAuthoritativeEvidence() {
+        OrderLifecycleEvidence evidence = evidence(
+                UUID.randomUUID(),
+                "INVENTORY_RESERVE_COMPLETED",
+                "PAYMENT_FAILED",
+                "PAYMENT_FAILED",
+                "RELEASE_INVENTORY",
+                "INVENTORY_SERVICE",
+                UUID.randomUUID(),
+                true,
+                "INVENTORY_RELEASE",
+                Instant.parse("2026-08-19T10:05:00Z")
+        );
+        when(repository.findByOrderIdOrderByOccurredAtAscMessageIdAsc(42L))
+                .thenReturn(List.of(evidence));
+
+        OrderTimelineBrief brief = reader.readBrief(42L);
+
+        assertEquals("PAYMENT_FAILED", brief.currentStatus());
+        assertEquals("PAYMENT_FAILED", brief.reasonCode());
+        assertEquals("RELEASE_INVENTORY", brief.decisionCode());
+        assertEquals("INVENTORY_RELEASE", brief.compensationType());
+        assertEquals("INVENTORY_SERVICE", brief.sourceService());
     }
 
     private OrderLifecycleEvidence evidence(
