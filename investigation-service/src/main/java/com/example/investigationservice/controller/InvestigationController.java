@@ -1,12 +1,18 @@
 package com.example.investigationservice.controller;
 
+import com.example.investigationservice.dto.request.InvestigationQuestionRequest;
+import com.example.investigationservice.dto.response.InvestigationQuestionResponse;
 import com.example.investigationservice.dto.response.OrderInvestigationResponse;
 import com.example.investigationservice.service.InvestigationQueryService;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -38,5 +44,24 @@ public class InvestigationController {
             long orderId
     ) {
         return investigationQueryService.getOrderInvestigation(orderId);
+    }
+
+    /**
+     * Accepts a question about an order investigation.
+     *
+     * @param orderId positive order identifier
+     * @param request investigation question
+     * @return empty response until question answering is implemented
+     */
+    @PostMapping("/{orderId}/questions")
+    public ResponseEntity<InvestigationQuestionResponse> askQuestion(
+            @PathVariable
+            @Positive(message = "orderId must be greater than zero")
+            long orderId,
+            @Valid @RequestBody InvestigationQuestionRequest request
+    ) {
+        return investigationQueryService.askQuestion(orderId, request.query())
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.noContent().build());
     }
 }

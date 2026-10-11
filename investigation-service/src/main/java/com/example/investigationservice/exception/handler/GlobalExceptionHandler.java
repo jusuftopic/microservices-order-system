@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -34,6 +35,31 @@ public class GlobalExceptionHandler {
         List<ApiErrorResponse.Violation> violations = exception.getConstraintViolations()
                 .stream()
                 .map(this::toViolation)
+                .toList();
+
+        return errorResponse(
+                HttpStatus.BAD_REQUEST,
+                "Request validation failed",
+                request.getRequestURI(),
+                violations
+        );
+    }
+
+    /**
+     * Handles Bean Validation failures in request bodies.
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiErrorResponse> handleMethodArgumentNotValid(
+            MethodArgumentNotValidException exception,
+            HttpServletRequest request
+    ) {
+        List<ApiErrorResponse.Violation> violations = exception.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .map(error -> new ApiErrorResponse.Violation(
+                        error.getField(),
+                        error.getDefaultMessage()
+                ))
                 .toList();
 
         return errorResponse(

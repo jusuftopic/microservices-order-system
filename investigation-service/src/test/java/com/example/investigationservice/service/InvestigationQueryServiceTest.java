@@ -54,4 +54,9 @@ class InvestigationQueryServiceTest {
         assertEquals("orderId must be greater than zero", exception.getMessage());
     }
 
+    @Test
+    void acceptsQuestionUntilRetrievalIsImplemented() {
+        assertTrue(service.askQuestion(42L, "Why did payment fail?").isEmpty());
+    }
+
 }

@@ -1,6 +1,7 @@
 package com.example.investigationservice.service;
 
 import com.example.investigationservice.dto.response.OrderInvestigationResponse;
+import com.example.investigationservice.dto.response.InvestigationQuestionResponse;
 import com.example.investigationservice.model.InvestigationContext;
 import com.example.investigationservice.model.InvestigationExplanation;
 import com.example.investigationservice.model.OrderTimeline;
@@ -9,6 +10,8 @@ import com.example.investigationservice.mapper.OrderTimelineMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 
 /**
  * Application service responsible for assembling order investigation reports.
@@ -43,5 +46,23 @@ public class InvestigationQueryService {
                 orderId, context.evidence().size(), explanation.source());
 
         return timelineMapper.toResponse(timeline, explanation);
+    }
+
+    /**
+     * Handles a question about an order investigation.
+     *
+     * @param orderId positive order identifier
+     * @param query question submitted for the investigation
+     * @return answer when question processing is available
+     */
+    public Optional<InvestigationQuestionResponse> askQuestion(
+            long orderId,
+            String query
+    ) {
+        log.debug(
+                "[INVESTIGATION-SERVICE][QUERY-SERVICE] Accepted question for order {}",
+                orderId
+        );
+        return Optional.empty();
     }
 }

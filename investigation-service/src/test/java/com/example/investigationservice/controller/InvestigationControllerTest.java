@@ -11,6 +11,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -39,6 +40,45 @@ class InvestigationControllerTest {
                 .andExpect(jsonPath("$.currentStatus").value(nullValue()))
                 .andExpect(jsonPath("$.explanation").value(nullValue()))
                 .andExpect(jsonPath("$.timeline", hasSize(0)));
+    }
+
+    @Test
+    void acceptsQuestionForPositiveOrderId() throws Exception {
+        mockMvc.perform(post("/api/v1/investigations/orders/{orderId}/questions", 42)
+                        .contentType("application/json")
+                        .content("""
+                                {"query":"Why did payment fail?"}
+                                """))
+                .andExpect(status().isNoContent())
+                .andExpect(content().string(""));
+
+        verify(investigationQueryService)
+                .askQuestion(42L, "Why did payment fail?");
+    }
+
+    @Test
+    void rejectsQuestionForNonPositiveOrderId() throws Exception {
+        mockMvc.perform(post("/api/v1/investigations/orders/{orderId}/questions", 0)
+                        .contentType("application/json")
+                        .content("""
+                                {"query":"Why did payment fail?"}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.violations[0].field").value("orderId"));
+    }
+
+    @Test
+    void rejectsBlankQuestion() throws Exception {
+        mockMvc.perform(post("/api/v1/investigations/orders/{orderId}/questions", 42)
+                        .contentType("application/json")
+                        .content("""
+                                {"query":"   "}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Request validation failed"))
+                .andExpect(jsonPath("$.violations[0].field").value("query"))
+                .andExpect(jsonPath("$.violations[0].message")
+                        .value("query must not be blank"));
     }
 
     @Test
