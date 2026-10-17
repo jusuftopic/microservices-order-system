@@ -22,7 +22,7 @@ The Order Service is the authority for the overall order lifecycle. Other servic
 | Inventory Service    | Manages stock reservation and finalization | Inventory items, available quantity, reserved quantity                                         | Order status, payment state                               |
 | Payment Service      | Handles payment processing                 | Payment records, payment status, provider interaction result                                   | Order completion decision, inventory state                |
 | Notification Service | Sends customer notifications               | Notification delivery logic                                                                    | Business workflow decisions, order status                 |
-| Investigation Service | Provides validated LLM-supported order status | Its local timeline projection, generated explanations and deterministic fallback              | Authoritative order state, workflow decisions             |
+| Investigation Service | Provides validated LLM-supported order status | Its local timeline projection, generated explanations, human feedback and deterministic fallback | Authoritative order state, workflow decisions             |
 
 ## Order Service
 
@@ -67,6 +67,7 @@ The Investigation Service provides an explanatory view of the distributed order 
 * builds a local timeline from authoritative lifecycle evidence
 * provides human-readable explanations of an order's current state
 * validates AI-supported explanations and provides a deterministic fallback
+* records one idempotent helpful or not-helpful rating for each persisted question execution
 * remains outside the critical order-processing path and never changes order state
 
 ## Shared Technical Capabilities

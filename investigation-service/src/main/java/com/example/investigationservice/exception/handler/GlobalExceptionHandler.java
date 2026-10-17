@@ -1,5 +1,7 @@
 package com.example.investigationservice.exception.handler;
 
+import com.example.investigationservice.exception.QuestionExecutionNotFoundException;
+import com.example.investigationservice.exception.QuestionFeedbackConflictException;
 import com.example.investigationservice.exception.dto.ApiErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
@@ -7,6 +9,7 @@ import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -16,6 +19,7 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Converts Investigation API failures into a consistent and sanitized error contract.
@@ -23,6 +27,51 @@ import java.util.List;
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
+
+    /**
+     * Returns 404 when feedback references an execution that does not exist.
+     */
+    @ExceptionHandler(QuestionExecutionNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleQuestionExecutionNotFound(
+            QuestionExecutionNotFoundException exception,
+            HttpServletRequest request
+    ) {
+        return errorResponse(
+                HttpStatus.NOT_FOUND,
+                exception.getMessage(),
+                request.getRequestURI(),
+                List.of()
+        );
+    }
+
+    /**
+     * Returns 409 when new feedback differs from feedback already persisted.
+     */
+    @ExceptionHandler(QuestionFeedbackConflictException.class)
+    public ResponseEntity<ApiErrorResponse> handleQuestionFeedbackConflict(
+            QuestionFeedbackConflictException exception,
+            HttpServletRequest request
+    ) {
+        return errorResponse(
+                HttpStatus.CONFLICT,
+                exception.getMessage(),
+                request.getRequestURI(),
+                List.of()
+        );
+    }
+
+    /**
+     * Returns 400 for malformed JSON and unsupported enum values.
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiErrorResponse> handleUnreadableRequest(HttpServletRequest request) {
+        return errorResponse(
+                HttpStatus.BAD_REQUEST,
+                "Request body is malformed or contains an unsupported value",
+                request.getRequestURI(),
+                List.of()
+        );
+    }
 
     /**
      * Handles Bean Validation failures on controller parameters.
@@ -78,9 +127,12 @@ public class GlobalExceptionHandler {
             MethodArgumentTypeMismatchException exception,
             HttpServletRequest request
     ) {
+        String expectedValue = exception.getRequiredType() == UUID.class
+                ? "a valid UUID"
+                : "a positive whole number";
         ApiErrorResponse.Violation violation = new ApiErrorResponse.Violation(
                 exception.getName(),
-                exception.getName() + " must be a positive whole number"
+                exception.getName() + " must be " + expectedValue
         );
 
         return errorResponse(
