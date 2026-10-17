@@ -1,12 +1,17 @@
 package com.example.investigationservice.controller;
 
 import com.example.investigationservice.dto.response.OrderInvestigationResponse;
+import com.example.investigationservice.dto.response.InvestigationQuestionResponse;
 import com.example.investigationservice.service.InvestigationQueryService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
@@ -44,13 +49,29 @@ class InvestigationControllerTest {
 
     @Test
     void acceptsQuestionForPositiveOrderId() throws Exception {
+        UUID executionId = UUID.randomUUID();
+        when(investigationQueryService.askQuestion(42L, "Why did payment fail?"))
+                .thenReturn(Optional.of(new InvestigationQuestionResponse(
+                        42L,
+                        executionId,
+                        "The payment provider rejected the charge.",
+                        "PAYMENT_FAILED",
+                        List.of("payment-failure-compensation")
+                )));
+
         mockMvc.perform(post("/api/v1/investigations/orders/{orderId}/questions", 42)
                         .contentType("application/json")
                         .content("""
                                 {"query":"Why did payment fail?"}
                                 """))
-                .andExpect(status().isNoContent())
-                .andExpect(content().string(""));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.orderId").value(42))
+                .andExpect(jsonPath("$.executionId").value(executionId.toString()))
+                .andExpect(jsonPath("$.answer")
+                        .value("The payment provider rejected the charge."))
+                .andExpect(jsonPath("$.currentStatus").value("PAYMENT_FAILED"))
+                .andExpect(jsonPath("$.referencedKnowledgeIds[0]")
+                        .value("payment-failure-compensation"));
 
         verify(investigationQueryService)
                 .askQuestion(42L, "Why did payment fail?");
