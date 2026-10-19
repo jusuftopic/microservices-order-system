@@ -111,6 +111,31 @@ public class OrderWorkflowService {
     ) {
         Order order = repository.findById(orderId)
                 .orElseThrow();
+        return applyTransition(order, targetStatus, context);
+    }
+
+    /**
+     * Locks an order before attempting a transition. Concurrent callers for
+     * the same order are serialized and re-evaluate its latest status after
+     * the preceding transaction commits.
+     */
+    @Transactional
+    public OrderTransitionResult tryUpdateStatusWithPessimisticLock(
+            Long orderId,
+            OrderStatus targetStatus,
+            OrderTransitionContext context
+    ) {
+        Order order = repository.findByIdForUpdate(orderId)
+                .orElseThrow();
+        return applyTransition(order, targetStatus, context);
+    }
+
+    private OrderTransitionResult applyTransition(
+            Order order,
+            OrderStatus targetStatus,
+            OrderTransitionContext context
+    ) {
+        final Long orderId = order.getId();
         final OrderStatus currentStatus = order.getStatus();
 
         if (currentStatus.isFinalState() || currentStatus == targetStatus) {

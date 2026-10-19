@@ -362,4 +362,70 @@ public class OrderWorkflowServiceTest {
         verifyNoInteractions(outboxService);
     }
 
+    @Test
+    void should_lock_order_before_timeout_transition() {
+        // GIVEN
+        Long orderId = 1L;
+        Order order = Order.builder()
+                .id(orderId)
+                .status(OrderStatus.CREATED)
+                .correlationId("corr-123")
+                .build();
+        when(repository.findByIdForUpdate(orderId)).thenReturn(Optional.of(order));
+        when(repository.save(order)).thenReturn(order);
+
+        // WHEN
+        OrderTransitionResult result = service.tryUpdateStatusWithPessimisticLock(
+                orderId,
+                OrderStatus.TIMED_OUT,
+                OrderTransitionContext.causedBy(
+                        LifecycleReasonCode.ORDER_PROCESSING_TIMEOUT,
+                        LifecycleTrigger.ORDER_TIMEOUT_DETECTED,
+                        null
+                )
+        );
+
+        // THEN
+        assertTrue(result.transitioned());
+        assertEquals(OrderStatus.CREATED, result.previousStatus());
+        assertEquals(OrderStatus.TIMED_OUT, result.targetStatus());
+        assertEquals(OrderStatus.TIMED_OUT, result.order().getStatus());
+        verify(repository).findByIdForUpdate(orderId);
+        verify(repository).save(order);
+        verify(outboxService).storeEvent(
+                eq(orderId),
+                eq("ORDER"),
+                eq(EventConstants.EVENT_ORDER_LIFECYCLE_TRANSITIONED),
+                any(OrderLifecycleTransitionedEvent.class)
+        );
+    }
+
+    @Test
+    void should_not_apply_locked_timeout_transition_twice() {
+        // GIVEN
+        Long orderId = 1L;
+        Order order = Order.builder()
+                .id(orderId)
+                .status(OrderStatus.TIMED_OUT)
+                .build();
+        when(repository.findByIdForUpdate(orderId)).thenReturn(Optional.of(order));
+
+        // WHEN
+        OrderTransitionResult result = service.tryUpdateStatusWithPessimisticLock(
+                orderId,
+                OrderStatus.TIMED_OUT,
+                OrderTransitionContext.causedBy(
+                        LifecycleReasonCode.ORDER_PROCESSING_TIMEOUT,
+                        LifecycleTrigger.ORDER_TIMEOUT_DETECTED,
+                        null
+                )
+        );
+
+        // THEN
+        assertFalse(result.transitioned());
+        verify(repository).findByIdForUpdate(orderId);
+        verify(repository, never()).save(any());
+        verifyNoInteractions(outboxService);
+    }
+
 }

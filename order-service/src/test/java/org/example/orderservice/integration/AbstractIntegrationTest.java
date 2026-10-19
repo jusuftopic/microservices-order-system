@@ -22,6 +22,7 @@ public abstract class AbstractIntegrationTest {
 
     static final KafkaContainer kafka = new KafkaContainer(
             DockerImageName.parse("confluentinc/cp-kafka:7.5.0")
+                    .asCompatibleSubstituteFor("apache/kafka")
     );
 
     static {

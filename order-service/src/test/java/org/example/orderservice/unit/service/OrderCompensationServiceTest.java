@@ -55,7 +55,7 @@ public class OrderCompensationServiceTest {
         );
 
         // WHEN
-        compensationService.compensate(order);
+        compensationService.compensate(order, OrderStatus.INVENTORY_RESERVE_COMPLETED);
 
         // THEN
         verify(outboxService).storeEvent(
@@ -86,7 +86,7 @@ public class OrderCompensationServiceTest {
         );
 
         // WHEN
-        compensationService.compensate(order);
+        compensationService.compensate(order, OrderStatus.PAYMENT_COMPLETED);
 
         // THEN
         verify(outboxService).storeEvent(
@@ -123,7 +123,7 @@ public class OrderCompensationServiceTest {
                 .build();
 
         // WHEN
-        compensationService.compensate(order);
+        compensationService.compensate(order, OrderStatus.INVENTORY_RESERVE_FAILED);
 
         // THEN
         verifyNoInteractions(outboxService);
@@ -140,7 +140,7 @@ public class OrderCompensationServiceTest {
                 .build();
 
         // WHEN
-        compensationService.compensate(order);
+        compensationService.compensate(order, OrderStatus.COMPLETED);
 
         // THEN
         verifyNoInteractions(outboxService);

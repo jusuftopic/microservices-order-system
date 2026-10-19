@@ -576,15 +576,11 @@ public class OrderService {
      * </p>
      */
     @Transactional
-    public void handleTimeout(Order order) {
+    public void handleTimeout(Long orderId) {
 
-        if (order.getStatus().isFinalState()) {
-            return;
-        }
-
-        /* 1. Update order status */
-        workflowService.updateStatus(
-                order.getId(),
+        /* 1. Lock the order and update its status */
+        OrderTransitionResult transition = workflowService.tryUpdateStatusWithPessimisticLock(
+                orderId,
                 OrderStatus.TIMED_OUT,
                 OrderTransitionContext.causedBy(
                                 LifecycleReasonCode.ORDER_PROCESSING_TIMEOUT,
@@ -593,6 +589,17 @@ public class OrderService {
                         )
                         .withCompensation(CompensationType.STATUS_DEPENDENT_COMPENSATION)
         );
+
+        if (!transition.transitioned()) {
+            log.info(
+                    "[ORDER-SERVICE] Timeout processing skipped for order {} in current state {}",
+                    orderId,
+                    transition.order().getStatus()
+            );
+            return;
+        }
+
+        Order order = transition.order();
 
         log.error(
                 "[ORDER-SERVICE] Order {} timed out after exceeding processing threshold.",
@@ -603,7 +610,7 @@ public class OrderService {
         increaseMetricsCounter(orderMetrics.getOrdersFailed());
 
         /* 3. Apply compensation actions */
-        compensationService.compensate(order);
+        compensationService.compensate(order, transition.previousStatus());
 
         /* 4. Send notifications */
         outboxService.storeEvent(

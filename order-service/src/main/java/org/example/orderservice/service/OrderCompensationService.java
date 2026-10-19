@@ -7,6 +7,7 @@ import org.example.messagingstarter.EventConstants;
 import org.example.messagingstarter.contracts.commands.ReleaseInventoryCommand;
 import org.example.messagingstarter.contracts.OrderItemEvent;
 import org.example.messagingstarter.contracts.commands.RefundPaymentCommand;
+import org.example.messagingstarter.contracts.lifecycle.OrderStatus;
 import org.example.orderservice.entity.Order;
 import org.example.orderservice.service.outbox.OrderOutboxService;
 import org.springframework.stereotype.Service;
@@ -35,16 +36,17 @@ public class OrderCompensationService {
      * Executes compensation actions for the given order.
      *
      * @param order order requiring compensation
+     * @param statusBeforeFailure order status that determines the compensation action
      */
-    public void compensate(Order order) {
+    public void compensate(Order order, OrderStatus statusBeforeFailure) {
 
         log.warn(
                 "[ORDER-COMPENSATION] Starting compensation for order {} in status {}",
                 order.getId(),
-                order.getStatus()
+                statusBeforeFailure
         );
 
-        switch (order.getStatus()) {
+        switch (statusBeforeFailure) {
 
             case INVENTORY_RESERVE_COMPLETED ->
                     releaseInventory(order);
@@ -55,7 +57,7 @@ public class OrderCompensationService {
             default -> log.info(
                     "[ORDER-COMPENSATION] No compensation required for order {} in status {}",
                     order.getId(),
-                    order.getStatus()
+                    statusBeforeFailure
             );
         }
     }

@@ -690,4 +690,60 @@ public class OrderServiceTest {
                 any()
         );
     }
+
+    @Test
+    void should_handle_timeout_after_locked_transition() {
+        Long orderId = 1L;
+        Order order = Order.builder()
+                .id(orderId)
+                .customerEmail("test@mail.com")
+                .correlationId("corr-123")
+                .status(OrderStatus.TIMED_OUT)
+                .build();
+        when(workflowService.tryUpdateStatusWithPessimisticLock(
+                eq(orderId),
+                eq(OrderStatus.TIMED_OUT),
+                any(OrderTransitionContext.class)
+        )).thenReturn(new OrderTransitionResult(
+                order,
+                OrderStatus.PAYMENT_COMPLETED,
+                OrderStatus.TIMED_OUT,
+                true
+        ));
+
+        orderService.handleTimeout(orderId);
+
+        verify(compensationService).compensate(order, OrderStatus.PAYMENT_COMPLETED);
+        verify(outboxService).storeEvent(
+                eq(orderId),
+                eq("ORDER"),
+                eq(EventConstants.EVENT_NOTIFICATION_REQUESTED),
+                any(SendNotificationCommand.class)
+        );
+    }
+
+    @Test
+    void should_skip_timeout_side_effects_when_locked_transition_was_not_applied() {
+        Long orderId = 1L;
+        Order order = Order.builder()
+                .id(orderId)
+                .status(OrderStatus.TIMED_OUT)
+                .build();
+        when(workflowService.tryUpdateStatusWithPessimisticLock(
+                eq(orderId),
+                eq(OrderStatus.TIMED_OUT),
+                any(OrderTransitionContext.class)
+        )).thenReturn(new OrderTransitionResult(
+                order,
+                OrderStatus.TIMED_OUT,
+                OrderStatus.TIMED_OUT,
+                false
+        ));
+
+        orderService.handleTimeout(orderId);
+
+        verifyNoInteractions(compensationService);
+        verifyNoInteractions(outboxService);
+        verifyNoInteractions(orderMetrics);
+    }
 }

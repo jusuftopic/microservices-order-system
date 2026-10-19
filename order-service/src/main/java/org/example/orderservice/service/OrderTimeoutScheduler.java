@@ -2,7 +2,6 @@ package org.example.orderservice.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.orderservice.entity.Order;
 import org.example.orderservice.repository.OrderRepository;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -32,16 +31,14 @@ public class OrderTimeoutScheduler {
         LocalDateTime threshold =
                 LocalDateTime.now().minus(TIMEOUT);
 
-        List<Order> timedOutOrders =
-                repository.findTimedOutOrders(threshold);
+        List<Long> timedOutOrderIds = repository.findTimedOutOrderIds(threshold);
 
-        timedOutOrders.forEach(orderService::handleTimeout);
-
-        if (!timedOutOrders.isEmpty()) {
-            log.warn(
-                    "[ORDER-TIMEOUT] Detected {} timed out orders",
-                    timedOutOrders.size()
-            );
+        if (timedOutOrderIds.isEmpty()) {
+            log.debug("[ORDER-TIMEOUT] No timeout orders found");
+            return;
         }
+
+        log.warn("[ORDER-TIMEOUT] Detected {} timed out orders", timedOutOrderIds.size());
+        timedOutOrderIds.forEach(orderService::handleTimeout);
     }
 }
