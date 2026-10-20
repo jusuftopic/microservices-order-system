@@ -58,25 +58,23 @@ public class OrderWorkflowServiceTest {
                 .status(OrderStatus.CREATED)
                 .build();
 
-        when(repository.findById(orderId))
+        when(repository.findByIdForUpdate(orderId))
                 .thenReturn(Optional.of(order));
 
         when(repository.save(order))
                 .thenReturn(order);
 
         // WHEN
-        Order result = service.updateStatus(
-                orderId,
-                OrderStatus.INVENTORY_RESERVE_COMPLETED
-        );
+        OrderTransitionResult result = transition(orderId,
+                OrderStatus.INVENTORY_RESERVE_COMPLETED);
 
         // THEN
         assertEquals(
                 OrderStatus.INVENTORY_RESERVE_COMPLETED,
-                result.getStatus()
+                result.order().getStatus()
         );
 
-        verify(repository).findById(orderId);
+        verify(repository).findByIdForUpdate(orderId);
         verify(repository).save(order);
     }
 
@@ -93,10 +91,10 @@ public class OrderWorkflowServiceTest {
                 .correlationId("corr-123")
                 .build();
 
-        when(repository.findById(orderId)).thenReturn(Optional.of(order));
+        when(repository.findByIdForUpdate(orderId)).thenReturn(Optional.of(order));
         when(repository.save(order)).thenReturn(order);
 
-        service.updateStatus(
+        service.tryUpdateStatus(
                 orderId,
                 OrderStatus.INVENTORY_RESERVE_COMPLETED,
                 OrderTransitionContext.causedBy(
@@ -145,22 +143,19 @@ public class OrderWorkflowServiceTest {
                 .status(OrderStatus.INVENTORY_RESERVE_COMPLETED)
                 .build();
 
-        when(repository.findById(orderId))
+        when(repository.findByIdForUpdate(orderId))
                 .thenReturn(Optional.of(order));
 
         when(repository.save(order))
                 .thenReturn(order);
 
         // WHEN
-        Order result = service.updateStatus(
-                orderId,
-                OrderStatus.PAYMENT_COMPLETED
-        );
+        OrderTransitionResult result = transition(orderId, OrderStatus.PAYMENT_COMPLETED);
 
         // THEN
         assertEquals(
                 OrderStatus.PAYMENT_COMPLETED,
-                result.getStatus()
+                result.order().getStatus()
         );
 
         verify(repository).save(order);
@@ -177,22 +172,20 @@ public class OrderWorkflowServiceTest {
                 .status(OrderStatus.PAYMENT_COMPLETED)
                 .build();
 
-        when(repository.findById(orderId))
+        when(repository.findByIdForUpdate(orderId))
                 .thenReturn(Optional.of(order));
 
         when(repository.save(order))
                 .thenReturn(order);
 
         // WHEN
-        Order result = service.updateStatus(
-                orderId,
-                OrderStatus.INVENTORY_COMMIT_COMPLETED
-        );
+        OrderTransitionResult result = transition(orderId,
+                OrderStatus.INVENTORY_COMMIT_COMPLETED);
 
         // THEN
         assertEquals(
                 OrderStatus.INVENTORY_COMMIT_COMPLETED,
-                result.getStatus()
+                result.order().getStatus()
         );
     }
 
@@ -207,22 +200,19 @@ public class OrderWorkflowServiceTest {
                 .status(OrderStatus.INVENTORY_COMMIT_COMPLETED)
                 .build();
 
-        when(repository.findById(orderId))
+        when(repository.findByIdForUpdate(orderId))
                 .thenReturn(Optional.of(order));
 
         when(repository.save(order))
                 .thenReturn(order);
 
         // WHEN
-        Order result = service.updateStatus(
-                orderId,
-                OrderStatus.COMPLETED
-        );
+        OrderTransitionResult result = transition(orderId, OrderStatus.COMPLETED);
 
         // THEN
         assertEquals(
                 OrderStatus.COMPLETED,
-                result.getStatus()
+                result.order().getStatus()
         );
     }
 
@@ -237,20 +227,17 @@ public class OrderWorkflowServiceTest {
                 .status(OrderStatus.INVENTORY_RESERVE_FAILED)
                 .build();
 
-        when(repository.findById(orderId))
+        when(repository.findByIdForUpdate(orderId))
                 .thenReturn(Optional.of(order));
 
         when(repository.save(order))
                 .thenReturn(order);
 
         // WHEN
-        Order result = service.updateStatus(
-                orderId,
-                OrderStatus.FAILED
-        );
+        OrderTransitionResult result = transition(orderId, OrderStatus.FAILED);
 
         // THEN
-        assertEquals(OrderStatus.FAILED, result.getStatus());
+        assertEquals(OrderStatus.FAILED, result.order().getStatus());
     }
 
     @Test
@@ -264,20 +251,17 @@ public class OrderWorkflowServiceTest {
                 .status(OrderStatus.PAYMENT_FAILED)
                 .build();
 
-        when(repository.findById(orderId))
+        when(repository.findByIdForUpdate(orderId))
                 .thenReturn(Optional.of(order));
 
         when(repository.save(order))
                 .thenReturn(order);
 
         // WHEN
-        Order result = service.updateStatus(
-                orderId,
-                OrderStatus.FAILED
-        );
+        OrderTransitionResult result = transition(orderId, OrderStatus.FAILED);
 
         // THEN
-        assertEquals(OrderStatus.FAILED, result.getStatus());
+        assertEquals(OrderStatus.FAILED, result.order().getStatus());
     }
 
     @Test
@@ -291,16 +275,13 @@ public class OrderWorkflowServiceTest {
                 .status(OrderStatus.CREATED)
                 .build();
 
-        when(repository.findById(orderId))
+        when(repository.findByIdForUpdate(orderId))
                 .thenReturn(Optional.of(order));
 
         // WHEN + THEN
         IllegalStateException ex = assertThrows(
                 IllegalStateException.class,
-                () -> service.updateStatus(
-                        orderId,
-                        OrderStatus.COMPLETED
-                )
+                () -> transition(orderId, OrderStatus.COMPLETED)
         );
 
         assertTrue(
@@ -319,19 +300,16 @@ public class OrderWorkflowServiceTest {
         // GIVEN
         Long orderId = 999L;
 
-        when(repository.findById(orderId))
+        when(repository.findByIdForUpdate(orderId))
                 .thenReturn(Optional.empty());
 
         // WHEN + THEN
         assertThrows(
                 NoSuchElementException.class,
-                () -> service.updateStatus(
-                        orderId,
-                        OrderStatus.COMPLETED
-                )
+                () -> transition(orderId, OrderStatus.COMPLETED)
         );
 
-        verify(repository).findById(orderId);
+        verify(repository).findByIdForUpdate(orderId);
         verify(repository, never()).save(any());
         verifyNoInteractions(outboxService);
     }
@@ -343,7 +321,7 @@ public class OrderWorkflowServiceTest {
                 .id(orderId)
                 .status(OrderStatus.TIMED_OUT)
                 .build();
-        when(repository.findById(orderId)).thenReturn(Optional.of(order));
+        when(repository.findByIdForUpdate(orderId)).thenReturn(Optional.of(order));
 
         OrderTransitionResult result = service.tryUpdateStatus(
                 orderId,
@@ -375,7 +353,7 @@ public class OrderWorkflowServiceTest {
         when(repository.save(order)).thenReturn(order);
 
         // WHEN
-        OrderTransitionResult result = service.tryUpdateStatusWithPessimisticLock(
+        OrderTransitionResult result = service.tryUpdateStatus(
                 orderId,
                 OrderStatus.TIMED_OUT,
                 OrderTransitionContext.causedBy(
@@ -411,7 +389,7 @@ public class OrderWorkflowServiceTest {
         when(repository.findByIdForUpdate(orderId)).thenReturn(Optional.of(order));
 
         // WHEN
-        OrderTransitionResult result = service.tryUpdateStatusWithPessimisticLock(
+        OrderTransitionResult result = service.tryUpdateStatus(
                 orderId,
                 OrderStatus.TIMED_OUT,
                 OrderTransitionContext.causedBy(
@@ -426,6 +404,18 @@ public class OrderWorkflowServiceTest {
         verify(repository).findByIdForUpdate(orderId);
         verify(repository, never()).save(any());
         verifyNoInteractions(outboxService);
+    }
+
+    private OrderTransitionResult transition(Long orderId, OrderStatus targetStatus) {
+        return service.tryUpdateStatus(
+                orderId,
+                targetStatus,
+                OrderTransitionContext.causedBy(
+                        LifecycleReasonCode.ORDER_STATUS_UPDATED,
+                        LifecycleTrigger.ORDER_STATUS_UPDATE,
+                        null
+                )
+        );
     }
 
 }

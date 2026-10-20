@@ -3,8 +3,6 @@ package org.example.orderservice.service.workflow;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.messagingstarter.contracts.events.OrderLifecycleTransitionedEvent;
-import org.example.messagingstarter.contracts.lifecycle.LifecycleReasonCode;
-import org.example.messagingstarter.contracts.lifecycle.LifecycleTrigger;
 import org.example.orderservice.entity.Order;
 import org.example.messagingstarter.contracts.lifecycle.OrderStatus;
 import org.example.orderservice.repository.OrderRepository;
@@ -71,37 +69,8 @@ public class OrderWorkflowService {
             );
 
     /**
-     * Update order status to inventory processing
-     *
-     * @param orderId Order identifier to change status for
-     * @param targetStatus Status to update order to
-     * @return Updated {@link Order}
-     */
-    @Transactional
-    public Order updateStatus(Long orderId, OrderStatus targetStatus) {
-        return updateStatus(
-                orderId,
-                targetStatus,
-                OrderTransitionContext.causedBy(
-                        LifecycleReasonCode.ORDER_STATUS_UPDATED,
-                        LifecycleTrigger.ORDER_STATUS_UPDATE,
-                        null
-                )
-        );
-    }
-
-    @Transactional
-    public Order updateStatus(
-            Long orderId,
-            OrderStatus targetStatus,
-            OrderTransitionContext context
-    ) {
-        return tryUpdateStatus(orderId, targetStatus, context).order();
-    }
-
-    /**
-     * Attempts a transition and reports whether it was committed. Final states
-     * and repeated observations of the target state are treated as safe no-ops.
+     * Locks the order while deciding whether a transition can be applied.
+     * Final states and repeated observations of the target state are safe no-ops.
      */
     @Transactional
     public OrderTransitionResult tryUpdateStatus(
@@ -109,24 +78,7 @@ public class OrderWorkflowService {
             OrderStatus targetStatus,
             OrderTransitionContext context
     ) {
-        Order order = repository.findById(orderId)
-                .orElseThrow();
-        return applyTransition(order, targetStatus, context);
-    }
-
-    /**
-     * Locks an order before attempting a transition. Concurrent callers for
-     * the same order are serialized and re-evaluate its latest status after
-     * the preceding transaction commits.
-     */
-    @Transactional
-    public OrderTransitionResult tryUpdateStatusWithPessimisticLock(
-            Long orderId,
-            OrderStatus targetStatus,
-            OrderTransitionContext context
-    ) {
-        Order order = repository.findByIdForUpdate(orderId)
-                .orElseThrow();
+        Order order = repository.findByIdForUpdate(orderId).orElseThrow();
         return applyTransition(order, targetStatus, context);
     }
 

@@ -72,8 +72,14 @@ public class IdempotencyIT extends AbstractIntegrationTest {
                     // only one inbox entry
                     assertThat(inboxRepository.count()).isEqualTo(1);
 
-                    // only one outbox event
-                    assertThat(outboxRepository.count()).isEqualTo(1);
+                    // One lifecycle event and one payment command for the
+                    // single successful transition.
+                    assertThat(outboxRepository.findAll())
+                            .extracting(outboxEvent -> outboxEvent.getEventType())
+                            .containsExactlyInAnyOrder(
+                                    EventConstants.EVENT_ORDER_LIFECYCLE_TRANSITIONED,
+                                    EventConstants.EVENT_PAYMENT_REQUESTED
+                            );
                 });
     }
 }

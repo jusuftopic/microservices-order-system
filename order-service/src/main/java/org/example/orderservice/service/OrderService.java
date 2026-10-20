@@ -107,7 +107,7 @@ public class OrderService {
         }
 
         UUID paymentCommandId = UUID.randomUUID();
-        Order order = workflowService.updateStatus(
+        OrderTransitionResult transition = workflowService.tryUpdateStatus(
                 event.orderId(),
                 OrderStatus.INVENTORY_RESERVE_COMPLETED,
                 OrderTransitionContext.causedBy(
@@ -117,6 +117,13 @@ public class OrderService {
                         )
                         .withDecision(OrchestrationDecisionCode.PROCESS_PAYMENT, paymentCommandId)
         );
+
+        if (!transition.transitioned()) {
+            logSkippedTransition(transition, event.messageId());
+            return;
+        }
+
+        Order order = transition.order();
 
         outboxService.storeEvent(
                 order.getId(),
@@ -136,14 +143,20 @@ public class OrderService {
      * Handles inventory failure scenario.
      *
      * <p>
-     * Marks order as failed.
+     * Records the inventory reservation failure.
      * </p>
      *
      * @param event inventory failed event
      */
     @Transactional
     public void handleInventoryFailed(InventoryFailedEvent event) {
-        final Order order = workflowService.updateStatus(
+        int inserted = inboxRepository.insertIfNotExists(event.messageId());
+        if (inserted == 0) {
+            logAlreadyProcessed(event.messageId());
+            return;
+        }
+
+        OrderTransitionResult transition = workflowService.tryUpdateStatus(
                 event.orderId(),
                 OrderStatus.INVENTORY_RESERVE_FAILED,
                 OrderTransitionContext.causedBy(
@@ -152,8 +165,12 @@ public class OrderService {
                         event.messageId()
                 )
         );
+        if (!transition.transitioned()) {
+            logSkippedTransition(transition, event.messageId());
+            return;
+        }
         log.warn("[ORDER-SERVICE] Inventory failed for order {} reason {}. No further processing.",
-                order.getId(), event.reason());
+                transition.order().getId(), event.reason());
     }
 
     /**
@@ -217,9 +234,9 @@ public class OrderService {
         if (order.getStatus() == OrderStatus.TIMED_OUT) {
             UUID refundCommandId = UUID.randomUUID();
             log.warn(
-                    "[ORDER-SERVICE] Payment completed after order {} timed out; "
-                            + "requesting compensation refund",
-                    order.getId()
+                    "[ORDER-SERVICE] Payment completion event {} arrived after order {} "
+                            + "timed out; order status remains TIMED_OUT and refund is requested",
+                    event.messageId(), order.getId()
             );
             outboxService.storeEvent(
                     order.getId(),
@@ -238,9 +255,9 @@ public class OrderService {
                 || order.getStatus() == OrderStatus.INVENTORY_COMMIT_COMPLETED
                 || order.getStatus() == OrderStatus.COMPLETED) {
             log.info(
-                    "[ORDER-SERVICE] Ignoring repeated payment completion for order {} "
+                    "[ORDER-SERVICE] Ignoring payment completion event {} for order {} "
                             + "in state {}",
-                    order.getId(),
+                    event.messageId(), order.getId(),
                     order.getStatus()
             );
             return;
@@ -271,7 +288,7 @@ public class OrderService {
         }
 
         UUID releaseInventoryCommandId = UUID.randomUUID();
-        Order order = workflowService.updateStatus(
+        OrderTransitionResult transition = workflowService.tryUpdateStatus(
                 event.orderId(),
                 OrderStatus.PAYMENT_FAILED,
                 OrderTransitionContext.causedBy(
@@ -283,6 +300,13 @@ public class OrderService {
                                 releaseInventoryCommandId)
                         .withCompensation(CompensationType.INVENTORY_RELEASE)
         );
+
+        if (!transition.transitioned()) {
+            logSkippedTransition(transition, event.messageId());
+            return;
+        }
+
+        Order order = transition.order();
 
         log.warn(
                 "[ORDER-SERVICE] Payment failed for order {} reason {}",
@@ -331,7 +355,7 @@ public class OrderService {
         }
 
         // 1. Update final status
-        workflowService.updateStatus(
+        OrderTransitionResult inventoryCommitted = workflowService.tryUpdateStatus(
                 event.orderId(),
                 OrderStatus.INVENTORY_COMMIT_COMPLETED,
                 OrderTransitionContext.causedBy(
@@ -341,8 +365,13 @@ public class OrderService {
                 )
         );
 
+        if (!inventoryCommitted.transitioned()) {
+            logSkippedTransition(inventoryCommitted, event.messageId());
+            return;
+        }
+
         UUID notificationCommandId = UUID.randomUUID();
-        Order order = workflowService.updateStatus(
+        OrderTransitionResult completed = workflowService.tryUpdateStatus(
                 event.orderId(),
                 OrderStatus.COMPLETED,
                 OrderTransitionContext.causedBy(
@@ -353,6 +382,13 @@ public class OrderService {
                         .withDecision(OrchestrationDecisionCode.SEND_NOTIFICATION,
                                 notificationCommandId)
         );
+
+        if (!completed.transitioned()) {
+            logSkippedTransition(completed, event.messageId());
+            return;
+        }
+
+        Order order = completed.order();
 
         log.info(
                 "[ORDER-SERVICE] Order {} successfully completed",
@@ -401,7 +437,7 @@ public class OrderService {
 
         // 1. Update final status (in case not already finalized)
         UUID notificationCommandId = UUID.randomUUID();
-        Order order = workflowService.updateStatus(
+        OrderTransitionResult transitionResult = workflowService.tryUpdateStatus(
                 event.orderId(),
                 OrderStatus.FAILED,
                 OrderTransitionContext.causedBy(
@@ -412,11 +448,14 @@ public class OrderService {
                         .withDecision(OrchestrationDecisionCode.SEND_NOTIFICATION,
                                 notificationCommandId)
         );
+        if (!transitionResult.transitioned()) {
+            logSkippedTransition(transitionResult, event.messageId());
+            return;
+        }
 
-        log.warn(
-                "[ORDER-SERVICE] Order {} finalized as FAILED after inventory release",
-                order.getId()
-        );
+        Order order = transitionResult.order();
+        log.warn("[ORDER-SERVICE] Order {} finalized as FAILED after inventory release",
+                order.getId());
 
         increaseMetricsCounter(orderMetrics.getOrdersFailed());
 
@@ -460,7 +499,7 @@ public class OrderService {
         }
 
         // 1. Mark order as FAILED
-        workflowService.updateStatus(
+        OrderTransitionResult commitFailed = workflowService.tryUpdateStatus(
                 event.orderId(),
                 OrderStatus.INVENTORY_COMMIT_FAILED,
                 OrderTransitionContext.causedBy(
@@ -469,8 +508,13 @@ public class OrderService {
                         event.messageId()
                 )
         );
+        if (!commitFailed.transitioned()) {
+            logSkippedTransition(commitFailed, event.messageId());
+            return;
+        }
+
         UUID refundCommandId = UUID.randomUUID();
-        Order order = workflowService.updateStatus(
+        OrderTransitionResult failed = workflowService.tryUpdateStatus(
                 event.orderId(),
                 OrderStatus.FAILED,
                 OrderTransitionContext.causedBy(
@@ -482,6 +526,13 @@ public class OrderService {
                                 refundCommandId)
                         .withCompensation(CompensationType.PAYMENT_REFUND)
         );
+
+        if (!failed.transitioned()) {
+            logSkippedTransition(failed, event.messageId());
+            return;
+        }
+
+        Order order = failed.order();
 
         log.error(
                 "[ORDER-SERVICE] Inventory commit failed for order {} reason {}",
@@ -526,7 +577,16 @@ public class OrderService {
     }
 
     private void logAlreadyProcessed(UUID messageId) {
-        log.warn("[ORDER-SERVICE] Event {} already processed.", messageId);
+        log.info("[ORDER-SERVICE] Ignored duplicate event {}: already recorded in Inbox",
+                messageId);
+    }
+
+    private void logSkippedTransition(OrderTransitionResult result, UUID messageId) {
+        log.info("[ORDER-SERVICE] Ignored event {} for order {}: transition {} -> {} was not applied",
+                messageId,
+                result.order().getId(),
+                result.previousStatus(),
+                result.targetStatus());
     }
 
     private BigDecimal calculateAmount(Order order) {
@@ -579,7 +639,7 @@ public class OrderService {
     public void handleTimeout(Long orderId) {
 
         /* 1. Lock the order and update its status */
-        OrderTransitionResult transition = workflowService.tryUpdateStatusWithPessimisticLock(
+        OrderTransitionResult transition = workflowService.tryUpdateStatus(
                 orderId,
                 OrderStatus.TIMED_OUT,
                 OrderTransitionContext.causedBy(

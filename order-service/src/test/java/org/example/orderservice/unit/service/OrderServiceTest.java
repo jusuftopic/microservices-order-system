@@ -162,7 +162,7 @@ public class OrderServiceTest {
 
 
     @Test
-    void should_handle_inventory_reserved_and_create_payment_outbox_event() throws Exception {
+    void should_handle_inventory_reserved_and_create_payment_outbox_event() {
 
         // GIVEN
         Long orderId = 1L;
@@ -180,18 +180,20 @@ public class OrderServiceTest {
         );
 
         when(inboxRepository.insertIfNotExists(event.messageId())).thenReturn(1);
-        when(workflowService.updateStatus(
+        when(workflowService.tryUpdateStatus(
                 eq(orderId),
                 eq(OrderStatus.INVENTORY_RESERVE_COMPLETED),
                 any(OrderTransitionContext.class)
-        )).thenReturn(order);
+        )).thenReturn(new OrderTransitionResult(
+                order, OrderStatus.CREATED, OrderStatus.INVENTORY_RESERVE_COMPLETED, true
+        ));
 
         // WHEN
         orderService.handleInventoryReserved(event);
 
         // THEN
         verify(inboxRepository).insertIfNotExists(event.messageId());
-        verify(workflowService).updateStatus(
+        verify(workflowService).tryUpdateStatus(
                 eq(orderId),
                 eq(OrderStatus.INVENTORY_RESERVE_COMPLETED),
                 any(OrderTransitionContext.class)
@@ -224,21 +226,37 @@ public class OrderServiceTest {
                 UUID.randomUUID()
         );
 
-        when(workflowService.updateStatus(
+        when(inboxRepository.insertIfNotExists(event.messageId())).thenReturn(1);
+        when(workflowService.tryUpdateStatus(
                 eq(orderId),
                 eq(OrderStatus.INVENTORY_RESERVE_FAILED),
                 any(OrderTransitionContext.class)
-        )).thenReturn(order);
+        )).thenReturn(new OrderTransitionResult(
+                order, OrderStatus.CREATED, OrderStatus.INVENTORY_RESERVE_FAILED, true
+        ));
 
         // WHEN
         orderService.handleInventoryFailed(event);
 
         // THEN
-        verify(workflowService).updateStatus(
+        verify(inboxRepository).insertIfNotExists(event.messageId());
+        verify(workflowService).tryUpdateStatus(
                 eq(orderId),
                 eq(OrderStatus.INVENTORY_RESERVE_FAILED),
                 any(OrderTransitionContext.class)
         );
+        verifyNoInteractions(outboxService);
+    }
+
+    @Test
+    void should_ignore_inventory_failure_already_recorded_in_inbox() {
+        InventoryFailedEvent event = new InventoryFailedEvent(
+                1L, "OUT_OF_STOCK", "corr", UUID.randomUUID());
+        when(inboxRepository.insertIfNotExists(event.messageId())).thenReturn(0);
+
+        orderService.handleInventoryFailed(event);
+
+        verifyNoInteractions(workflowService);
         verifyNoInteractions(outboxService);
     }
 
@@ -409,11 +427,13 @@ public class OrderServiceTest {
         when(inboxRepository.insertIfNotExists(event.messageId()))
                 .thenReturn(1);
 
-        when(workflowService.updateStatus(
+        when(workflowService.tryUpdateStatus(
                 eq(orderId),
                 eq(OrderStatus.PAYMENT_FAILED),
                 any(OrderTransitionContext.class)
-        )).thenReturn(order);
+        )).thenReturn(new OrderTransitionResult(
+                order, OrderStatus.INVENTORY_RESERVE_COMPLETED, OrderStatus.PAYMENT_FAILED, true
+        ));
 
         // WHEN
         orderService.handlePaymentFailed(event);
@@ -424,7 +444,7 @@ public class OrderServiceTest {
 
         ArgumentCaptor<OrderTransitionContext> transitionContext =
                 ArgumentCaptor.forClass(OrderTransitionContext.class);
-        verify(workflowService).updateStatus(
+        verify(workflowService).tryUpdateStatus(
                 eq(orderId),
                 eq(OrderStatus.PAYMENT_FAILED),
                 transitionContext.capture()
@@ -471,17 +491,21 @@ public class OrderServiceTest {
         when(inboxRepository.insertIfNotExists(event.messageId()))
                 .thenReturn(1);
 
-        when(workflowService.updateStatus(
+        when(workflowService.tryUpdateStatus(
                 eq(orderId),
                 eq(OrderStatus.INVENTORY_COMMIT_COMPLETED),
                 any(OrderTransitionContext.class)
-        )).thenReturn(order);
+        )).thenReturn(new OrderTransitionResult(
+                order, OrderStatus.PAYMENT_COMPLETED, OrderStatus.INVENTORY_COMMIT_COMPLETED, true
+        ));
 
-        when(workflowService.updateStatus(
+        when(workflowService.tryUpdateStatus(
                 eq(orderId),
                 eq(OrderStatus.COMPLETED),
                 any(OrderTransitionContext.class)
-        )).thenReturn(order);
+        )).thenReturn(new OrderTransitionResult(
+                order, OrderStatus.INVENTORY_COMMIT_COMPLETED, OrderStatus.COMPLETED, true
+        ));
 
         // WHEN
         orderService.handleInventoryCommitCompleted(event);
@@ -492,14 +516,14 @@ public class OrderServiceTest {
 
         ArgumentCaptor<OrderTransitionContext> inventoryCommittedContext =
                 ArgumentCaptor.forClass(OrderTransitionContext.class);
-        verify(workflowService).updateStatus(
+        verify(workflowService).tryUpdateStatus(
                 eq(orderId),
                 eq(OrderStatus.INVENTORY_COMMIT_COMPLETED),
                 inventoryCommittedContext.capture()
         );
         ArgumentCaptor<OrderTransitionContext> workflowCompletedContext =
                 ArgumentCaptor.forClass(OrderTransitionContext.class);
-        verify(workflowService).updateStatus(
+        verify(workflowService).tryUpdateStatus(
                 eq(orderId),
                 eq(OrderStatus.COMPLETED),
                 workflowCompletedContext.capture()
@@ -567,21 +591,24 @@ public class OrderServiceTest {
         when(inboxRepository.insertIfNotExists(event.messageId()))
                 .thenReturn(1);
 
-        when(workflowService.updateStatus(
+        OrderTransitionResult result = new OrderTransitionResult(
+                order, OrderStatus.PAYMENT_FAILED, OrderStatus.FAILED, true
+        );
+
+        when(workflowService.tryUpdateStatus(
                 eq(orderId),
                 eq(OrderStatus.FAILED),
                 any(OrderTransitionContext.class)
-        )).thenReturn(order);
+        )).thenReturn(result);
 
         // WHEN
         orderService.handleInventoryReleaseCompleted(event);
 
         // THEN
-        verify(inboxRepository)
-                .insertIfNotExists(event.messageId());
+        verify(inboxRepository).insertIfNotExists(event.messageId());
 
         verify(workflowService)
-                .updateStatus(
+                .tryUpdateStatus(
                         eq(orderId),
                         eq(OrderStatus.FAILED),
                         any(OrderTransitionContext.class)
@@ -646,18 +673,23 @@ public class OrderServiceTest {
         when(inboxRepository.insertIfNotExists(event.messageId()))
                 .thenReturn(1);
 
-        when(workflowService.updateStatus(
+        when(workflowService.tryUpdateStatus(
                 eq(orderId),
                 eq(OrderStatus.INVENTORY_COMMIT_FAILED),
                 any(OrderTransitionContext.class)
         ))
-                .thenReturn(order);
-        when(workflowService.updateStatus(
+                .thenReturn(new OrderTransitionResult(
+                        order, OrderStatus.PAYMENT_COMPLETED,
+                        OrderStatus.INVENTORY_COMMIT_FAILED, true
+                ));
+        when(workflowService.tryUpdateStatus(
                 eq(orderId),
                 eq(OrderStatus.FAILED),
                 any(OrderTransitionContext.class)
         ))
-                .thenReturn(order);
+                .thenReturn(new OrderTransitionResult(
+                        order, OrderStatus.INVENTORY_COMMIT_FAILED, OrderStatus.FAILED, true
+                ));
 
         // WHEN
         orderService.handleInventoryCommitFailed(event);
@@ -665,14 +697,14 @@ public class OrderServiceTest {
         // THEN
         ArgumentCaptor<OrderTransitionContext> inventoryCommitFailedContext =
                 ArgumentCaptor.forClass(OrderTransitionContext.class);
-        verify(workflowService).updateStatus(
+        verify(workflowService).tryUpdateStatus(
                 eq(orderId),
                 eq(OrderStatus.INVENTORY_COMMIT_FAILED),
                 inventoryCommitFailedContext.capture()
         );
         ArgumentCaptor<OrderTransitionContext> paymentRefundContext =
                 ArgumentCaptor.forClass(OrderTransitionContext.class);
-        verify(workflowService).updateStatus(
+        verify(workflowService).tryUpdateStatus(
                 eq(orderId),
                 eq(OrderStatus.FAILED),
                 paymentRefundContext.capture()
@@ -700,7 +732,7 @@ public class OrderServiceTest {
                 .correlationId("corr-123")
                 .status(OrderStatus.TIMED_OUT)
                 .build();
-        when(workflowService.tryUpdateStatusWithPessimisticLock(
+        when(workflowService.tryUpdateStatus(
                 eq(orderId),
                 eq(OrderStatus.TIMED_OUT),
                 any(OrderTransitionContext.class)
@@ -729,7 +761,7 @@ public class OrderServiceTest {
                 .id(orderId)
                 .status(OrderStatus.TIMED_OUT)
                 .build();
-        when(workflowService.tryUpdateStatusWithPessimisticLock(
+        when(workflowService.tryUpdateStatus(
                 eq(orderId),
                 eq(OrderStatus.TIMED_OUT),
                 any(OrderTransitionContext.class)
@@ -745,5 +777,137 @@ public class OrderServiceTest {
         verifyNoInteractions(compensationService);
         verifyNoInteractions(outboxService);
         verifyNoInteractions(orderMetrics);
+    }
+
+    @Test
+    void should_not_request_payment_when_inventory_reservation_did_not_advance_order() {
+        InventoryReservedEvent event = new InventoryReservedEvent(1L, "corr", UUID.randomUUID());
+        when(inboxRepository.insertIfNotExists(event.messageId())).thenReturn(1);
+        skippedTransition( OrderStatus.INVENTORY_RESERVE_COMPLETED,
+                OrderStatus.INVENTORY_RESERVE_COMPLETED);
+
+        orderService.handleInventoryReserved(event);
+
+        verifyNoInteractions(outboxService);
+    }
+
+    @Test
+    void should_not_process_repeated_inventory_failure_with_new_message_id() {
+        InventoryFailedEvent event = new InventoryFailedEvent(
+                1L, "OUT_OF_STOCK", "corr", UUID.randomUUID());
+        when(inboxRepository.insertIfNotExists(event.messageId())).thenReturn(1);
+        skippedTransition(OrderStatus.INVENTORY_RESERVE_FAILED,
+                OrderStatus.INVENTORY_RESERVE_FAILED);
+
+        orderService.handleInventoryFailed(event);
+
+        verifyNoInteractions(outboxService);
+    }
+
+    @Test
+    void should_not_release_inventory_when_payment_failure_did_not_advance_order() {
+        PaymentFailedEvent event = new PaymentFailedEvent(
+                1L, "DECLINED", "corr", UUID.randomUUID());
+        when(inboxRepository.insertIfNotExists(event.messageId())).thenReturn(1);
+        skippedTransition( OrderStatus.PAYMENT_FAILED, OrderStatus.PAYMENT_FAILED);
+
+        orderService.handlePaymentFailed(event);
+
+        verifyNoInteractions(outboxService);
+    }
+
+    @Test
+    void should_not_complete_order_when_inventory_commit_did_not_advance_order() {
+        InventoryCommitCompletedEvent event = new InventoryCommitCompletedEvent(
+                1L, "corr", UUID.randomUUID());
+        when(inboxRepository.insertIfNotExists(event.messageId())).thenReturn(1);
+        skippedTransition(OrderStatus.COMPLETED,
+                OrderStatus.INVENTORY_COMMIT_COMPLETED);
+
+        orderService.handleInventoryCommitCompleted(event);
+
+        verify(workflowService, never()).tryUpdateStatus(
+                eq(1L), eq(OrderStatus.COMPLETED), any(OrderTransitionContext.class));
+        verifyNoInteractions(outboxService);
+        verifyNoInteractions(orderMetrics);
+    }
+
+    @Test
+    void should_not_notify_when_final_completion_transition_was_skipped() {
+        InventoryCommitCompletedEvent event = new InventoryCommitCompletedEvent(
+                1L, "corr", UUID.randomUUID());
+        Order order = Order.builder().id(1L)
+                .status(OrderStatus.INVENTORY_COMMIT_COMPLETED).build();
+        when(inboxRepository.insertIfNotExists(event.messageId())).thenReturn(1);
+        when(workflowService.tryUpdateStatus(
+                eq(1L), eq(OrderStatus.INVENTORY_COMMIT_COMPLETED),
+                any(OrderTransitionContext.class)
+        )).thenReturn(new OrderTransitionResult(
+                order, OrderStatus.PAYMENT_COMPLETED,
+                OrderStatus.INVENTORY_COMMIT_COMPLETED, true));
+        skippedTransition(OrderStatus.COMPLETED, OrderStatus.COMPLETED);
+
+        orderService.handleInventoryCommitCompleted(event);
+
+        verifyNoInteractions(outboxService);
+        verifyNoInteractions(orderMetrics);
+    }
+
+    @Test
+    void should_not_notify_for_inventory_release_after_order_already_failed() {
+        InventoryReleaseCompletedEvent event = new InventoryReleaseCompletedEvent(
+                1L, "corr", UUID.randomUUID());
+        when(inboxRepository.insertIfNotExists(event.messageId())).thenReturn(1);
+        skippedTransition(OrderStatus.FAILED, OrderStatus.FAILED);
+
+        orderService.handleInventoryReleaseCompleted(event);
+
+        verifyNoInteractions(outboxService);
+        verifyNoInteractions(orderMetrics);
+    }
+
+    @Test
+    void should_not_refund_when_inventory_commit_failure_did_not_advance_order() {
+        InventoryCommitFailedEvent event = new InventoryCommitFailedEvent(
+                1L, "FAILED", "corr", UUID.randomUUID());
+        when(inboxRepository.insertIfNotExists(event.messageId())).thenReturn(1);
+        skippedTransition( OrderStatus.FAILED, OrderStatus.INVENTORY_COMMIT_FAILED);
+
+        orderService.handleInventoryCommitFailed(event);
+
+        verify(workflowService, never()).tryUpdateStatus(
+                eq(1L), eq(OrderStatus.FAILED), any(OrderTransitionContext.class));
+        verifyNoInteractions(outboxService);
+        verifyNoInteractions(orderMetrics);
+    }
+
+    @Test
+    void should_not_refund_when_final_failure_transition_was_skipped() {
+        InventoryCommitFailedEvent event = new InventoryCommitFailedEvent(
+                1L, "FAILED", "corr", UUID.randomUUID());
+        Order order = Order.builder().id(1L)
+                .status(OrderStatus.INVENTORY_COMMIT_FAILED).build();
+        when(inboxRepository.insertIfNotExists(event.messageId())).thenReturn(1);
+        when(workflowService.tryUpdateStatus(
+                eq(1L), eq(OrderStatus.INVENTORY_COMMIT_FAILED),
+                any(OrderTransitionContext.class)
+        )).thenReturn(new OrderTransitionResult(
+                order, OrderStatus.PAYMENT_COMPLETED,
+                OrderStatus.INVENTORY_COMMIT_FAILED, true));
+        skippedTransition(OrderStatus.FAILED, OrderStatus.FAILED);
+
+        orderService.handleInventoryCommitFailed(event);
+
+        verifyNoInteractions(outboxService);
+        verifyNoInteractions(orderMetrics);
+    }
+
+    private void skippedTransition(OrderStatus currentStatus,
+                                   OrderStatus targetStatus) {
+        Order order = Order.builder().id(1L).status(currentStatus).build();
+        when(workflowService.tryUpdateStatus(
+                eq(1L), eq(targetStatus), any(OrderTransitionContext.class)
+        )).thenReturn(new OrderTransitionResult(
+                order, currentStatus, targetStatus, false));
     }
 }

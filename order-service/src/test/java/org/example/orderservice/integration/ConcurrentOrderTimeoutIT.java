@@ -96,7 +96,7 @@ class ConcurrentOrderTimeoutIT extends AbstractIntegrationTest {
         if (!start.await(5, TimeUnit.SECONDS)) {
             throw new IllegalStateException("Concurrent timeout workers did not start in time");
         }
-        return workflowService.tryUpdateStatusWithPessimisticLock(
+        return workflowService.tryUpdateStatus(
                 orderId,
                 OrderStatus.TIMED_OUT,
                 OrderTransitionContext.causedBy(

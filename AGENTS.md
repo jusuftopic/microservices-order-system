@@ -74,5 +74,6 @@ Add meaningful tests for changed business behavior, relevant failure paths and r
 ## Documentation and delivery
 - Update the relevant handbook, configuration documentation or ADR when the change affects a documented contract, operational procedure or architectural decision.
 - Keep documentation clear about current behavior, accepted limitations and future work.
+- New classes and tests must contain proper class-level and method-level Java-docs
 - Report what changed, how each acceptance criterion was checked, commands actually run, results and remaining limitations.
 - Commit, push, publish images, deploy or open a pull request only when the user's task authorizes it. Do not enable ECR publishing or change live infrastructure as a side effect of implementation.
