@@ -17,7 +17,12 @@ import org.example.messagingstarter.inbox.repository.InboxRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 
 /**
@@ -62,14 +67,15 @@ public class InventoryService {
         log.info("[INVENTORY-SERVICE] Processing inventory for order {}", event.orderId());
 
 
-        for (OrderItemEvent item : event.items()) {
+        Map<Long, Long> requestedQuantities = getRequestedQuantitiesMap(event.items());
 
-            InventoryItem inventory = inventoryRepository
-                    .findById(item.productId())
-                    .orElse(null);
+        Map<Long, InventoryItem> inventoryByProductId = getInventoryByProductIdMap(requestedQuantities);
+
+        for (Map.Entry<Long, Long> request : requestedQuantities.entrySet()) {
+            InventoryItem inventory = inventoryByProductId.get(request.getKey());
 
             if (inventory == null) {
-                logItemNotFound(item);
+                log.warn("[INVENTORY-SERVICE] Item {} not found.", request.getKey());
 
                 incrementMetrics(metrics.getInventoryReservationsFailedTotal());
                 incrementMetrics(metrics.getInventoryItemNotFoundTotal());
@@ -78,13 +84,11 @@ public class InventoryService {
                 return;
             }
 
-            if (!inventory.canReserve(item.quantity())) {
+            if (request.getValue() > Integer.MAX_VALUE
+                    || !inventory.canReserve(request.getValue().intValue())) {
 
                 log.warn("[INVENTORY-SERVICE] Not enough stock for product {} requested {} available {}. Order ID {}",
-                        item.productId(),
-                        item.quantity(),
-                        inventory.getAvailableQuantity(),
-                        event.orderId()
+                        request.getKey(), request.getValue(), inventory.getAvailableQuantity(), event.orderId()
                 );
 
                 incrementMetrics(metrics.getInventoryReservationsFailedTotal());
@@ -94,11 +98,13 @@ public class InventoryService {
 
                 return;
             }
-
-
-            inventory.reserve(item.quantity());
-            inventoryRepository.save(inventory);
         }
+
+        for (Map.Entry<Long, Long> request : requestedQuantities.entrySet()) {
+            inventoryByProductId.get(request.getKey()).reserve(request.getValue().intValue());
+        }
+
+        inventoryRepository.saveAll(inventoryByProductId.values());
 
         incrementMetrics(metrics.getInventoryReservationsSuccessTotal());
         storeOutboxEventSuccess(event);
@@ -133,25 +139,37 @@ public class InventoryService {
 
         log.info("[INVENTORY-SERVICE] Committing inventory for order {}", event.orderId());
 
-        for (OrderItemEvent item : event.items()) {
-            InventoryItem inventory = inventoryRepository
-                    .findById(item.productId())
-                    .orElse(null);
+        Map<Long, Long> requestedQuantities = getRequestedQuantitiesMap(event.items());
+        Map<Long, InventoryItem> inventoryByProductId = getInventoryByProductIdMap(requestedQuantities);
+
+        for (Map.Entry<Long, Long> request : requestedQuantities.entrySet()) {
+            InventoryItem inventory = inventoryByProductId.get(request.getKey());
 
             if (inventory == null) {
+                log.warn("[INVENTORY-SERVICE] Cannot commit inventory for order {}: product {} not found",
+                        event.orderId(), request.getKey());
                 incrementMetrics(metrics.getInventoryCommitFailedTotal());
                 incrementMetrics(metrics.getInventoryItemNotFoundTotal());
                 storeCommitFailure(event, "ITEM_NOT_FOUND");
                 return;
             }
 
-            // finalize reservation
-            inventory.setReservedQuantity(
-                    inventory.getReservedQuantity() - item.quantity()
-            );
-
-            inventoryRepository.save(inventory);
+            if (request.getValue() > inventory.getReservedQuantity()) {
+                log.warn("[INVENTORY-SERVICE] Cannot commit inventory for order {}: product {} requested {} reserved {}",
+                        event.orderId(), request.getKey(), request.getValue(), inventory.getReservedQuantity());
+                incrementMetrics(metrics.getInventoryCommitFailedTotal());
+                storeCommitFailure(event, "INSUFFICIENT_RESERVED_STOCK");
+                return;
+            }
         }
+
+        for (Map.Entry<Long, Long> request : requestedQuantities.entrySet()) {
+            InventoryItem inventory = inventoryByProductId.get(request.getKey());
+            inventory.setReservedQuantity(
+                    inventory.getReservedQuantity() - request.getValue().intValue()
+            );
+        }
+        inventoryRepository.saveAll(inventoryByProductId.values());
 
         incrementMetrics(metrics.getInventoryCommitSuccessTotal());
         storeCommitSuccess(event);
@@ -168,8 +186,8 @@ public class InventoryService {
      * </p>
      *
      * <p>
-     * Missing items are skipped, and processing continues for the remaining items.
-     * Once all items are processed, a success event is emitted.
+     * All requested items must have enough reserved stock before any stock is released.
+     * A missing or insufficient reservation fails processing; no completion event is emitted.
      * </p>
      *
      * @param event inventory release request event
@@ -186,27 +204,45 @@ public class InventoryService {
 
         log.info("[INVENTORY-SERVICE] Releasing inventory for order {}", event.orderId());
 
-        for (OrderItemEvent item : event.items()) {
+        Map<Long, Long> requestedQuantities = getRequestedQuantitiesMap(event.items());
+        Map<Long, InventoryItem> inventoryByProductId = getInventoryByProductIdMap(requestedQuantities);
 
-            InventoryItem inventory = inventoryRepository
-                    .findById(item.productId())
-                    .orElse(null);
+        for (Map.Entry<Long, Long> request : requestedQuantities.entrySet()) {
+            InventoryItem inventory = inventoryByProductId.get(request.getKey());
 
             if (inventory == null) {
-                logItemNotFound(item);
-                continue;
+                throw new IllegalArgumentException("Cannot release inventory for order " + event.orderId()
+                        + ": product " + request.getKey() + " not found");
             }
 
-            inventory.release(item.quantity());
-            inventoryRepository.save(inventory);
+            if (request.getValue() > inventory.getReservedQuantity()) {
+                throw new IllegalArgumentException("Cannot release inventory for order " + event.orderId()
+                        + ": product " + request.getKey() + " requested " + request.getValue()
+                        + " but only " + inventory.getReservedQuantity() + " reserved");
+            }
         }
+
+        for (Map.Entry<Long, Long> request : requestedQuantities.entrySet()) {
+            inventoryByProductId.get(request.getKey()).release(request.getValue().intValue());
+        }
+        inventoryRepository.saveAll(inventoryByProductId.values());
 
         incrementMetrics(metrics.getInventoryReleaseTotal());
         storeReleaseSuccess(event);
     }
 
-    private void logItemNotFound(OrderItemEvent item) {
-        log.warn("[INVENTORY-SERVICE] Item {} not found.", item.productId());
+    private Map<Long, Long> getRequestedQuantitiesMap(List<OrderItemEvent> items) {
+        Map<Long, Long> requestedQuantities = new LinkedHashMap<>();
+        items.forEach(
+                item -> requestedQuantities.merge(item.productId(), item.quantity().longValue(), Long::sum));
+        return requestedQuantities;
+    }
+
+    private Map<Long, InventoryItem> getInventoryByProductIdMap(Map<Long, Long> requestedQuantities) {
+        return inventoryRepository
+                .findAllById(requestedQuantities.keySet())
+                .stream()
+                .collect(Collectors.toMap(InventoryItem::getProductId, Function.identity()));
     }
 
     private void logAlreadyProcessed(UUID event) {

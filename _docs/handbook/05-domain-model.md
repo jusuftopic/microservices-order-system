@@ -147,6 +147,13 @@ Inventory processing is divided into distinct stages:
 3. **Release**
    Reserved stock is returned when the order cannot be completed.
 
+For multi-item commit and release commands, the Inventory Service checks every
+requested product and reserved quantity before changing any stock. A failed
+commit produces an `InventoryCommitFailed` event. A release with a missing or
+insufficient reservation produces no completion event; the command is sent to
+the Kafka dead-letter topic for investigation, so the Order Service does not
+mistakenly mark compensation as complete.
+
 This distinction supports compensation and prevents stock from being permanently deducted before payment has completed.
 
 ## Payment Domain
