@@ -14,6 +14,7 @@ import org.awaitility.Awaitility;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -47,6 +48,7 @@ public class OutboxPublisherIT extends AbstractIntegrationTest {
                         .quantity(2)
                 .build());
         order.setStatus(OrderStatus.CREATED);
+        order.setCustomerId(UUID.fromString("22222222-2222-4222-8222-222222222222"));
         order.setCustomerEmail("test@test.com");
 
         order = orderRepository.save(order);

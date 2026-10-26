@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -56,6 +57,7 @@ class ConcurrentOrderTimeoutIT extends AbstractIntegrationTest {
     void should_allow_only_one_concurrent_timeout_transition() throws Exception {
         Order order = orderRepository.saveAndFlush(Order.builder()
                 .status(OrderStatus.INVENTORY_RESERVE_COMPLETED)
+                .customerId(UUID.fromString("22222222-2222-4222-8222-222222222222"))
                 .customerEmail("customer@example.com")
                 .correlationId("corr-123")
                 .build());

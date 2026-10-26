@@ -9,14 +9,23 @@ import org.example.orderservice.entity.OrderItem;
 import org.example.messagingstarter.contracts.lifecycle.OrderStatus;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Maps Order entity and DTOs.
  */
 public class OrderMapper {
 
-    public static Order toEntity(OrderRequest request) {
+    /**
+     * Maps an authenticated customer's request to a new order entity.
+     *
+     * @param customerId internal identifier of the customer that owns the order
+     * @param request order creation request
+     * @return new order entity
+     */
+    public static Order toEntity(UUID customerId, OrderRequest request) {
         Order order = Order.builder()
+                .customerId(customerId)
                 .customerEmail(request.customerEmail())
                 .description(request.description())
                 .status(OrderStatus.CREATED)

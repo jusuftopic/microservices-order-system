@@ -73,6 +73,7 @@ public class OrderServiceTest {
     void should_create_order_and_store_outbox_event() {
 
         // GIVEN
+        UUID customerId = UUID.fromString("22222222-2222-4222-8222-222222222222");
         OrderRequest request = new OrderRequest(
                 "test@mail.com",
                 List.of(
@@ -84,6 +85,7 @@ public class OrderServiceTest {
 
         Order savedOrder = Order.builder()
                 .id(1L)
+                .customerId(customerId)
                 .customerEmail("test@mail.com")
                 .description("desc")
                 .status(OrderStatus.CREATED)
@@ -99,14 +101,16 @@ public class OrderServiceTest {
 
 
         // WHEN
-        OrderResponse response = orderService.createOrder(request);
+        OrderResponse response = orderService.createOrder(customerId, request);
 
         // THEN
         assertNotNull(response);
         assertEquals(1L, response.id());
         assertEquals("CREATED", response.status());
 
-        verify(repository).save(any(Order.class));
+        ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
+        verify(repository).save(orderCaptor.capture());
+        assertEquals(customerId, orderCaptor.getValue().getCustomerId());
 
         verify(outboxService).storeEvent(
                 eq(1L),

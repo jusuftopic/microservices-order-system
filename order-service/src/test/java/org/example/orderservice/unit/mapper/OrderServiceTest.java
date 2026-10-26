@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -31,13 +32,15 @@ public class OrderServiceTest {
                 ),
                 "Test order"
         );
+        UUID customerId = UUID.fromString("22222222-2222-4222-8222-222222222222");
 
 
         // WHEN
-        Order result = OrderMapper.toEntity(request);
+        Order result = OrderMapper.toEntity(customerId, request);
 
         // THEN
         assertNotNull(result);
+        assertEquals(customerId, result.getCustomerId());
         assertEquals("test1@example.com", result.getCustomerEmail());
         assertEquals("Test order", result.getDescription());
 

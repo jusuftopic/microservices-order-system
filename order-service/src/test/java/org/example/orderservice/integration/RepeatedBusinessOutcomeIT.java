@@ -59,6 +59,7 @@ class RepeatedBusinessOutcomeIT extends AbstractIntegrationTest {
     private Long createOrder() {
         Order order = Order.builder()
                 .status(OrderStatus.CREATED)
+                .customerId(UUID.fromString("22222222-2222-4222-8222-222222222222"))
                 .customerEmail("customer@example.com")
                 .correlationId("corr-123")
                 .build();

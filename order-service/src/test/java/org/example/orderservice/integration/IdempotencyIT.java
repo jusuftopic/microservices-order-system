@@ -52,6 +52,7 @@ public class IdempotencyIT extends AbstractIntegrationTest {
         // GIVEN
         final Order order = new Order();
         order.setStatus(OrderStatus.CREATED);
+        order.setCustomerId(UUID.fromString("22222222-2222-4222-8222-222222222222"));
         order.setCustomerEmail("test");
 
         final Order stored = orderRepository.save(order);

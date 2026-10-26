@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Order entity represents a purchase/order in the system.
@@ -42,6 +43,12 @@ public class Order {
      */
     @Column(nullable = false)
     private String customerEmail;
+
+    /**
+     * Immutable internal identifier of the customer that owns this order.
+     */
+    @Column(name = "customer_id", nullable = false, updatable = false)
+    private UUID customerId;
 
     @Builder.Default
     @OneToMany(

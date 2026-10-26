@@ -5,9 +5,13 @@ import lombok.RequiredArgsConstructor;
 import org.example.orderservice.dto.request.OrderRequest;
 import org.example.orderservice.dto.response.OrderResponse;
 import org.example.orderservice.service.OrderService;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Objects;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/orders")
@@ -16,11 +20,44 @@ public class OrderController {
 
     private final OrderService service;
 
+    /**
+     * Creates an order owned by the customer identified in the validated access token.
+     *
+     * @param jwt validated access token
+     * @param request order creation request
+     * @return persisted order
+     */
     @PostMapping
-    public OrderResponse createOrder(@Valid @RequestBody OrderRequest request) {
+    public OrderResponse createOrder(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody OrderRequest request
+    ) {
         Objects.requireNonNull(request, "request must not be null");
 
-        return service.createOrder(request);
+        return service.createOrder(extractCustomerId(jwt), request);
+    }
+
+    /**
+     * Extracts the internal customer identifier from an authenticated JWT.
+     *
+     * @param jwt validated access token
+     * @return internal customer identifier
+     * @throws AccessDeniedException when the required claim is missing or malformed
+     */
+    private UUID extractCustomerId(Jwt jwt) {
+        if (jwt == null) {
+            throw new AccessDeniedException("Authenticated customer identity is required");
+        }
+
+        String customerId = jwt.getClaimAsString("customer_id");
+        try {
+            return UUID.fromString(customerId);
+        } catch (IllegalArgumentException | NullPointerException exception) {
+            throw new AccessDeniedException(
+                    "Authenticated token must contain a valid customer_id claim",
+                    exception
+            );
+        }
     }
 
     /**

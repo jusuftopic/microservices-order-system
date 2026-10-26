@@ -29,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.UUID;
 
 import static org.example.messagingstarter.EventConstants.EVENT_INVENTORY_CHECK_REQUESTED;
@@ -52,15 +53,19 @@ public class OrderService {
     /**
      * Creates a new initial Order
      *
+     * @param customerId internal identifier of the customer that owns the order
+     * @param request order creation request
      * @return persisted Order response
      */
     @Transactional
-    public OrderResponse createOrder(OrderRequest request) {
+    public OrderResponse createOrder(UUID customerId, OrderRequest request) {
+        Objects.requireNonNull(customerId, "customerId must not be null");
+
         log.info("[ORDER-SERVICE] Received new order from customer {}. Total items {}",
                 request.customerEmail(), request.items().size());
 
         final String correlationId = UUID.randomUUID().toString();
-        final Order saved = storeOrder(request, correlationId);
+        final Order saved = storeOrder(customerId, request, correlationId);
         final UUID messageId = UUID.randomUUID();
 
         // store outbox event
@@ -570,8 +575,8 @@ public class OrderService {
         );
     }
 
-    private Order storeOrder(final OrderRequest request, String correlationId) {
-        Order order = OrderMapper.toEntity(request);
+    private Order storeOrder(UUID customerId, final OrderRequest request, String correlationId) {
+        Order order = OrderMapper.toEntity(customerId, request);
         order.setCorrelationId(correlationId);
         return repository.save(order);
     }
