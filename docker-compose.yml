@@ -129,6 +129,8 @@ services:
     container_name: order-service
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      JWT_ISSUER_URI: http://localhost:8081/realms/order-system
+      JWT_JWK_SET_URI: http://keycloak:8080/realms/order-system/protocol/openid-connect/certs
     depends_on:
       order-db:
         condition: service_healthy
@@ -217,6 +219,8 @@ services:
     container_name: inventory-service
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      JWT_ISSUER_URI: http://localhost:8081/realms/order-system
+      JWT_JWK_SET_URI: http://keycloak:8080/realms/order-system/protocol/openid-connect/certs
     depends_on:
       inventory-db:
         condition: service_healthy
@@ -281,6 +285,21 @@ services:
     depends_on:
       - prometheus
       - loki
+
+  # KEYCLOAK
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.5.7
+    command:
+      - start-dev
+      - --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USERNAME:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin-local-only}
+      KC_HOSTNAME: http://localhost:8081
+    ports:
+      - "127.0.0.1:8081:8080"
+    volumes:
+      - ./_gateway/keycloak:/opt/keycloak/data/import:ro
 
 volumes:
   loki-storage:

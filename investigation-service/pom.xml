@@ -91,6 +91,12 @@
             <version>2.4.0</version>
         </dependency>
 
+        <!-- OAUTH -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+        </dependency>
+
         <!-- INTERNAL DEPENDENCIES -->
         <dependency>
             <groupId>org.example</groupId>
