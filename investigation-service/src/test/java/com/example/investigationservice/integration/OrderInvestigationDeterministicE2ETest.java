@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +22,7 @@ import static com.example.investigationservice.service.explanation.ai.MockAiExpl
 import static com.example.investigationservice.service.explanation.ai.prompt.InvestigationPromptFactory.PROMPT_VERSION;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -93,7 +95,10 @@ class OrderInvestigationDeterministicE2ETest {
         ));
         repository.flush();
 
-        mockMvc.perform(get("/api/v1/investigations/orders/{orderId}", 42))
+        mockMvc.perform(get("/api/v1/investigations/orders/{orderId}", 42)
+                        .with(jwt().authorities(
+                                new SimpleGrantedAuthority("SCOPE_investigations.read")
+                        )))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.dataAvailable").value(true))
                 .andExpect(jsonPath("$.currentStatus").value("PAYMENT_FAILED"))

@@ -29,7 +29,7 @@ public class InvestigationSecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/investigations/orders/**")
-                        .hasAuthority("SCOPE_investigation.read")
+                        .hasAuthority("SCOPE_investigations.read")
                         .requestMatchers(HttpMethod.POST, "/api/v1/investigations/orders/**")
                         .hasAuthority("SCOPE_investigations.ask")
                         .requestMatchers(HttpMethod.POST, "/api/v1/investigations/questions/**")

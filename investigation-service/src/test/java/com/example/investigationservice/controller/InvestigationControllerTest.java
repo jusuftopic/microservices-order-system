@@ -2,11 +2,15 @@ package com.example.investigationservice.controller;
 
 import com.example.investigationservice.dto.response.OrderInvestigationResponse;
 import com.example.investigationservice.dto.response.InvestigationQuestionResponse;
+import com.example.investigationservice.config.security.InvestigationSecurityConfig;
 import com.example.investigationservice.service.InvestigationQueryService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.security.test.context.support.WithAnonymousUser;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
@@ -24,6 +28,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(InvestigationController.class)
+@Import(InvestigationSecurityConfig.class)
+@WithMockUser(authorities = {
+        "SCOPE_investigations.read",
+        "SCOPE_investigations.ask"
+})
 class InvestigationControllerTest {
 
     @Autowired
@@ -141,10 +150,22 @@ class InvestigationControllerTest {
     }
 
     @Test
-    void returnsNotFoundForUnknownEndpoint() throws Exception {
+    void rejectsUnknownEndpoint() throws Exception {
         mockMvc.perform(get("/api/v1/investigations/unknown"))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.status").value(404))
-                .andExpect(jsonPath("$.message").value("Requested endpoint was not found"));
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithAnonymousUser
+    void rejectsUnauthenticatedRequest() throws Exception {
+        mockMvc.perform(get("/api/v1/investigations/orders/{orderId}", 42))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(authorities = "SCOPE_investigations.ask")
+    void rejectsRequestWithoutRequiredScope() throws Exception {
+        mockMvc.perform(get("/api/v1/investigations/orders/{orderId}", 42))
+                .andExpect(status().isForbidden());
     }
 }

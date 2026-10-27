@@ -1,5 +1,6 @@
 package com.example.investigationservice.controller;
 
+import com.example.investigationservice.config.security.InvestigationSecurityConfig;
 import com.example.investigationservice.entity.enums.FeedbackRating;
 import com.example.investigationservice.exception.QuestionExecutionNotFoundException;
 import com.example.investigationservice.exception.QuestionFeedbackConflictException;
@@ -7,6 +8,8 @@ import com.example.investigationservice.service.QuestionFeedbackService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -19,6 +22,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(QuestionFeedbackController.class)
+@Import(InvestigationSecurityConfig.class)
+@WithMockUser(authorities = "SCOPE_investigations.feedback")
 class QuestionFeedbackControllerTest {
 
     @Autowired
