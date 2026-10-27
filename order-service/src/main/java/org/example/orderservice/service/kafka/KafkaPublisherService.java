@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.messagingstarter.EventConstants;
 import org.example.messagingstarter.contracts.commands.*;
 import org.example.messagingstarter.contracts.events.OrderLifecycleTransitionedEvent;
+import org.example.messagingstarter.contracts.events.OrderOwnershipAssignedEvent;
 import org.example.messagingstarter.utils.TopicResolver;
 import org.example.messagingstarter.outbox.entity.OutboxEvent;
 import org.example.messagingstarter.outbox.service.EventPublisherService;
@@ -109,6 +110,12 @@ public class KafkaPublisherService implements EventPublisherService {
                         objectMapper.readValue(
                                 event.getPayload(),
                                 OrderLifecycleTransitionedEvent.class
+                        );
+
+                case EventConstants.EVENT_ORDER_OWNERSHIP_ASSIGNED ->
+                        objectMapper.readValue(
+                                event.getPayload(),
+                                OrderOwnershipAssignedEvent.class
                         );
 
                 default -> throw new IllegalArgumentException(

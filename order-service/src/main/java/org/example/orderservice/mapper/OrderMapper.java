@@ -58,7 +58,22 @@ public class OrderMapper {
                 order.getCustomerEmail(),
                 items,
                 order.getDescription(),
-                order.getCreatedAt()
+                order.getCreatedAt(),
+                true
         );
+    }
+
+    /**
+     * Creates a response indicating that an order request was not persisted.
+     *
+     * @param request rejected order request
+     * @return response without an order identifier or lifecycle status
+     */
+    public static OrderResponse toSubmissionFailureResponse(OrderRequest request) {
+        List<OrderItemResponse> items = request.items().stream()
+                .map(item -> new OrderItemResponse(item.productId(), item.quantity()))
+                .toList();
+
+        return new OrderResponse(null, null, request.customerEmail(), items, request.description(), null, false);
     }
 }

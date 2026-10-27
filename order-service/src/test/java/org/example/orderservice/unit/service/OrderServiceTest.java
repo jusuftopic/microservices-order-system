@@ -24,6 +24,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -97,7 +98,7 @@ public class OrderServiceTest {
                         .quantity(item.quantity())
                 .build()));
 
-        when(repository.save(any(Order.class))).thenReturn(savedOrder);
+        when(repository.saveAndFlush(any(Order.class))).thenReturn(savedOrder);
 
 
         // WHEN
@@ -107,18 +108,75 @@ public class OrderServiceTest {
         assertNotNull(response);
         assertEquals(1L, response.id());
         assertEquals("CREATED", response.status());
+        assertTrue(response.submitted());
 
         ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
-        verify(repository).save(orderCaptor.capture());
+        verify(repository).saveAndFlush(orderCaptor.capture());
         assertEquals(customerId, orderCaptor.getValue().getCustomerId());
 
+        ArgumentCaptor<ReserveInventoryCommand> inventoryEventCaptor =
+                ArgumentCaptor.forClass(ReserveInventoryCommand.class);
         verify(outboxService).storeEvent(
                 eq(1L),
                 eq("ORDER"),
                 eq(EventConstants.EVENT_INVENTORY_CHECK_REQUESTED),
-                any(ReserveInventoryCommand.class));
+                inventoryEventCaptor.capture());
+
+        ArgumentCaptor<OrderOwnershipAssignedEvent> ownershipEventCaptor =
+                ArgumentCaptor.forClass(OrderOwnershipAssignedEvent.class);
+        verify(outboxService).storeEvent(
+                eq(1L),
+                eq("ORDER"),
+                eq(EventConstants.EVENT_ORDER_OWNERSHIP_ASSIGNED),
+                ownershipEventCaptor.capture()
+        );
+
+        OrderOwnershipAssignedEvent ownershipEvent = ownershipEventCaptor.getValue();
+        assertEquals(1L, ownershipEvent.orderId());
+        assertEquals(customerId, ownershipEvent.customerId());
+        assertEquals(1, ownershipEvent.eventVersion());
+        assertNotNull(ownershipEvent.occurredAt());
+        assertNotNull(ownershipEvent.messageId());
+        assertEquals(
+                inventoryEventCaptor.getValue().correlationId(),
+                ownershipEvent.correlationId()
+        );
     }
 
+    @Test
+    void should_not_store_outbox_event_when_order_persist_fails() {
+
+        // GIVEN
+        UUID customerId = UUID.fromString("22222222-2222-4222-8222-222222222222");
+        OrderRequest request = new OrderRequest(
+                "test@mail.com",
+                List.of(
+                        new OrderItemRequest(1L, 2),
+                        new OrderItemRequest(2L, 1)
+                ),
+                "desc"
+        );
+
+        when(repository.saveAndFlush(any(Order.class)))
+                .thenThrow(new DataIntegrityViolationException("order persistence failed"));
+
+
+        // WHEN
+        OrderResponse response = orderService.createOrder(customerId, request);
+
+        // THEN
+        assertNotNull(response);
+        assertNull(response.id());
+        assertNull(response.status());
+        assertFalse(response.submitted());
+
+        ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
+        verify(repository).saveAndFlush(orderCaptor.capture());
+        assertEquals(customerId, orderCaptor.getValue().getCustomerId());
+
+        verifyNoInteractions(outboxService);
+        verifyNoInteractions(orderMetrics);
+    }
 
     @Test
     void should_return_order_when_found() {

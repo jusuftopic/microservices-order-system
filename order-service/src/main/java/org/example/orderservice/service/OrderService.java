@@ -23,11 +23,15 @@ import org.example.orderservice.service.outbox.OrderOutboxService;
 import org.example.orderservice.service.workflow.OrderWorkflowService;
 import org.example.orderservice.service.workflow.OrderTransitionContext;
 import org.example.orderservice.service.workflow.OrderTransitionResult;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.UUID;
@@ -65,33 +69,24 @@ public class OrderService {
                 request.customerEmail(), request.items().size());
 
         final String correlationId = UUID.randomUUID().toString();
-        final Order saved = storeOrder(customerId, request, correlationId);
-        final UUID messageId = UUID.randomUUID();
 
-        // store outbox event
-        outboxService.storeEvent(
-                saved.getId(),
-                "ORDER",
-                EVENT_INVENTORY_CHECK_REQUESTED,
-                new ReserveInventoryCommand(
-                        saved.getId(),
-                        saved.getItems().stream()
-                                .map(item -> new OrderItemEvent(
-                                        item.getProductId(),
-                                        item.getQuantity()
-                                ))
-                                .toList(),
-                        correlationId,
-                        messageId
-                )
-        );
+        try {
+            final Order saved = storeOrder(customerId, request, correlationId);
 
-        /* 3. return order details */
-        log.info("[ORDER-SERVICE] Order {} successfully created. Status: {}. Correlation ID {}",
-                saved.getId(), saved.getStatus(), correlationId);
-        increaseMetricsCounter(orderMetrics.getOrdersCreated());
+            storeInventoryReservationEvent(saved, correlationId);
+            storeOwnershipAssignedEvent(saved, correlationId);
 
-        return OrderMapper.toResponse(saved);
+            log.info("[ORDER-SERVICE] Order {} successfully created. Status: {}. Correlation ID {}",
+                    saved.getId(), saved.getStatus(), correlationId);
+            increaseMetricsCounter(orderMetrics.getOrdersCreated());
+
+            return OrderMapper.toResponse(saved);
+        } catch (DataAccessException | IllegalStateException exception) {
+            markCurrentTransactionForRollback();
+            log.error("[ORDER-SERVICE] Order submission failed. Correlation ID {}",
+                    correlationId, exception);
+            return OrderMapper.toSubmissionFailureResponse(request);
+        }
     }
 
     /**
@@ -578,7 +573,63 @@ public class OrderService {
     private Order storeOrder(UUID customerId, final OrderRequest request, String correlationId) {
         Order order = OrderMapper.toEntity(customerId, request);
         order.setCorrelationId(correlationId);
-        return repository.save(order);
+        return repository.saveAndFlush(order);
+    }
+
+    /**
+     * Stores the command that starts inventory reservation for a new order.
+     *
+     * @param order persisted order
+     * @param correlationId order workflow correlation identifier
+     */
+    private void storeInventoryReservationEvent(Order order, String correlationId) {
+        outboxService.storeEvent(
+                order.getId(),
+                "ORDER",
+                EVENT_INVENTORY_CHECK_REQUESTED,
+                new ReserveInventoryCommand(
+                        order.getId(),
+                        order.getItems().stream()
+                                .map(item -> new OrderItemEvent(
+                                        item.getProductId(),
+                                        item.getQuantity()
+                                ))
+                                .toList(),
+                        correlationId,
+                        UUID.randomUUID()
+                )
+        );
+    }
+
+    /**
+     * Stores the ownership fact assigned while creating a new order.
+     *
+     * @param order persisted order
+     * @param correlationId order workflow correlation identifier
+     */
+    private void storeOwnershipAssignedEvent(Order order, String correlationId) {
+        outboxService.storeEvent(
+                order.getId(),
+                "ORDER",
+                EventConstants.EVENT_ORDER_OWNERSHIP_ASSIGNED,
+                new OrderOwnershipAssignedEvent(
+                        order.getId(),
+                        order.getCustomerId(),
+                        Instant.now(),
+                        1,
+                        correlationId,
+                        UUID.randomUUID()
+                )
+        );
+    }
+
+    /**
+     * Ensures partially persisted order creation work cannot be committed.
+     */
+    private void markCurrentTransactionForRollback() {
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+        }
     }
 
     private void logAlreadyProcessed(UUID messageId) {

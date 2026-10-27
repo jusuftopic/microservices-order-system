@@ -40,6 +40,9 @@ public class TopicResolver {
             case EVENT_ORDER_LIFECYCLE_TRANSITIONED ->
                     TOPIC_ORDER_LIFECYCLE_V1;
 
+            case EVENT_ORDER_OWNERSHIP_ASSIGNED ->
+                    TOPIC_ORDER_OWNERSHIP_V1;
+
             default -> throw new IllegalArgumentException(
                     "Unknown event type: " + eventType
             );

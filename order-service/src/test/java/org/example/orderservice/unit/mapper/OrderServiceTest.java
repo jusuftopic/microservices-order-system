@@ -97,6 +97,7 @@ public class OrderServiceTest {
         assertEquals("test@example.com", response.customerEmail());
         assertEquals("Order desc", response.description());
         assertEquals(order.getCreatedAt(), response.createdAt());
+        assertTrue(response.submitted());
 
 
         assertNotNull(response.items());

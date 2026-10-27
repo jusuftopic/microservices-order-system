@@ -1,6 +1,7 @@
 package org.example.orderservice.integration;
 
 import org.example.messagingstarter.outbox.entity.OutboxEvent;
+import org.example.messagingstarter.EventConstants;
 import org.example.orderservice.dto.request.OrderItemRequest;
 import org.example.orderservice.dto.request.OrderRequest;
 import org.example.orderservice.dto.response.OrderResponse;
@@ -13,6 +14,7 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -88,13 +90,14 @@ public class OrderFlowIT extends AbstractIntegrationTest {
         );
 
         // then
-        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
 
         OrderResponse responseBody = response.getBody();
         assertThat(responseBody).isNotNull();
 
         Long orderId = responseBody.id();
 
+        assertThat(responseBody.submitted()).isTrue();
         assertThat(responseBody.items()).hasSize(2);
         assertThat(responseBody.items().get(0).productId()).isEqualTo(1L);
         assertThat(responseBody.items().get(0).quantity()).isEqualTo(2);
@@ -104,11 +107,16 @@ public class OrderFlowIT extends AbstractIntegrationTest {
 
         List<OutboxEvent> events = outboxRepository.findAll();
 
-        assertThat(events).hasSize(1);
-
-        OutboxEvent event = events.get(0);
-
-        assertThat(event.getAggregateId()).isEqualTo(orderId);
-        assertThat(event.getProcessed()).isFalse();
+        assertThat(events).hasSize(2);
+        assertThat(events)
+                .allSatisfy(event -> {
+                    assertThat(event.getAggregateId()).isEqualTo(orderId);
+                    assertThat(event.getProcessed()).isFalse();
+                })
+                .extracting(OutboxEvent::getEventType)
+                .containsExactlyInAnyOrder(
+                        EventConstants.EVENT_INVENTORY_CHECK_REQUESTED,
+                        EventConstants.EVENT_ORDER_OWNERSHIP_ASSIGNED
+                );
     }
 }

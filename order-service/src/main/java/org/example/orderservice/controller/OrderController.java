@@ -5,6 +5,8 @@ import lombok.RequiredArgsConstructor;
 import org.example.orderservice.dto.request.OrderRequest;
 import org.example.orderservice.dto.response.OrderResponse;
 import org.example.orderservice.service.OrderService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -28,13 +30,17 @@ public class OrderController {
      * @return persisted order
      */
     @PostMapping
-    public OrderResponse createOrder(
+    public ResponseEntity<OrderResponse> createOrder(
             @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody OrderRequest request
     ) {
         Objects.requireNonNull(request, "request must not be null");
 
-        return service.createOrder(extractCustomerId(jwt), request);
+        OrderResponse response = service.createOrder(extractCustomerId(jwt), request);
+        HttpStatus status = response.submitted()
+                ? HttpStatus.CREATED
+                : HttpStatus.INTERNAL_SERVER_ERROR;
+        return ResponseEntity.status(status).body(response);
     }
 
     /**

@@ -104,4 +104,18 @@ public class KafkaTopicConfig {
                 .replicas(props.replicas())
                 .build();
     }
+
+    /**
+     * Creates the topic containing authoritative order ownership facts.
+     *
+     * @param props common Kafka topic settings
+     * @return order ownership topic definition
+     */
+    @Bean
+    public NewTopic orderOwnershipV1Topic(KafkaTopicProperties props) {
+        return TopicBuilder.name(EventConstants.TOPIC_ORDER_OWNERSHIP_V1)
+                .partitions(props.partitions())
+                .replicas(props.replicas())
+                .build();
+    }
 }

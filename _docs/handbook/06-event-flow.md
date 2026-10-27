@@ -39,6 +39,18 @@ This distinction keeps responsibilities clear. Services never instruct another s
 | InventoryCommitted         | Reserved inventory has been permanently deducted |
 | InventoryReleased          | Reserved inventory has been returned             |
 | OrderLifecycleTransitioned | The Order Service committed a lifecycle change   |
+| OrderOwnershipAssigned     | The Order Service assigned an order to a customer |
+
+## Order Creation and Ownership
+
+Order creation stores the order, the initial `ReserveInventory` Outbox command
+and one `OrderOwnershipAssigned` Outbox event in the same local transaction.
+The ownership event is published to `order.ownership.v1`.
+
+If order or Outbox persistence fails, the complete transaction rolls back and
+neither message is available to the publisher. Consumer-side ownership
+projection is introduced separately by services that need order-level access
+control.
 
 ## Investigation Evidence
 
@@ -75,7 +87,8 @@ types use shared contract vocabulary while remaining strings on the wire.
 A successful order follows the sequence below:
 
 1. The customer places an order.
-2. The Order Service creates the order and publishes a `ReserveInventory` command.
+2. The Order Service creates the order, assigns its owner, and publishes a
+   `ReserveInventory` command and `OrderOwnershipAssigned` event.
 3. The Inventory Service reserves the requested products and publishes an `InventoryReserved` event.
 4. The Order Service updates the order status and publishes a `ProcessPayment` command.
 5. The Payment Service processes the payment and publishes a `PaymentCompleted` event.

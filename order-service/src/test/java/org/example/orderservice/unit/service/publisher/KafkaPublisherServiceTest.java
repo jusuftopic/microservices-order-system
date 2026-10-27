@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.messagingstarter.EventConstants;
 import org.example.messagingstarter.contracts.commands.ReserveInventoryCommand;
 import org.example.messagingstarter.contracts.events.OrderLifecycleTransitionedEvent;
+import org.example.messagingstarter.contracts.events.OrderOwnershipAssignedEvent;
 import org.example.messagingstarter.outbox.entity.OutboxEvent;
 import org.example.orderservice.service.kafka.KafkaPublisherService;
 import org.junit.jupiter.api.BeforeEach;
@@ -141,6 +142,40 @@ public class KafkaPublisherServiceTest {
                 eq(EventConstants.TOPIC_ORDER_LIFECYCLE_V1),
                 eq("42"),
                 any(OrderLifecycleTransitionedEvent.class)
+        );
+    }
+
+    @Test
+    void should_publish_ownership_event_to_ownership_topic() {
+        OutboxEvent event = new OutboxEvent();
+        event.setAggregateId(42L);
+        event.setEventType(EventConstants.EVENT_ORDER_OWNERSHIP_ASSIGNED);
+        event.setPayload("""
+                {
+                  "orderId": 42,
+                  "customerId": "22222222-2222-4222-8222-222222222222",
+                  "occurredAt": "2026-10-27T10:15:00Z",
+                  "eventVersion": 1,
+                  "correlationId": "corr-42",
+                  "messageId": "2b997737-7918-442b-bbd8-c26e52fce083"
+                }
+                """);
+
+        CompletableFuture<SendResult<String, Object>> future =
+                CompletableFuture.completedFuture(mock(SendResult.class));
+
+        when(kafkaTemplate.send(
+                eq(EventConstants.TOPIC_ORDER_OWNERSHIP_V1),
+                eq("42"),
+                any(OrderOwnershipAssignedEvent.class)
+        )).thenReturn(future);
+
+        assertSame(future, service.publishEvent(event));
+
+        verify(kafkaTemplate).send(
+                eq(EventConstants.TOPIC_ORDER_OWNERSHIP_V1),
+                eq("42"),
+                any(OrderOwnershipAssignedEvent.class)
         );
     }
 

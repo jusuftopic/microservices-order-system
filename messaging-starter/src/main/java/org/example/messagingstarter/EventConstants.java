@@ -20,6 +20,7 @@ public class EventConstants {
     public static final String EVENT_NOTIFICATION_REQUESTED = "EVENT_NOTIFICATION_REQUESTED";
     public static final String EVENT_PAYMENT_REFUND_REQUESTED = "EVENT_PAYMENT_REFUND_REQUESTED";
     public static final String EVENT_ORDER_LIFECYCLE_TRANSITIONED = "EVENT_ORDER_LIFECYCLE_TRANSITIONED";
+    public static final String EVENT_ORDER_OWNERSHIP_ASSIGNED = "EVENT_ORDER_OWNERSHIP_ASSIGNED";
 
     /* TOPICS */
     public static final String TOPIC_ORDER_INVENTORY_REQUEST_V1 = "order.inventory.request.v1";
@@ -30,6 +31,7 @@ public class EventConstants {
     public static final String TOPIC_ORDER_INVENTORY_FINALIZATION_RESPONSE_V1 = "order.inventory.finalization.response.v1";
     public static final String TOPIC_NOTIFICATION_REQUEST_V1 = "notification.request.v1";
     public static final String TOPIC_ORDER_LIFECYCLE_V1 = "order.lifecycle.v1";
+    public static final String TOPIC_ORDER_OWNERSHIP_V1 = "order.ownership.v1";
 
     /* TOPICS - DLQ */
     public static final String TOPIC_ORDER_DLQ = "order.dlq";
