@@ -48,9 +48,12 @@ and one `OrderOwnershipAssigned` Outbox event in the same local transaction.
 The ownership event is published to `order.ownership.v1`.
 
 If order or Outbox persistence fails, the complete transaction rolls back and
-neither message is available to the publisher. Consumer-side ownership
-projection is introduced separately by services that need order-level access
-control.
+neither message is available to the publisher. The Investigation Service
+consumes the ownership event through its retry and dead-letter handling and
+persists an idempotent local projection keyed by order ID. Its ownership
+capability returns true only for an exact order/customer match; a missing
+projection therefore denies access while the asynchronous event is pending or
+requires recovery.
 
 ## Investigation Evidence
 

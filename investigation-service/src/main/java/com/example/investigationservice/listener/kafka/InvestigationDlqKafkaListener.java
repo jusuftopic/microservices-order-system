@@ -7,7 +7,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 /**
- * Observes terminal lifecycle records rejected by Investigation Service.
+ * Observes terminal business records rejected by Investigation Service.
  */
 @Service
 public class InvestigationDlqKafkaListener {

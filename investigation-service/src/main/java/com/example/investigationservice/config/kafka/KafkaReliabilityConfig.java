@@ -1,6 +1,7 @@
 package com.example.investigationservice.config.kafka;
 
 import com.example.investigationservice.exception.InvalidLifecycleEventException;
+import com.example.investigationservice.exception.InvalidOrderOwnershipEventException;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.example.messagingstarter.EventConstants;
@@ -20,7 +21,7 @@ import static org.example.messagingstarter.kafka.KafkaConsumerReliabilitySupport
 import static org.example.messagingstarter.kafka.KafkaConsumerReliabilitySupport.DEAD_LETTER_LISTENER_FACTORY;
 
 /**
- * Defines retry and recovery behavior for lifecycle evidence consumption.
+ * Defines retry and recovery behavior for Investigation Service consumers.
  */
 @Configuration
 @EnableConfigurationProperties(KafkaTopicProperties.class)
@@ -30,8 +31,9 @@ public class KafkaReliabilityConfig {
     private static final long RETRY_ATTEMPTS = 3L;
 
     /**
-     * Creates the service-owned dead-letter topic for lifecycle records that
-     * cannot be processed safely.
+     * Creates the service-owned dead-letter topic for business records that
+     * cannot be processed safely. The legacy topic name is retained to avoid
+     * changing the existing operational contract.
      *
      * @param properties topic infrastructure settings
      * @return dead-letter topic definition
@@ -63,7 +65,8 @@ public class KafkaReliabilityConfig {
                 RETRY_INTERVAL_MILLIS,
                 RETRY_ATTEMPTS,
                 DeserializationException.class,
-                InvalidLifecycleEventException.class
+                InvalidLifecycleEventException.class,
+                InvalidOrderOwnershipEventException.class
         );
     }
 

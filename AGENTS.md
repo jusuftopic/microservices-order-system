@@ -48,6 +48,7 @@ Use the root `pom.xml` as the source of truth for active Maven modules. `commons
 - Keep external provider calls outside database transactions according to existing service patterns. Account for uncertain provider outcomes and duplicate callbacks.
 - The documented in-process after-commit refund handoff has an accepted recovery gap. Do not claim durable delivery or redesign it incidentally; address it explicitly if the task requires stronger guarantees.
 - Preserve useful logs, correlation identifiers and metrics when changing failure/recovery behavior. Never expose credentials or sensitive payloads in logs.
+- Keep one listener class per event/command
 
 ## Investigation and AI
 - Treat persisted order evidence as authoritative. LLM output must not decide or mutate order, inventory or payment state.
