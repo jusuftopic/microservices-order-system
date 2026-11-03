@@ -5,6 +5,7 @@ import com.example.investigationservice.service.QuestionFeedbackService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -36,6 +37,7 @@ public class QuestionFeedbackController {
      * @return an empty successful response
      */
     @PostMapping("/{executionId}/feedback")
+    @PreAuthorize("@investigationOwnershipAccess.canAccessQuestion(authentication, #executionId)")
     public ResponseEntity<Void> submitFeedback(
             @PathVariable UUID executionId,
             @Valid @RequestBody QuestionFeedbackRequest request

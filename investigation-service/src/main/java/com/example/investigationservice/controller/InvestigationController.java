@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -38,6 +39,7 @@ public class InvestigationController {
      * @return the order investigation report
      */
     @GetMapping("/{orderId}")
+    @PreAuthorize("@investigationOwnershipAccess.canAccessOrder(authentication, #orderId)")
     public OrderInvestigationResponse getOrderInvestigation(
             @PathVariable
             @Positive(message = "orderId must be greater than zero")
@@ -54,10 +56,9 @@ public class InvestigationController {
      * @return grounded answer, or no content when no valid answer is available
      */
     @PostMapping("/{orderId}/questions")
+    @PreAuthorize("@investigationOwnershipAccess.canAccessOrder(authentication, #orderId)")
     public ResponseEntity<InvestigationQuestionResponse> askQuestion(
-            @PathVariable
-            @Positive(message = "orderId must be greater than zero")
-            long orderId,
+            @PathVariable @Positive(message = "orderId must be greater than zero") long orderId,
             @Valid @RequestBody InvestigationQuestionRequest request
     ) {
         return investigationQueryService.askQuestion(orderId, request.query())

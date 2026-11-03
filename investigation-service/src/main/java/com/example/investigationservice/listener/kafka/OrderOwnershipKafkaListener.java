@@ -46,11 +46,8 @@ public class OrderOwnershipKafkaListener {
         boolean persisted = ownershipService.persist(event, kafkaTopic, kafkaPartition, kafkaOffset);
 
         log.info(
-                "[INVESTIGATION-SERVICE][KAFKA] Processed "
-                        + "OrderOwnershipAssignedEvent for order {} correlationId {} "
-                        + "messageId {} persisted {}",
-                event.orderId(), event.correlationId(),
-                event.messageId(), persisted
+                "[INVESTIGATION-SERVICE][KAFKA] Processed OrderOwnershipAssignedEvent for order {} correlationId {} "
+                        + "messageId {} persisted {}", event.orderId(), event.correlationId(), event.messageId(), persisted
         );
     }
 

@@ -22,12 +22,12 @@ importOptions = ImportOption.DoNotIncludeTests.class)
 public class OrderArchitectureTest {
 
     /**
-     * Enforces a strict layered architecture:
-     * Controller → Service → Repository.
+     * Enforces the application flow from controllers through validation and
+     * service boundaries to repositories.
      *
      * <ul>
      *     <li>Controllers must not be accessed by other layers</li>
-     *     <li>Services may only be accessed by Controllers</li>
+     *     <li>Services may be accessed by controllers, listeners and validators</li>
      *     <li>Repositories may only be accessed by Services</li>
      * </ul>
      */
@@ -36,12 +36,17 @@ public class OrderArchitectureTest {
             layeredArchitecture()
                     .consideringAllDependencies()
                     .layer("Controller").definedBy("..controller..")
-                    .layer("Service").definedBy("..service..")
+                    .layer("Service").definedBy("..service..", "..authorization..")
+                    .layer("Validation").definedBy("..validation..")
                     .layer("Repository").definedBy("..repository..")
                     .layer("Listener").definedBy("..listener..")
 
                     .whereLayer("Controller").mayNotBeAccessedByAnyLayer()
-                    .whereLayer("Service").mayOnlyBeAccessedByLayers("Controller", "Listener")
+                    .whereLayer("Service").mayOnlyBeAccessedByLayers(
+                            "Controller",
+                            "Listener",
+                            "Validation"
+                    )
                     .whereLayer("Repository").mayOnlyBeAccessedByLayers("Service");
 
     /**

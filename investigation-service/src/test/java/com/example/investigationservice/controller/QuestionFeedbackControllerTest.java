@@ -1,10 +1,13 @@
 package com.example.investigationservice.controller;
 
 import com.example.investigationservice.config.security.InvestigationSecurityConfig;
+import com.example.investigationservice.authorization.OwnershipPermissionService;
 import com.example.investigationservice.entity.enums.FeedbackRating;
 import com.example.investigationservice.exception.QuestionExecutionNotFoundException;
 import com.example.investigationservice.exception.QuestionFeedbackConflictException;
 import com.example.investigationservice.service.QuestionFeedbackService;
+import com.example.investigationservice.validation.OwnershipAccessValidator;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -22,7 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(QuestionFeedbackController.class)
-@Import(InvestigationSecurityConfig.class)
+@Import({InvestigationSecurityConfig.class, OwnershipAccessValidator.class})
 @WithMockUser(authorities = "SCOPE_investigations.feedback")
 class QuestionFeedbackControllerTest {
 
@@ -31,6 +34,20 @@ class QuestionFeedbackControllerTest {
 
     @MockitoBean
     private QuestionFeedbackService feedbackService;
+
+    @MockitoBean
+    private OwnershipPermissionService ownershipPermissionService;
+
+    /**
+     * Allows ownership by default so feedback behavior remains independently tested.
+     */
+    @BeforeEach
+    void allowOwnership() {
+        org.mockito.Mockito.when(ownershipPermissionService.canAccessQuestion(
+                org.mockito.ArgumentMatchers.any(UUID.class),
+                org.mockito.ArgumentMatchers.nullable(String.class)
+        )).thenReturn(true);
+    }
 
     @Test
     void storesValidFeedback() throws Exception {

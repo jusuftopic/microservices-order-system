@@ -3,7 +3,11 @@ package com.example.investigationservice.controller;
 import com.example.investigationservice.dto.response.OrderInvestigationResponse;
 import com.example.investigationservice.dto.response.InvestigationQuestionResponse;
 import com.example.investigationservice.config.security.InvestigationSecurityConfig;
+import com.example.investigationservice.authorization.OwnershipPermissionService;
 import com.example.investigationservice.service.InvestigationQueryService;
+import com.example.investigationservice.validation.OwnershipAccessValidator;
+import org.apache.kafka.common.protocol.types.Field;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -28,7 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(InvestigationController.class)
-@Import(InvestigationSecurityConfig.class)
+@Import({InvestigationSecurityConfig.class, OwnershipAccessValidator.class})
 @WithMockUser(authorities = {
         "SCOPE_investigations.read",
         "SCOPE_investigations.ask"
@@ -40,6 +44,20 @@ class InvestigationControllerTest {
 
     @MockitoBean
     private InvestigationQueryService investigationQueryService;
+
+    @MockitoBean
+    private OwnershipPermissionService ownershipPermissionService;
+
+    /**
+     * Allows ownership by default so each test can focus on its declared concern.
+     */
+    @BeforeEach
+    void allowOwnership() {
+        when(ownershipPermissionService.canAccessOrder(
+                org.mockito.ArgumentMatchers.anyLong(),
+                org.mockito.ArgumentMatchers.nullable(String.class)
+        )).thenReturn(true);
+    }
 
     @Test
     void returnsEmptyInvestigationForValidOrderId() throws Exception {
@@ -166,6 +184,23 @@ class InvestigationControllerTest {
     @WithMockUser(authorities = "SCOPE_investigations.ask")
     void rejectsRequestWithoutRequiredScope() throws Exception {
         mockMvc.perform(get("/api/v1/investigations/orders/{orderId}", 42))
+                .andExpect(status().isForbidden());
+    }
+
+    /**
+     * Verifies that a scoped caller without ownership cannot read investigation data.
+     */
+    @Test
+    void rejectsRequestForOrderOwnedByAnotherCustomer() throws Exception {
+        final String customerId = "33333333-3333-4333-8333-333333333333";
+        when(ownershipPermissionService.canAccessOrder(42L, customerId)).thenReturn(false);
+
+        mockMvc.perform(get("/api/v1/investigations/orders/{orderId}", 42)
+                        .with(org.springframework.security.test.web.servlet.request
+                                .SecurityMockMvcRequestPostProcessors.jwt()
+                                .jwt(jwt -> jwt.claim("customer_id", customerId))
+                                .authorities(new org.springframework.security.core.authority
+                                        .SimpleGrantedAuthority("SCOPE_investigations.read"))))
                 .andExpect(status().isForbidden());
     }
 }

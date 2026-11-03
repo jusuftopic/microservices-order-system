@@ -13,6 +13,15 @@ import java.util.UUID;
 public interface QuestionExecutionRepository extends JpaRepository<QuestionExecution, Long> {
 
     /**
+     * Resolves a public question execution to its protected order resource.
+     *
+     * @param executionId public execution identifier
+     * @return associated order identifier when the execution exists
+     */
+    @Query("select execution.orderId from QuestionExecution execution where execution.executionId = :executionId")
+    Optional<Long> findOrderIdByExecutionId(@Param("executionId") UUID executionId);
+
+    /**
      * Finds and locks an execution while its feedback is checked and stored.
      *
      * <p>The write lock serializes concurrent submissions for the same

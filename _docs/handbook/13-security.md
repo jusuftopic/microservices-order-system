@@ -44,6 +44,27 @@ Private service exposure reduces accidental access, but it does not by itself
 authenticate or encrypt internal traffic. It represents one boundary in a
 broader security model.
 
+## External API Authentication and Ownership Authorization
+
+The Order and Investigation APIs are OAuth 2.0 resource servers. Each service
+validates the JWT signature, issuer, audience and expiry and requires a
+capability-specific scope before invoking an endpoint. The gateway routes and
+limits requests but does not make business authorization decisions.
+
+Order-specific reads require a second authorization decision after the scope
+check. The signed `customer_id` claim is compared with service-owned data:
+
+* Order Service checks the authoritative order row.
+* Investigation Service checks its local ownership projection populated from
+  `OrderOwnershipAssignedEvent`.
+* Feedback access resolves the question execution to its order and applies the
+  same ownership check.
+
+Missing projections, malformed customer claims and ownership mismatches deny
+access. Denials return HTTP 403, produce a sanitized warning log and increment
+a counter with bounded resource and reason tags. Customer identifiers and
+tokens are not written to authorization logs or metric tags.
+
 During the design phase, principles aligned with a zero-trust architecture were considered, such as enforcing encrypted communication (for example, TLS between services and Kafka) and requiring explicit authentication for every interaction. However, as this project is a side project with limited scope, these mechanisms were not fully implemented. Despite this, the design acknowledges the benefits of zero-trust approaches, including stronger protection against lateral movement, improved data confidentiality, and more robust identity-based access control, and these considerations inform how the system could be further hardened in a production environment.
 
 ## Internal Network Segmentation
@@ -229,7 +250,6 @@ The current deployment provides protection through:
 
 As the system moves toward a production environment, additional controls would be required, including:
 
-* authentication and authorization for external APIs
 * TLS for external and internal communication
 * Kafka authentication and encryption
 * dedicated Kubernetes ServiceAccounts and RBAC

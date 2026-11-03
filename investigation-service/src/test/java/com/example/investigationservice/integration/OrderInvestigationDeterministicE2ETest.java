@@ -1,7 +1,9 @@
 package com.example.investigationservice.integration;
 
 import com.example.investigationservice.entity.OrderLifecycleEvidence;
+import com.example.investigationservice.entity.OrderOwner;
 import com.example.investigationservice.repository.OrderLifecycleEvidenceRepository;
+import com.example.investigationservice.repository.OrderOwnerRepository;
 import com.example.investigationservice.service.explanation.ai.AiExplanationGenerator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,6 +47,8 @@ class OrderInvestigationDeterministicE2ETest {
             UUID.fromString("f63135c3-640c-4313-9ad4-6114ae28748f");
     private static final UUID RELEASE_COMMAND_ID =
             UUID.fromString("0ae52e0a-9272-4ce7-8221-522578e622c7");
+    private static final UUID CUSTOMER_ID =
+            UUID.fromString("22222222-2222-4222-8222-222222222222");
 
     @Autowired
     private MockMvc mockMvc;
@@ -52,11 +56,16 @@ class OrderInvestigationDeterministicE2ETest {
     @Autowired
     private OrderLifecycleEvidenceRepository repository;
 
+    @Autowired
+    private OrderOwnerRepository ownerRepository;
+
     @MockitoBean
     private AiExplanationGenerator aiExplanationGenerator;
 
     @Test
     void retrievesOrderedTimelineAndDeterministicExplanation() throws Exception {
+        final Long orderId = 42L;
+
         when(aiExplanationGenerator.generate(any())).thenReturn(Optional.empty());
         when(aiExplanationGenerator.provider()).thenReturn(PROVIDER);
         when(aiExplanationGenerator.model()).thenReturn(MODEL);
@@ -65,6 +74,7 @@ class OrderInvestigationDeterministicE2ETest {
 
         repository.save(evidence(
                 UUID.fromString("8f711b2d-5350-4d3e-8233-a0e9930139ce"),
+                orderId,
                 "INVENTORY_RESERVE_COMPLETED",
                 "PAYMENT_FAILED",
                 "PAYMENT_FAILED",
@@ -80,6 +90,7 @@ class OrderInvestigationDeterministicE2ETest {
         ));
         repository.save(evidence(
                 UUID.fromString("252393c1-e649-4b4d-a3d4-8f6317bd60d2"),
+                orderId,
                 "CREATED",
                 "INVENTORY_RESERVE_COMPLETED",
                 "INVENTORY_RESERVED",
@@ -94,9 +105,19 @@ class OrderInvestigationDeterministicE2ETest {
                 1L
         ));
         repository.flush();
+        ownerRepository.saveAndFlush(OrderOwner.builder()
+                .orderId(orderId)
+                .customerId(CUSTOMER_ID)
+                .messageId(UUID.fromString("66666666-6666-4666-8666-666666666666"))
+                .occurredAt(Instant.parse("2026-08-19T09:59:00Z"))
+                .eventVersion(1)
+                .correlationId("correlation-42")
+                .build());
 
         mockMvc.perform(get("/api/v1/investigations/orders/{orderId}", 42)
-                        .with(jwt().authorities(
+                        .with(jwt()
+                                .jwt(jwt -> jwt.claim("customer_id", CUSTOMER_ID.toString()))
+                                .authorities(
                                 new SimpleGrantedAuthority("SCOPE_investigations.read")
                         )))
                 .andExpect(status().isOk())
@@ -123,6 +144,7 @@ class OrderInvestigationDeterministicE2ETest {
 
     private OrderLifecycleEvidence evidence(
             UUID messageId,
+            Long orderId,
             String previousStatus,
             String newStatus,
             String reasonCode,
@@ -138,7 +160,7 @@ class OrderInvestigationDeterministicE2ETest {
     ) {
         return OrderLifecycleEvidence.builder()
                 .messageId(messageId)
-                .orderId(42L)
+                .orderId(orderId)
                 .previousStatus(previousStatus)
                 .newStatus(newStatus)
                 .reasonCode(reasonCode)

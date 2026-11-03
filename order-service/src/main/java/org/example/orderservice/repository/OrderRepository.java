@@ -11,9 +11,19 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
+
+    /**
+     * Checks whether the identified order belongs to the authenticated customer.
+     *
+     * @param orderId order identifier
+     * @param customerId internal customer identifier
+     * @return {@code true} only for an exact order and customer match
+     */
+    boolean existsByIdAndCustomerId(Long orderId, UUID customerId);
 
 
     @Query("""

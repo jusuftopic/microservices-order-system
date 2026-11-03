@@ -2,6 +2,7 @@ package org.example.orderservice.metrics;
 
 
 import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import lombok.Getter;
@@ -23,6 +24,7 @@ public class OrderMetrics {
     private final Counter ordersCreated;
     private final Counter ordersCompleted;
     private final Counter ordersFailed;
+    private final Meter.MeterProvider<Counter> ownershipAccessDenied;
 
     /* TIMERS */
     private final Timer orderProcessingDuration;
@@ -41,11 +43,28 @@ public class OrderMetrics {
                 .description("Total number of failed orders")
                 .register(registry);
 
+        this.ownershipAccessDenied = Counter.builder("orders.authorization.denied.total")
+                .description("Order resource access denied by ownership authorization")
+                .withRegistry(registry);
+
         /* TIMERS */
         orderProcessingDuration =
                 Timer.builder("order.processing.duration")
                         .description("Order end-to-end processing duration")
                         .register(registry);
+    }
+
+    /**
+     * Records an ownership authorization denial with bounded classifications.
+     *
+     * @param resourceType kind of protected order resource
+     * @param reason bounded denial reason
+     */
+    public void recordOwnershipAccessDenied(String resourceType, String reason) {
+        ownershipAccessDenied.withTags(
+                "resource_type", resourceType,
+                "reason", reason
+        ).increment();
     }
 
 }

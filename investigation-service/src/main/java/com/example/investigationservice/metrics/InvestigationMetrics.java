@@ -39,6 +39,8 @@ public class InvestigationMetrics {
             "investigation.rag.ingestion.documents.total";
     static final String RAG_INGESTION_RETRIES_METRIC =
             "investigation.rag.ingestion.retries.total";
+    static final String OWNERSHIP_ACCESS_DENIED_METRIC =
+            "investigation.authorization.denied.total";
 
     private final Counter lifecycleConcurrentInserts;
     private final Counter deterministicExplanations;
@@ -54,6 +56,7 @@ public class InvestigationMetrics {
     private final Meter.MeterProvider<Counter> ragIngestionRuns;
     private final Meter.MeterProvider<Counter> ragIngestionDocuments;
     private final Meter.MeterProvider<Counter> ragIngestionRetries;
+    private final Meter.MeterProvider<Counter> ownershipAccessDenied;
 
     /**
      * Registers metrics that describe lifecycle evidence processing.
@@ -102,6 +105,9 @@ public class InvestigationMetrics {
                 .withRegistry(registry);
         ragIngestionRetries = Counter.builder(RAG_INGESTION_RETRIES_METRIC)
                 .description("RAG ingestion retry attempts")
+                .withRegistry(registry);
+        ownershipAccessDenied = Counter.builder(OWNERSHIP_ACCESS_DENIED_METRIC)
+                .description("Investigation resource access denied by ownership authorization")
                 .withRegistry(registry);
     }
 
@@ -307,6 +313,19 @@ public class InvestigationMetrics {
         ragIngestionRetries.withTags(
                 "corpus_version", corpusVersion,
                 "operation", operation
+        ).increment();
+    }
+
+    /**
+     * Records an ownership authorization denial with bounded classifications.
+     *
+     * @param resourceType kind of protected investigation resource
+     * @param reason bounded denial reason
+     */
+    public void recordOwnershipAccessDenied(String resourceType, String reason) {
+        ownershipAccessDenied.withTags(
+                "resource_type", resourceType,
+                "reason", reason
         ).increment();
     }
 

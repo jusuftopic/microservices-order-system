@@ -37,12 +37,7 @@ public class OrderOwnershipService {
      *         for a repeated delivery of the same event
      */
     @Transactional
-    public boolean persist(
-            OrderOwnershipAssignedEvent event,
-            String kafkaTopic,
-            int kafkaPartition,
-            long kafkaOffset
-    ) {
+    public boolean persist(OrderOwnershipAssignedEvent event, String kafkaTopic, int kafkaPartition, long kafkaOffset) {
         validator.validate(event, kafkaTopic, kafkaPartition, kafkaOffset);
 
         Optional<OrderOwner> ownerByMessage = repository.findByMessageId(event.messageId());
@@ -100,10 +95,7 @@ public class OrderOwnershipService {
      * @param incoming ownership event being processed
      * @return {@code false} for an exact redelivery
      */
-    private boolean handleExisting(
-            OrderOwner stored,
-            OrderOwnershipAssignedEvent incoming
-    ) {
+    private boolean handleExisting(OrderOwner stored, OrderOwnershipAssignedEvent incoming) {
         if (stored.getOrderId().equals(incoming.orderId())
                 && stored.getCustomerId().equals(incoming.customerId())
                 && stored.getMessageId().equals(incoming.messageId())) {
